@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Save, Search, UserRound, WalletCards } from 'lucide-react';
+import { FileCheck2, FilePenLine, History, Repeat2, Save, Search, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
+const Home2Layout = React.lazy(() => import('./Home2Layout').then(m => ({default:m.Home2Layout})));
 
 // Only publicly shipped fictional fixtures may appear in public autocomplete.
 // Never suggest account receipts or hosted payment records.
 // The status/Travel Tax modal pulls in the checkout and receipt modules.
 // Keep the public landing light until the user explicitly opens that service.
 const PublicServiceModal = React.lazy(() => import('./PublicServiceModal').then(module => ({default: module.PublicServiceModal})));
+const PaymentServiceChoiceDialog = React.lazy(() => import('./PaymentServiceChoiceDialog').then(module => ({default: module.PaymentServiceChoiceDialog})));
 
 const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
 const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
@@ -19,11 +20,10 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
   { value: receipt.gatewayTransactionId, kind: 'transaction' as const },
 ]);
 
-export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen, previewAccount } = useTaxState();
-  const { user } = useAccountIdentity();
-  const signedIn = Boolean(user || previewAccount);
+export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
+  const { language, navigate, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
+  const [otherTaxEntryOpen, setOtherTaxEntryOpen] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
@@ -32,15 +32,18 @@ export const PublicLanding: React.FC = () => {
   const matchedOptions = cleanReference
     ? sampleSearchOptions.filter(option => option.value.toLowerCase().includes(cleanReference)).slice(0, 5)
     : [];
-  // Only public synthetic references; matches and example numbers remain separate groups.
-  const exampleOptions = sampleSearchOptions.slice(0, 3);
+  // Do not repeat a matching reference under Example reference numbers.
+  // Keep three alternative examples available and never query account/private data.
+  const matchedKeys = new Set(matchedOptions.map(option => option.kind + ':' + option.value));
+  const exampleOptions = sampleSearchOptions
+    .filter(option => !matchedKeys.has(option.kind + ':' + option.value)).slice(0, 3);
   const suggestions = [...matchedOptions, ...exampleOptions];
   const chooseReference = (reference: string) => {
     setSearchOpen(false);
     setActiveSuggestion(-1);
     setPaymentReference(reference);
     // Preserve existing in-memory navigation; never expose references in the URL.
-    navigate('verify', { initialReference: reference });
+    navigate('verify', { initialReference: reference, ...(home2 ? {fromHome2:true} : {}) });
   };
   useEffect(() => {
     const handleOutside = (event: PointerEvent) => {
@@ -55,8 +58,8 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // Citizen-value cards are informational, not duplicate payment CTAs.
-  // The approved Pay Tax / Pay Travel Tax journeys remain in the hero.
+  // The banner and All Tax Payments benefit now share the approved parallel entry.
+  // Preserve the original payment flow implementation without changing its behavior.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -96,72 +99,16 @@ export const PublicLanding: React.FC = () => {
     },
   ];
 
-  const stages = [
-    {
-      Icon: UserRound,
-      title: t('Input taxpayer details', 'করদাতার তথ্য দিন'),
-      description: t('Enter or confirm the taxpayer’s details.', 'যার কর পরিশোধ করছেন, তার তথ্য দিন বা নিশ্চিত করুন।'),
-    },
-    {
-      Icon: ListChecks,
-      title: t('Select purpose & amount', 'খাত ও পরিমাণ নির্বাচন করুন'),
-      description: t('Choose the payment head and enter the amount.', 'কর পরিশোধের খাত বেছে নিয়ে পরিমাণ লিখুন।'),
-    },
-    {
-      Icon: WalletCards,
-      title: t('Choose payment method', 'পেমেন্ট পদ্ধতি বেছে নিন'),
-      description: t('Choose to pay online or at a bank branch.', 'অনলাইন বা ব্যাংক শাখায় পরিশোধের পদ্ধতি বেছে নিন।'),
-    },
-    {
-      Icon: ReceiptText,
-      title: t('Review & confirm payment', 'যাচাই করে নিশ্চিত করুন'),
-      description: t('Review the details and keep your payment reference.', 'পেমেন্টের তথ্য যাচাই করুন ও রেফারেন্স সংরক্ষণ করুন।'),
-    },
-  ];
-
-  const questions = [
-    {
-      question: t('Do I need an account to pay?', 'কর পরিশোধ করতে কি অ্যাকাউন্ট লাগবে?'),
-      answer: t(
-        'It depends on the service. Choose the taxpayer relationship and service first. Sign-in is offered when relevant, but public payments can continue without an account.',
-        'সেবার ওপর নির্ভর করে। আগে কার কর পরিশোধ করছেন ও সেবা বেছে নিন। প্রয়োজনে সাইন ইন করতে পারবেন; পাবলিক পেমেন্ট অ্যাকাউন্ট ছাড়াও চলতে পারে।',
-      ),
-    },
-    {
-      question: t('Where can I find an earlier payment?', 'আগের পেমেন্ট কোথায় খুঁজব?'),
-      answer: signedIn
-        ? t('Use your reference to check payment status and receipts, or open your dashboard for transaction history.', 'রেফারেন্স দিয়ে পেমেন্টের অবস্থা ও রসিদ দেখুন, অথবা লেনদেনের ইতিহাসের জন্য ড্যাশবোর্ড খুলুন।')
-        : t('Use your reference to check payment status and receipts. Sign in to see your transaction workspace and payment history.', 'রেফারেন্স দিয়ে পেমেন্টের অবস্থা ও রসিদ দেখুন। নিজের লেনদেন ও ইতিহাস দেখতে লগইন করুন।'),
-    },
-    {
-      question: t('Does a receipt automatically confirm a tax credit?', 'রসিদ থাকলেই কি কর ক্রেডিট নিশ্চিত হয়?'),
-      answer: t(
-        'No. A receipt records a payment. Tax credit depends on applicable rules, ownership and verification.',
-        'না। রসিদ একটি পেমেন্টের রেকর্ড। কর ক্রেডিট প্রযোজ্য নিয়ম, মালিকানা ও যাচাইয়ের ওপর নির্ভর করে।',
-      ),
-    },
-    {
-      question: t('What if my payment details do not match?', 'পেমেন্টের তথ্যে অমিল থাকলে কী করব?'),
-      answer: t(
-        'Keep your payment reference and follow the records and corrections guidance.',
-        'পেমেন্ট রেফারেন্স সংরক্ষণ করুন এবং রেকর্ড ও সংশোধনের নির্দেশনা অনুসরণ করুন।',
-      ),
-      guide: true,
-    },
-  ];
-
-  return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
-    <PublicHeroCarousel
+  const hero = (<PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
-      paused={isPaymentServiceChoiceOpen || openService !== null}
-    />
-
-
-    <section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
+      onPayTax={() => openAllTaxPayments()}
+      onOtherTax={() => setOtherTaxEntryOpen(true)}
+      paused={isPaymentServiceChoiceOpen || otherTaxEntryOpen || openService !== null}
+    />);
+  const recordSearch = (<section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
       <div className="public-record-discovery__heading">
         <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
-        <p>{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
+        <p id="public-record-discovery-help">{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
       </div>
       <div className="public-record-discovery__interactive" ref={searchRegionRef}>
         <form
@@ -179,6 +126,8 @@ export const PublicLanding: React.FC = () => {
           <label className="sr-only" htmlFor="public-payment-reference">
             {t('Search payment records by reference', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন')}
           </label>
+          {/* Native searchbox keeps its role. The status region announces matches;
+              combobox-only ARIA belongs neither here nor on the input. */}
           <input
             id="public-payment-reference"
             type="search"
@@ -186,6 +135,8 @@ export const PublicLanding: React.FC = () => {
             spellCheck={false}
             maxLength={120}
             value={paymentReference}
+            aria-describedby="public-record-discovery-help"
+            aria-autocomplete="list"
             aria-controls={searchOpen ? "public-record-suggestions" : undefined}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
@@ -221,8 +172,25 @@ export const PublicLanding: React.FC = () => {
             <Search size={23} aria-hidden="true" />
           </button>
         </form>
+        {/* Keep the live region mounted while closed so the first update is
+            announced reliably instead of appearing with pre-filled content. */}
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only"
+          data-testid="public-search-match-status">
+          {searchOpen
+            ? cleanReference
+              ? matchedOptions.length
+                ? t(`${matchedOptions.length} matching example references. Use arrow keys to choose one, or submit your own reference.`,
+                  `${new Intl.NumberFormat('bn-BD').format(matchedOptions.length)}টি নমুনা রেফারেন্স মিলেছে। বেছে নিতে তীর চিহ্নের বোতাম বা নিজের রেফারেন্স খুঁজতে অনুসন্ধান ব্যবহার করুন।`)
+                : t('No example references matched. You can still check your own reference.',
+                  'কোনো নমুনা রেফারেন্স মেলেনি। নিজের রেফারেন্স দিয়েও যাচাই করতে পারবেন।')
+              : t('Example references available. Use the arrow keys to choose one.',
+                  'নমুনা রেফারেন্স পাওয়া যাচ্ছে। বেছে নিতে তীর চিহ্নের বোতাম ব্যবহার করুন।')
+            : ''}
+        </p>
         {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
+            {/* The persistent live region above is the only announcement source;
+                duplicating it here causes two screen-reader announcements. */}
             {cleanReference && (
               <div className="public-record-suggestions__group">
                 <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>
@@ -241,7 +209,7 @@ export const PublicLanding: React.FC = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="public-record-suggestions__empty">{t('No matching references. You can still search using this reference.', 'মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
+                  <p className="public-record-suggestions__empty">{t('No matching references among the examples. You can still search using this reference.', 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
                 )}
               </div>
             )}
@@ -267,7 +235,16 @@ export const PublicLanding: React.FC = () => {
           </div>
         )}
       </div>
-    </section>
+    </section>);
+  const serviceOverlays = (<>{otherTaxEntryOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}>
+      <PaymentServiceChoiceDialog unifiedEntryRequested onDismiss={() => setOtherTaxEntryOpen(false)}
+        onPublicOtherTaxContinue={() => { setOtherTaxEntryOpen(false); setOpenService('other'); }} />
+    </React.Suspense>}
+    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onBack={openService === 'other' ? () => { setOpenService(null); setOtherTaxEntryOpen(true); } : undefined} onChooseOther={setOpenService} /></React.Suspense>}</>);
+  if (home2) return <><Home2Layout onSearch={chooseReference} onOtherTax={()=>setOtherTaxEntryOpen(true)} />{serviceOverlays}</>;
+  return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
+    {hero}
+    {recordSearch}
 
     <section className="public-benefits" aria-labelledby="public-benefits-title">
       <div className="public-benefits__heading">
@@ -275,64 +252,24 @@ export const PublicLanding: React.FC = () => {
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
       </div>
       <div className="public-benefits__grid">
-        {citizenBenefits.map(({ id, Icon, title, detail }) => (
-          <article key={id} className="public-benefits__item" data-benefit={id}>
+        {citizenBenefits.map(({ id, Icon, title, detail }) => {
+          const contents = <>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
               <h3>{title}</h3>
-              <p>{detail}</p>
+              <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
-          </article>
-        ))}
+          </>;
+          return id === 'payments'
+            ? <button type="button" key={id} className="public-benefits__item public-benefits__item--action"
+                data-benefit={id} onClick={openAllTaxPayments} aria-describedby={`public-benefit-detail-${id}`}>
+                {contents}
+              </button>
+            : <article key={id} className="public-benefits__item" data-benefit={id}>{contents}</article>;
+        })}
       </div>
     </section>
 
-    <section id="public-how-it-works" style={{ display: 'none' }} className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
-      <div className="citizen-hub-section__heading">
-        <div>
-          <h2 id="steps-title">{t('How your payment works', 'যেভাবে কর পরিশোধ করবেন')}</h2>
-          <p>{t('A clear route from taxpayer details to your payment record.', 'করদাতার তথ্য থেকে পেমেন্ট রেকর্ড পর্যন্ত প্রতিটি ধাপ পরিষ্কারভাবে দেখুন।')}</p>
-        </div>
-      </div>
-      <div className="public-payment-path__starter">
-        <span className="public-payment-path__starter-label">{t('Start here', 'এখান থেকে শুরু করুন')}</span>
-        <p>{t('Choose who you are paying for, then select one of two services and follow these four steps.', 'আগে কার কর পরিশোধ করছেন নির্বাচন করুন, তারপর দুটি সেবার একটি বেছে নিয়ে চারটি ধাপ অনুসরণ করুন।')}</p>
-      </div>
-      <ol className="public-payment-path__steps">
-        {stages.map((stage, index) => <li key={stage.title}>
-          <div className="public-payment-path__step-head">
-            <span className="public-payment-path__symbol" aria-hidden="true"><stage.Icon size={23} strokeWidth={1.9}/></span>
-            <span className="public-payment-path__step-label">{t(`Step ${index + 1}`, `ধাপ ${['১', '২', '৩', '৪'][index]}`)}</span>
-          </div>
-          <h3>{stage.title}</h3>
-          <p>{stage.description}</p>
-        </li>)}
-      </ol>
-    </section>
-
-    <section id="public-faq" style={{ display: 'none' }} className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
-      <div className="public-faq-layout__heading">
-        <div>
-          <h2 id="faq-title">{t('Common questions', 'সাধারণ প্রশ্ন')}</h2>
-          <p>{t('The answers you may need before making a payment.', 'কর পরিশোধের আগে আপনার প্রয়োজনীয় কিছু উত্তর।')}</p>
-        </div>
-        <button type="button" className="public-faq-layout__all-guides" onClick={() => navigate('user_guide')}>
-          <BookOpen size={18} aria-hidden="true" /> {t('Open user guide', 'ব্যবহার নির্দেশিকা দেখুন')} <ArrowRight size={17} aria-hidden="true" />
-        </button>
-      </div>
-      <div className="public-info-faq">
-        {questions.map(item => <details key={item.question}>
-          <summary><span>{item.question}</span><ChevronDown size={20} aria-hidden="true" /></summary>
-          <div className="public-faq-layout__answer">
-            <p>{item.answer}</p>
-            {item.guide && <button type="button" className="public-faq-layout__guide-link" onClick={() => navigate('user_guide', { category: 'records' })}>
-              {t('Read records & corrections guidance', 'রেকর্ড ও সংশোধনের নির্দেশনা পড়ুন')}
-              <ArrowRight size={15} aria-hidden="true" />
-            </button>}
-          </div>
-        </details>)}
-      </div>
-    </section>
-    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
+    {serviceOverlays}
   </div>;
 };

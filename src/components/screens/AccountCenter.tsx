@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, ShieldAlert } from 'lucide-react';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
@@ -8,13 +8,62 @@ import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfil
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {AccountRecentActivity} from './AccountRecentActivity';
 import {TaxpayerTinInformation} from './TaxpayerTinInformation';
-import {USER1_FICTIONAL_TIN_PROFILE} from '../../data/user1FictionalTinProfile';
+import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrationProfile';
+import {loadAuthenticatedRegistrationProfile} from '../../services/authenticatedRegistrationProfile';
+import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
-type ReviewNotice = { id: string; request_id: string; message_code: string; is_read: boolean; created_at: string };
+type ReviewNotice = {
+  id: string;
+  request_id: string | null;
+  event_id?: string | null;
+  correction_inquiry_id?: string | null;
+  correction_decision_id?: string | null;
+  correction_reference?: string | null;
+  message_code: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+const reviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at,correction_inquiry_id,correction_decision_id';
+const legacyReviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at';
+
+function missingCorrectionNoticeColumns(error: { code?: string; message?: string } | null): boolean {
+  return Boolean(error && (
+    error.code === '42703' || error.code === 'PGRST204' ||
+    /column .* does not exist|could not find .* column|schema cache/i.test(error.message ?? '')
+  ));
+}
+
+async function readReviewNotices(client: NonNullable<typeof supabase>, uid: string): Promise<ReviewNotice[]> {
+  const query = (select: string) => client.from('taxpay_in_app_notifications').select(select)
+    .eq('recipient_uid', uid).order('created_at', { ascending: false }).limit(50);
+  let result = await query(reviewNoticeSelect);
+  // Keep existing payment review notices readable before WS3's additive
+  // correction-notification migration reaches the hosted schema.
+  if (result.error && missingCorrectionNoticeColumns(result.error)) result = await query(legacyReviewNoticeSelect);
+  if (result.error) throw result.error;
+
+  const notices = (result.data ?? []) as unknown as ReviewNotice[];
+  const inquiryIds = [...new Set(notices
+    .filter(item => item.message_code.startsWith('CORRECTION_'))
+    .map(item => item.correction_inquiry_id)
+    .filter((id): id is string => Boolean(id)))];
+  if (!inquiryIds.length) return notices;
+
+  const references = await client.from('taxpay_correction_inquiries')
+    .select('inquiry_id,original_reference')
+    .eq('requester_uid', uid).in('inquiry_id', inquiryIds);
+  if (references.error) throw references.error;
+  const byInquiry = new Map((references.data ?? []).map(row => [row.inquiry_id, row.original_reference]));
+  return notices.map(item => item.correction_inquiry_id
+    ? { ...item, correction_reference: byInquiry.get(item.correction_inquiry_id) ?? null }
+    : item);
+}
 
 const I18N = {
   en: {
@@ -31,6 +80,8 @@ const I18N = {
     reviewTitle: 'Officer review updates', reviewLabel: 'Non-financial review',
     reviewReceived: 'Review request submitted', reviewAcknowledged: 'Officer acknowledged your request',
     reviewInfo: 'Officer requested additional information', reviewClosed: 'Officer completed the review',
+    correctionMakerAcknowledged: 'Correction request acknowledged', correctionReviewerVerified: 'Correction review verified',
+    correctionApproverClosed: 'Correction review closed', correctionRejected: 'Correction request rejected',
     noNotices: 'No stored draft activity for this account.', noDemoNotices: 'No notifications yet.',
     load: 'Loading private activity…', loadError: 'Could not load notifications. Try again.',
     retry: 'Retry', markRead: 'Mark all as viewed', viewed: 'Viewed', new: 'New', draft: 'Draft saved',
@@ -55,6 +106,8 @@ const I18N = {
     reviewTitle: 'কর্মকর্তার পর্যালোচনার হালনাগাদ', reviewLabel: 'অ-আর্থিক পর্যালোচনা',
     reviewReceived: 'রিভিউ অনুরোধ জমা হয়েছে', reviewAcknowledged: 'কর্মকর্তা অনুরোধ গ্রহণ করেছেন',
     reviewInfo: 'কর্মকর্তা অতিরিক্ত তথ্য চেয়েছেন', reviewClosed: 'কর্মকর্তা পর্যালোচনা শেষ করেছেন',
+    correctionMakerAcknowledged: 'সংশোধনের অনুরোধ গ্রহণ করা হয়েছে', correctionReviewerVerified: 'সংশোধন পর্যালোচনা যাচাই হয়েছে',
+    correctionApproverClosed: 'সংশোধন পর্যালোচনা শেষ হয়েছে', correctionRejected: 'সংশোধনের অনুরোধ প্রত্যাখ্যান করা হয়েছে',
     noNotices: 'এই অ্যাকাউন্টে সংরক্ষিত ড্রাফটের কার্যক্রম নেই।', noDemoNotices: 'এখনো কোনো বিজ্ঞপ্তি নেই।',
     load: 'ব্যক্তিগত কার্যক্রম লোড হচ্ছে…', loadError: 'বিজ্ঞপ্তি লোড করা যায়নি। আবার চেষ্টা করুন।',
     retry: 'আবার চেষ্টা', markRead: 'সবগুলো দেখা হয়েছে', viewed: 'দেখা', new: 'নতুন', draft: 'খসড়া সংরক্ষিত',
@@ -76,18 +129,53 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [name, setName] = useState('');
   const [showNotifications, setShowNotifications] = useState(true);
   const [preferredLanguage, setPreferredLanguage] = useState<'en'|'bn'>(language);
-  const [notices, setNotices] = useState<DraftNotice[]>([]);
-  const [reviewNotices, setReviewNotices] = useState<ReviewNotice[]>([]);
+  const [settingsOwnerUid,setSettingsOwnerUid] = useState<string | null>(null);
+  const settingsReady = Boolean(user && settingsOwnerUid === user.id);
+  // Private records are coupled to the Auth owner at render time, before
+  // effects reset state on account change.
+  const [noticeSnapshot, setNoticeSnapshot] = useState<{
+    ownerUid: string; drafts: DraftNotice[]; reviews: ReviewNotice[];
+  } | null>(null);
+  const notices = noticeSnapshot && noticeSnapshot.ownerUid === user?.id ? noticeSnapshot.drafts : [];
+  const reviewNotices = noticeSnapshot && noticeSnapshot.ownerUid === user?.id ? noticeSnapshot.reviews : [];
+  const currentUidRef = useRef(user?.id ?? null);
+  currentUidRef.current = user?.id ?? null;
+  const isCurrentUid = (uid: string) => currentUidRef.current === uid;
   const [loadState, setLoadState] = useState<'idle'|'loading'|'error'|'ready'>('idle');
   const [revision, setRevision] = useState(0);
   const [notificationSearch,setNotificationSearch]=useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; content: string } | null>(null);
   const [previewSigningOut,setPreviewSigningOut]=useState(false);
+  const [registrationRetry,setRegistrationRetry]=useState(0);
+  const [registrationSnapshot,setRegistrationSnapshot]=useState<{
+    ownerKey:string;status:'loading'|'ready'|'unlinked'|'error';record:TaxpayerTinProfile|null;
+  }|null>(null);
+  const registrationOwnerKey=user?.id?'auth:'+user.id:previewAccount?.id==='user1'?'preview:user1':null;
+  const registrationRecord=registrationOwnerKey&&registrationSnapshot?.ownerKey===registrationOwnerKey&&registrationSnapshot.status==='ready'
+    ?registrationSnapshot.record:null;
+  const registrationStatus=registrationOwnerKey&&registrationSnapshot?.ownerKey===registrationOwnerKey
+    ?registrationSnapshot.status:null;
   const title = page === 'profile' ? t.profile : page === 'settings' ? t.settings : t.notifications;
   const allowed = user?.user_metadata?.taxpay_in_app_notifications !== false;
   const readAt = typeof user?.user_metadata?.taxpay_notifications_read_at === 'string'
     ? Date.parse(user.user_metadata.taxpay_notifications_read_at) : NaN;
+
+  useEffect(()=>{
+    if(page!=='profile'||!registrationOwnerKey){setRegistrationSnapshot(null);return;}
+    let active=true;
+    const ownerKey=registrationOwnerKey;
+    setRegistrationSnapshot({ownerKey,status:'loading',record:null});
+    const load=user?.id
+      ?loadAuthenticatedRegistrationProfile(user.id)
+      :loadTaxpayerRegistrationProfile('user1').then(snapshot=>snapshot?.profile??null);
+    void load.then(record=>{
+      if(active)setRegistrationSnapshot({ownerKey,status:record?'ready':'unlinked',record});
+    }).catch(()=>{
+      if(active)setRegistrationSnapshot({ownerKey,status:'error',record:null});
+    });
+    return()=>{active=false;};
+  },[page,registrationOwnerKey,registrationRetry]);
 
   useEffect(() => {
     setName(typeof user?.user_metadata?.taxpay_display_name === 'string'
@@ -95,13 +183,14 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     setShowNotifications(user?.user_metadata?.taxpay_in_app_notifications !== false);
     const storedLanguage = user?.user_metadata?.taxpay_language;
     setPreferredLanguage(storedLanguage === 'bn' || storedLanguage === 'en' ? storedLanguage : language);
+    setSettingsOwnerUid(user?.id ?? null);
+    setBusy(false);
     setFeedback(null);
   }, [user?.id]);
 
   useEffect(() => {
     if (page !== 'notifications' || !user || !allowed) {
-      setNotices([]);
-      setReviewNotices([]);
+      setNoticeSnapshot(null);
       setLoadState('idle');
       return;
     }
@@ -109,6 +198,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     if (!client) return;
     let active = true;
     const uid = user.id;
+    setNoticeSnapshot(null);
     setLoadState('loading');
     const refreshNotices = () => (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -116,17 +206,18 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const [draftResult, reviewResult] = await Promise.all([
         client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
           .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
-        client.from('taxpay_in_app_notifications').select('id,request_id,message_code,is_read,created_at')
-          .order('created_at', { ascending: false }).limit(50)
+        readReviewNotices(client, uid)
       ]);
-      if (draftResult.error || reviewResult.error) throw draftResult.error ?? reviewResult.error;
+      if (draftResult.error) throw draftResult.error;
       const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
       if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
       if (!active) return;
-      setNotices((draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid));
-      setReviewNotices((reviewResult.data ?? []) as ReviewNotice[]);
+      if (!isCurrentUid(uid)) return;
+      setNoticeSnapshot({ownerUid: uid,
+        drafts: (draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid),
+        reviews: reviewResult});
       setLoadState('ready');
-    })().catch(() => { if (active) { setNotices([]); setReviewNotices([]); setLoadState('error'); } });
+    })().catch(() => { if (active && isCurrentUid(uid)) { setNoticeSnapshot(null); setLoadState('error'); } });
     void refreshNotices();
     // New non-financial officer updates arrive without requiring a page reload.
     // Every poll revalidates the currently authenticated owner before and after SQL reads.
@@ -136,7 +227,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
 
   const savePreferences = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !supabase) return;
+    if (!user || !supabase || !settingsReady) return;
+    const requestUid = user.id;
     if (name.trim().length > 80) { setFeedback({error:true,content:t.saveFailed}); return; }
     setBusy(true); setFeedback(null);
     try {
@@ -148,20 +240,23 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         taxpay_language: preferredLanguage
       }});
       if (error) throw error;
-      if (updated.user?.id !== user.id ||
+      if (!isCurrentUid(requestUid)) return;
+      if (updated.user?.id !== requestUid ||
           updated.user.user_metadata?.taxpay_display_name !== name.trim() ||
           updated.user.user_metadata?.taxpay_in_app_notifications !== showNotifications ||
           updated.user.user_metadata?.taxpay_language !== preferredLanguage)
         throw new Error('Account settings were not confirmed.');
-      void recordAccountActivity(user.id,'PROFILE_SAVED','account_settings').catch(()=>undefined);
+      void recordAccountActivity(requestUid,'PROFILE_SAVED','account_settings').catch(()=>undefined);
+      if (!isCurrentUid(requestUid)) return;
       setLanguage(preferredLanguage);
       setFeedback({error:false,content:I18N[preferredLanguage].settingsSaved});
-    } catch { setFeedback({error:true,content:t.saveFailed}); }
-    finally { setBusy(false); }
+    } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
+    finally { if (isCurrentUid(requestUid)) setBusy(false); }
   };
 
   const markViewed = async () => {
-    if (!user || !supabase || loadState !== 'ready') return;
+    if (!user || !supabase || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
+    const requestUid = user.id;
     setBusy(true); setFeedback(null);
     try {
       const { data: current, error: identityError } = await supabase.auth.getUser();
@@ -170,27 +265,43 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         taxpay_notifications_read_at: new Date().toISOString()
       }});
       if (error) throw error;
+      if (!isCurrentUid(requestUid)) return;
+      const {data: session, error: sessionError} = await supabase.auth.getUser();
+      if (sessionError || session.user?.id !== requestUid || !isCurrentUid(requestUid))
+        throw new Error('Account session changed');
       const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
       if (unread.length) {
         const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
-          .update({is_read:true}).in('id',unread).select('id');
+          .update({is_read:true}).eq('recipient_uid', requestUid).in('id',unread).select('id');
+        if (!isCurrentUid(requestUid)) return;
         if (reviewError || updated?.length !== unread.length) throw new Error('Review notice read-back not confirmed');
-        setReviewNotices(prev=>prev.map(n=>unread.includes(n.id)?{...n,is_read:true}:n));
+        setNoticeSnapshot(prev=>prev?.ownerUid===requestUid
+          ?{...prev,reviews:prev.reviews.map(n=>unread.includes(n.id)?{...n,is_read:true}:n)}:prev);
       }
-      setFeedback({error:false,content:t.readSaved});
-    } catch { setFeedback({error:true,content:t.saveFailed}); }
-    finally { setBusy(false); }
+      if (isCurrentUid(requestUid)) setFeedback({error:false,content:t.readSaved});
+    } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
+    finally { if (isCurrentUid(requestUid)) setBusy(false); }
   };
 
   const signOut = async () => {
+    if (!user) return;
+    const requestUid=user.id;
     setBusy(true); setFeedback(null);
     try {
       const result = await signOutApplicationAccount();
+      // Successful sign-out makes the Auth owner null. A different *non-null*
+      // owner means a second account took over; the old response cannot navigate
+      // or change that account's settings/feedback.
+      if(currentUidRef.current && !isCurrentUid(requestUid))return;
       if (!result.ok) throw new Error(result.error);
-      setNotices([]); setReviewNotices([]); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
+      setNoticeSnapshot(null); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
       navigate('landing');
-    } catch { setFeedback({error:true,content:t.logoutFailed}); }
-    finally { setBusy(false); }
+    } catch {
+      if(!currentUidRef.current || isCurrentUid(requestUid))
+        setFeedback({error:true,content:t.logoutFailed});
+    } finally {
+      if(!currentUidRef.current || isCurrentUid(requestUid))setBusy(false);
+    }
   };
 
   const date = (value?: string | null) => {
@@ -199,12 +310,29 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
   const normalizedNotificationSearch=notificationSearch.trim().toLocaleLowerCase(language==='bn'?'bn-BD':'en-GB');
   const filteredReviewNotices=reviewNotices.filter(item=>
-    !normalizedNotificationSearch || [item.request_id,item.message_code,
+    !normalizedNotificationSearch || [item.request_id ?? '',item.correction_reference ?? '',item.message_code,
       date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
   const filteredDraftNotices=notices.filter(item=>
     !normalizedNotificationSearch || [item.category,item.assessment_year,item.id,
       date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
   const sampleOnly = !user && sample;
+  // Preserve account metadata under the one authorized profile composition.
+  // It must not be rendered again as a detached standalone card.
+  const accountDetails = user && page === 'profile' ? (
+    <div className="space-y-3" data-testid="profile-integrated-account-details">
+                <h2>{language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details'}</h2>
+                <dl className="taxpayer-account-facts">
+                  <div><dt>{t.name}</dt><dd>{typeof user.user_metadata?.taxpay_display_name === 'string' && user.user_metadata.taxpay_display_name.trim() ? user.user_metadata.taxpay_display_name : t.noName}</dd></div>
+                  <div><dt>{t.email}</dt><dd>{user.email
+                     ?<MaskedProfileValue value={user.email} kind="email" label={t.email} language={language} allowCopy/>
+                     :'—'}</dd></div>
+                  <div><dt>{t.verified}</dt><dd>{user.email_confirmed_at ? date(user.email_confirmed_at) : t.unverified}</dd></div>
+                  <div><dt>{t.joined}</dt><dd>{date(user.created_at)}</dd></div>
+                  <div><dt>{t.accountId}</dt><dd className="taxpayer-account-id">{user.id}</dd></div>
+                </dl>
+                <p className="taxpayer-account-notice"><ShieldAlert size={17} aria-hidden />{t.consent}</p>
+              </div>
+  ) : null;
   return (
     <section className="taxpayer-account-center" lang={language} aria-labelledby="taxpay-account-title">
       <TaxpayerPageHeading id="taxpay-account-title" className="taxpayer-account-heading"
@@ -235,11 +363,16 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                     <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{previewAccount?.role ?? demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
                     {(previewAccount || demoSql.profile) && <>
                       <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{previewAccount ? (language === 'bn' ? previewAccount.focusBn : previewAccount.focusEn) : ((language === 'bn' ? demoSql.profile?.focusBn : demoSql.profile?.focusEn) ?? '—')}</dd></div>
-                      <div><dt>{language === 'bn' ? 'করদাতা রেফারেন্স' : 'Taxpayer reference'}</dt><dd>{previewAccount?.tin ?? demoSql.profile?.tinStub ?? '—'}</dd></div>
+                      <div><dt>{language === 'bn' ? 'করদাতা রেফারেন্স' : 'Taxpayer reference'}</dt><dd>{(()=>{
+                         const tin=previewAccount?.tin ?? demoSql.profile?.tinStub ?? null;
+                         const kind=typeof tin==='string'?sensitiveProfileKind('tin',tin):null;
+                         return tin&&kind?<MaskedProfileValue value={tin} kind={kind}
+                           label={language==='bn'?'করদাতা রেফারেন্স':'Taxpayer reference'} language={language} allowCopy profileContext/>:tin??'—';
+                       })()}</dd></div>
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>
-                {previewAccount && <TaxpayerTinInformation language={language} record={previewAccount.id==='user1'?USER1_FICTIONAL_TIN_PROFILE:null} />}
+                {previewAccount && <TaxpayerTinInformation language={language} record={registrationRecord} />}
               </>
             )}
             {sampleOnly && page === 'settings' && (
@@ -268,46 +401,37 @@ export function AccountCenter({ page }: { page: AccountPage }) {
           </section>
         ) : (
           <>
-            {page === 'profile' && (
-              <section className="taxpayer-account-panel">
-                <h2>{language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details'}</h2>
-                <dl className="taxpayer-account-facts">
-                  <div><dt>{t.name}</dt><dd>{typeof user.user_metadata?.taxpay_display_name === 'string' && user.user_metadata.taxpay_display_name.trim() ? user.user_metadata.taxpay_display_name : t.noName}</dd></div>
-                  <div><dt>{t.email}</dt><dd>{user.email ?? '—'}</dd></div>
-                  <div><dt>{t.verified}</dt><dd>{user.email_confirmed_at ? date(user.email_confirmed_at) : t.unverified}</dd></div>
-                  <div><dt>{t.joined}</dt><dd>{date(user.created_at)}</dd></div>
-                  <div><dt>{t.accountId}</dt><dd className="taxpayer-account-id">{user.id}</dd></div>
-                </dl>
-                <p className="taxpayer-account-notice"><ShieldAlert size={17} aria-hidden />{t.consent}</p>
-              </section>
-            )}
             {page === 'profile' && <AccountRecentActivity ownerUid={user.id} language={language}/>}
-            {page === 'profile' && <TaxpayerTinInformation language={language} />}
+            {page === 'profile' && registrationStatus==='loading' && <p role="status" className="taxpayer-account-panel">{language==='bn'?'করদাতার নিবন্ধন তথ্য যাচাই হচ্ছে…':'Checking taxpayer registration information…'}</p>}
+            {page === 'profile' && registrationStatus==='error' && <div className="taxpayer-account-panel"><p role="alert">{language==='bn'?'নিবন্ধন তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।':'Registration information could not be loaded. Retry.'}</p><button type="button" onClick={()=>setRegistrationRetry(value=>value+1)}>{t.retry}</button></div>}
+            {page === 'profile' && <TaxpayerTinInformation key={user.id} language={language} record={registrationRecord} accountDetails={accountDetails} />}
             {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>
                 <label htmlFor="taxpay-profile-display-name">{t.name}</label>
                 <input id="taxpay-profile-display-name" maxLength={80} autoComplete="nickname"
-                  value={name} onChange={e => setName(e.target.value)} />
+                  value={settingsReady ? name : (typeof user.user_metadata?.taxpay_display_name === 'string' ? user.user_metadata.taxpay_display_name : '')}
+                  onChange={e => setName(e.target.value)} />
                 <label htmlFor="taxpay-profile-language">{t.language}</label>
-                <select id="taxpay-profile-language" value={preferredLanguage}
+                <select id="taxpay-profile-language" value={settingsReady ? preferredLanguage : (user.user_metadata?.taxpay_language === 'bn' ? 'bn' : user.user_metadata?.taxpay_language === 'en' ? 'en' : language)}
                   onChange={e => setPreferredLanguage(e.target.value as 'en'|'bn')}>
                   <option value="en">{t.english}</option><option value="bn">{t.bangla}</option>
                 </select>
                 <label className="taxpayer-account-toggle">
-                  <input type="checkbox" checked={showNotifications} onChange={e=>setShowNotifications(e.target.checked)}/>
+                  <input type="checkbox" checked={settingsReady ? showNotifications : user.user_metadata?.taxpay_in_app_notifications !== false}
+                    onChange={e=>setShowNotifications(e.target.checked)}/>
                   <span>{t.alertsEnabled}</span>
                 </label>
                 <p>{t.alertsHelp}</p>
                 <p>{t.consent}</p>
-                <button type="submit" disabled={busy}>{busy ? t.saving : t.save}</button>
+                <button type="submit" disabled={busy || !settingsReady}>{busy ? t.saving : t.save}</button>
               </form>
             )}
             {page === 'notifications' && (
               <section className="taxpayer-account-panel">
                 <h2>{t.notificationsTitle}</h2>
                 <p>{t.noticesInfo}</p>
-                {!allowed ? <p role="status">{t.off}</p> : loadState === 'loading' ? <p role="status">{t.load}</p>
+                {!allowed ? <p role="status">{t.off}</p> : loadState === 'loading' || (loadState === 'ready' && noticeSnapshot?.ownerUid !== user.id) ? <p role="status">{t.load}</p>
                   : loadState === 'error' ? <div><p role="alert">{t.loadError}</p>
                       <button type="button" onClick={()=>setRevision(n=>n+1)}>{t.retry} <RefreshCcw size={16} aria-hidden /></button></div>
                   : loadState === 'ready' && (notices.length || reviewNotices.length) ? <div className="space-y-4" data-testid="authenticated-notification-registers">
@@ -340,9 +464,20 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                               REQUEST_SUBMITTED:t.reviewReceived,
                               REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
                               REQUEST_INFO_REQUESTED:t.reviewInfo,
-                              REQUEST_REVIEW_CLOSED:t.reviewClosed
+                              REQUEST_REVIEW_CLOSED:t.reviewClosed,
+                              CORRECTION_MAKER_ACKNOWLEDGED:t.correctionMakerAcknowledged,
+                              CORRECTION_REVIEWER_VERIFIED:t.correctionReviewerVerified,
+                              CORRECTION_APPROVER_CLOSED:t.correctionApproverClosed,
+                              CORRECTION_REJECTED:t.correctionRejected
                             } as Record<string,string>)[item.message_code]??t.reviewLabel}</p>},
-                            {key:'reference',header:language==='bn'?'অনুরোধের রেফারেন্স':'Request reference',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.request_id}</p>},
+                            {key:'reference',header:language==='bn'?'রেফারেন্স':'Reference',renderCell:item=>{
+                              const reference=item.correction_inquiry_id ? item.correction_reference : item.request_id;
+                              return item.correction_inquiry_id && reference
+                                ? <button type="button" className="break-all text-left font-mono-plex text-sm text-taxpay-primary underline underline-offset-2"
+                                    aria-label={language==='bn'?'সংশোধন মামলা খুলুন: '+reference:'Open correction case: '+reference}
+                                    onClick={()=>navigate('corrections',{inquiryId:item.correction_inquiry_id})}>{reference}</button>
+                                : <p className="break-all font-mono-plex text-sm text-taxpay-muted">{reference ?? '—'}</p>;
+                            }},
                             {key:'recorded',header:language==='bn'?'রেকর্ডের তারিখ':'Recorded',renderCell:item=><time dateTime={item.created_at} className="text-sm text-taxpay-muted">{date(item.created_at)}</time>},
                             {key:'status',header:language==='bn'?'অবস্থা':'Status',renderCell:item=><p className="font-semibold">{item.is_read?t.viewed:t.new}</p>}
                           ]}/>

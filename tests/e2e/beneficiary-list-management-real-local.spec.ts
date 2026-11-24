@@ -31,6 +31,7 @@ test('beneficiary list custom dropdown, owner-scoped rename, delete and reload',
     const page=await context.newPage();
     await page.goto(loginUrl(first.session));
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+    await page.getByRole('button',{name:'Filter',exact:true}).click();
     await page.getByRole('button',{name:'Create list',exact:true}).click();
     const create=page.getByRole('dialog',{name:'Create list'});
     await create.locator('#beneficiary-create-list-name').fill('Family');
@@ -48,6 +49,7 @@ test('beneficiary list custom dropdown, owner-scoped rename, delete and reload',
     await editor.getByRole('button',{name:'Save changes'}).click();
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Family & Friends');
     await page.reload();
+    await page.getByRole('button',{name:'Filter',exact:true}).click();
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Family & Friends');
 
     const listsResponse=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?select=id,name',api.origin),{

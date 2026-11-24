@@ -2,114 +2,144 @@ export interface GlossaryTerm {
   termEn: string;
   termBn: string;
   acronym?: string;
-  category: 'STATUTORY' | 'PROCEDURAL' | 'BANKING' | 'TAX_HEAD';
+  category: 'IDENTITY' | 'TAX' | 'PAYMENT' | 'RECORD' | 'PROCESS';
   definitionEn: string;
   definitionBn: string;
-  actReference?: string;
 }
 
+/** Plain-language descriptions of terms used in the payment journeys.
+ * They explain the interface and do not replace current NBR instructions. */
 export const GLOSSARY_TERMS: GlossaryTerm[] = [
   {
-    termEn: 'A-Challan (Automated Challan)',
-    termBn: 'এ-চালান (স্বয়ংক্রিয় সরকারি চালান)',
-    acronym: 'ACS',
-    category: 'BANKING',
-    definitionEn: 'The central Bangladesh Government electronic portal system for collecting all revenue and government fees directly into the Treasury Account at Bangladesh Bank.',
-    definitionBn: 'বাংলাদেশ সরকারের রাজস্ব ও ফি সরাসরি বাংলাদেশ ব্যাংকের ট্রেজারি হিসাবে জমা করার কেন্দ্রীয় ইলেকট্রনিক ব্যবস্থা।',
-    actReference: 'Bangladesh Treasury Rules'
+    termEn: 'A-Challan',
+    termBn: 'এ-চালান',
+    category: 'RECORD',
+    definitionEn: 'A government payment document or reference. Use the relevant official service to confirm whether it was paid or credited.',
+    definitionBn: 'সরকারি পেমেন্টের একটি দলিল বা রেফারেন্স। অর্থ জমা বা ক্রেডিট হয়েছে কি না সংশ্লিষ্ট সরকারি সেবায় যাচাই করুন।'
   },
   {
     termEn: 'Taxpayer Identification Number',
-    termBn: 'কর শনাক্তকরণ নম্বর',
+    termBn: 'করদাতা শনাক্তকরণ নম্বর',
     acronym: 'e-TIN',
-    category: 'STATUTORY',
-    definitionEn: 'Unique 12-digit numeric identifier issued by the National Board of Revenue to every registered taxpayer in Bangladesh.',
-    definitionBn: 'জাতীয় রাজস্ব বোর্ড (এনবিআর) কর্তৃক নিবন্ধিত প্রতিটি করদাতাকে প্রদত্ত অনন্য ১২ সংখ্যার পরিচিতি নম্বর।',
-    actReference: 'Section 261, Income Tax Act 2023'
+    category: 'IDENTITY',
+    definitionEn: 'A number used to identify a taxpayer in NBR services. Enter the number belonging to the person whose tax is being paid.',
+    definitionBn: 'এনবিআর সেবায় করদাতাকে শনাক্ত করার নম্বর। যার কর দেওয়া হচ্ছে, তাঁর নম্বর লিখুন।'
   },
   {
     termEn: 'Assessment Year',
     termBn: 'করবর্ষ',
     acronym: 'AY',
-    category: 'STATUTORY',
-    definitionEn: 'The period of twelve months commencing on the first day of July every year, in which income of the previous income year is taxed.',
-    definitionBn: 'প্রতি বছরের ১লা জুলাই হতে শুরু হওয়া ১২ মাসের সময়কাল, যে সময়ে পূর্ববর্তী আয়বর্ষের অর্জিত আয়ের ওপর কর ধার্য করা হয়।',
-    actReference: 'Section 2(9), Income Tax Act 2023'
+    category: 'TAX',
+    definitionEn: 'The year label attached to a return, notice or payment. Follow the year shown in the relevant official record.',
+    definitionBn: 'রিটার্ন, নোটিশ বা পেমেন্টের সঙ্গে থাকা করবর্ষের নাম। সংশ্লিষ্ট সরকারি রেকর্ডে দেখানো বছর অনুসরণ করুন।'
   },
   {
     termEn: 'Tax Deducted at Source',
     termBn: 'উৎসে কর কর্তন',
     acronym: 'TDS',
-    category: 'STATUTORY',
-    definitionEn: 'Tax withheld by a designated deducting entity (employer, bank, government agency, contractor payer) at the moment of disbursing payment.',
-    definitionBn: 'অর্থ পরিশোধকারী কর্তৃপক্ষ কর্তৃক সেবাগ্রহীতা, কর্মচারী বা ঠিকাদারকে অর্থ প্রদানের সময় সংবিধিবদ্ধ হারে কর কেটে রাখা।',
-    actReference: 'Chapter VII, Income Tax Act 2023'
+    category: 'TAX',
+    definitionEn: 'Tax withheld from a payment by the payer where applicable. Check official records to see how it is treated for a taxpayer.',
+    definitionBn: 'প্রযোজ্য ক্ষেত্রে অর্থ দেওয়ার সময় পরিশোধকারীর কেটে রাখা কর। করদাতার হিসাবে এর ব্যবহার সরকারি রেকর্ডে যাচাই করুন।'
   },
   {
     termEn: 'Tax Collected at Source',
     termBn: 'উৎসে কর সংগ্রহ',
     acronym: 'TCS',
-    category: 'STATUTORY',
-    definitionEn: 'Tax collected by designated authorities at the stage of commercial import, auction, real estate deed registration, or motor vehicle renewal.',
-    definitionBn: 'আমদানি, নিলাম, জমি রেজিস্ট্রেশন বা মোটরযান নবায়ন পর্যায়ে সংবিধিবদ্ধ কর্তৃপক্ষ কর্তৃক সংগৃহীত কর।',
-    actReference: 'Section 90, 118, 120, Income Tax Act 2023'
+    category: 'TAX',
+    definitionEn: 'Tax collected by an authorized party where applicable. Check current NBR guidance for the rules that apply to you.',
+    definitionBn: 'প্রযোজ্য ক্ষেত্রে অনুমোদিত পক্ষের সংগ্রহ করা কর। আপনার ক্ষেত্রে কোন নিয়ম প্রযোজ্য তা বর্তমান এনবিআর নির্দেশনায় যাচাই করুন।'
   },
   {
     termEn: 'Tax with Return',
-    termBn: 'রিটার্নের সাথে কর',
-    category: 'PROCEDURAL',
-    definitionEn: 'Self-assessed tax payable by the taxpayer under Section 173 prior to or simultaneously with submitting the annual return of income.',
-    definitionBn: 'বার্ষিক আয়কর রিটার্ন দাখিলের পূর্বে বা দাখিলের সাথে করদাতা কর্তৃক স্ব-নির্ধারিত হিসাব অনুযায়ী প্রদেয় নিট কর।',
-    actReference: 'Section 173, Income Tax Act 2023'
+    termBn: 'রিটার্নের সঙ্গে কর',
+    category: 'PAYMENT',
+    definitionEn: 'A payment category in this service. Selecting it here does not file or submit an income tax return.',
+    definitionBn: 'এই সেবার একটি পেমেন্ট শ্রেণি। এখানে এটি বেছে নিলে আয়কর রিটার্ন দাখিল হয় না।'
   },
   {
     termEn: 'Advance Tax',
     termBn: 'অগ্রিম কর',
-    category: 'PROCEDURAL',
-    definitionEn: 'Income tax payable in four quarterly installments (September, December, March, June) during the income year if the taxpayer\'s latest assessed income exceeds statutory limits.',
-    definitionBn: 'আয়বর্ষ চলাকালীন ৪টি ত্রৈমাসিক কিস্তিতে (সেপ্টেম্বর, ডিসেম্বর, মার্চ ও জুন) প্রদেয় আনুমানিক কর।',
-    actReference: 'Section 154, Income Tax Act 2023'
+    category: 'PAYMENT',
+    definitionEn: 'A tax payment made before a final assessment when applicable. Check NBR guidance for eligibility and amount.',
+    definitionBn: 'প্রযোজ্য ক্ষেত্রে চূড়ান্ত নির্ধারণের আগে দেওয়া কর। যোগ্যতা ও পরিমাণ এনবিআরের নির্দেশনায় যাচাই করুন।'
   },
   {
     termEn: 'Demand Notice',
-    termBn: 'দাবি নোটিশ',
-    category: 'STATUTORY',
-    definitionEn: 'Formal statutory notice served by the tax circle specifying assessed tax liability, penalty, or interest payable within a specified timeframe (normally 30 days).',
-    definitionBn: 'কর সার্কেল কর্তৃক জারি করা বিধিবদ্ধ নোটিশ যাতে নির্ধারিত কর দাবি, জরিমানা বা সুদ নির্দিষ্ট সময়ের মধ্যে পরিশোধের নির্দেশ থাকে।',
-    actReference: 'Section 214, Income Tax Act 2023'
+    termBn: 'কর দাবি নোটিশ',
+    category: 'TAX',
+    definitionEn: 'A notice from the tax authority that states an amount to pay. Use the notice and current official instructions to confirm the details.',
+    definitionBn: 'কর কর্তৃপক্ষের দেওয়া অর্থ পরিশোধের নোটিশ। বিবরণ যাচাই করতে নোটিশ ও বর্তমান সরকারি নির্দেশনা অনুসরণ করুন।'
   },
   {
     termEn: 'Tax Credit',
-    termBn: 'কর রেয়াত / কর জমা',
-    category: 'STATUTORY',
-    definitionEn: 'Recognized financial credit officially booked in the taxpayer\'s ledger resulting from advance tax, TDS, or direct Treasury payment that offsets tax liability.',
-    definitionBn: 'অগ্রিম কর, উৎসে কর্তিত কর বা সরাসরি ট্রেজারি জমার মাধ্যমে করদাতার লেজারে আনুষ্ঠানিকভাবে অর্জিত ক্রেডিট যা কর দায় হ্রাস করে।',
-    actReference: 'Section 173, Income Tax Act 2023'
+    termBn: 'কর ক্রেডিট',
+    category: 'TAX',
+    definitionEn: 'An amount recognized in an official tax record and applied against tax due. A payment receipt alone does not prove that a credit was recorded.',
+    definitionBn: 'সরকারি কর রেকর্ডে স্বীকৃত এবং করের সঙ্গে সমন্বিত অর্থ। শুধু পেমেন্টের রসিদে কর ক্রেডিট রেকর্ড হয়েছে প্রমাণ হয় না।'
   },
   {
     termEn: 'Maker-Reviewer-Approver',
-    termBn: 'মেকার-রিভিউয়ার-অ্যাপ্রুভার',
+    termBn: 'প্রস্তুতকারী-পর্যালোচক-অনুমোদনকারী',
     acronym: 'MRA',
-    category: 'PROCEDURAL',
-    definitionEn: 'Three-stage administrative segregation of duties workflow required to amend, reverse, or transfer tax payment ledger credits.',
-    definitionBn: 'ট্যাক্স পেমেন্ট লেজার সংশোধন বা হস্তান্তরের ক্ষেত্রে ৩ স্তরের প্রশাসনিক যাচাই ও অনুমোদন কাঠামো।',
-    actReference: 'NBR Administrative Manual'
+    category: 'PROCESS',
+    definitionEn: 'A workflow where one person prepares an item, another reviews it, and an authorized person makes the approval decision.',
+    definitionBn: 'এমন একটি প্রক্রিয়া যেখানে একজন তথ্য প্রস্তুত করেন, আরেকজন পর্যালোচনা করেন এবং অনুমোদিত ব্যক্তি সিদ্ধান্ত দেন।'
   },
   {
     termEn: 'Travel Tax',
     termBn: 'ভ্রমণ কর',
-    category: 'TAX_HEAD',
-    definitionEn: 'Statutory government tax payable by departing passengers traveling outside Bangladesh by air, land, or sea.',
-    definitionBn: 'আকাশপথ, স্থলপথ বা সমুদ্রপথে বাংলাদেশ হতে বিদেশ গমনকারী যাত্রীদের জন্য প্রদেয় সরকারি ভ্রমণ কর।',
-    actReference: 'Travel Tax Act 2003'
+    category: 'PAYMENT',
+    definitionEn: 'A payment service for travel tax when it applies to a passenger’s journey. Check NBR publications for current requirements and rates.',
+    definitionBn: 'যাত্রীর ভ্রমণে প্রযোজ্য হলে ভ্রমণ কর দেওয়ার সেবা। বর্তমান শর্ত ও হার এনবিআরের প্রকাশনায় যাচাই করুন।'
   },
   {
     termEn: 'Alternative Dispute Resolution',
     termBn: 'বিকল্প বিরোধ নিষ্পত্তি',
     acronym: 'ADR',
-    category: 'PROCEDURAL',
-    definitionEn: 'Consensual statutory framework allowing taxpayers and the NBR to resolve assessment disputes amicably with the assistance of a certified facilitator.',
-    definitionBn: 'করদাতা ও এনবিআরের মধ্যকার কর বিরোধ সমঝোতার মাধ্যমে নিষ্পত্তির বিধিবদ্ধ কাঠামো।',
-    actReference: 'Section 315-321, Income Tax Act 2023'
+    category: 'PROCESS',
+    definitionEn: 'A way to address a tax dispute with help from an authorized facilitator. Check NBR guidance for the available process.',
+    definitionBn: 'অনুমোদিত সহায়তাকারীর মাধ্যমে কর বিরোধ সমাধানের একটি পদ্ধতি। প্রযোজ্য প্রক্রিয়া এনবিআরের নির্দেশনায় যাচাই করুন।'
+  },
+  {
+    termEn: 'Payment Head',
+    termBn: 'পেমেন্ট খাত',
+    category: 'PAYMENT',
+    definitionEn: 'The category or description that identifies what a payment is for. Match it to the relevant official instruction or notice.',
+    definitionBn: 'কোন উদ্দেশ্যে পেমেন্ট করা হচ্ছে তা বোঝানোর শ্রেণি বা বিবরণ। সংশ্লিষ্ট সরকারি নির্দেশনা বা নোটিশের সঙ্গে মিলিয়ে নিন।'
+  },
+  {
+    termEn: 'Source Tax Deposit',
+    termBn: 'উৎসে কর জমা',
+    category: 'PAYMENT',
+    definitionEn: 'A payment flow for depositing tax withheld or collected at source. Any taxpayer allocation must be checked against verified official records.',
+    definitionBn: 'উৎসে কর্তন বা সংগ্রহ করা কর জমা দেওয়ার পেমেন্ট ধাপ। করদাতার নামে বরাদ্দ যাচাইকৃত সরকারি রেকর্ডে মিলিয়ে নিন।'
+  },
+  {
+    termEn: 'Payment Reference',
+    termBn: 'পেমেন্ট রেফারেন্স',
+    category: 'RECORD',
+    definitionEn: 'A number or code used to find a payment record. Enter the reference exactly as it appears on the source document.',
+    definitionBn: 'পেমেন্ট রেকর্ড খুঁজতে ব্যবহৃত নম্বর বা কোড। উৎস নথিতে যেমন আছে, ঠিক তেমনভাবে লিখুন।'
+  },
+  {
+    termEn: 'Payment Receipt',
+    termBn: 'পেমেন্ট রসিদ',
+    category: 'RECORD',
+    definitionEn: 'A record that summarizes a payment and its displayed status. For actual settlement or tax credit, check the relevant official record.',
+    definitionBn: 'পেমেন্ট ও প্রদর্শিত অবস্থা সংক্ষেপে দেখানো রেকর্ড। প্রকৃত অর্থ জমা বা কর ক্রেডিটের জন্য সংশ্লিষ্ট সরকারি রেকর্ড যাচাই করুন।'
+  },
+  {
+    termEn: 'Payment Status',
+    termBn: 'পেমেন্টের অবস্থা',
+    category: 'RECORD',
+    definitionEn: 'The current state shown for a payment record, such as pending or completed. A sample or example status is not proof of settlement.',
+    definitionBn: 'পেমেন্ট রেকর্ডের বর্তমান অবস্থা, যেমন অপেক্ষমাণ বা সম্পন্ন। নমুনা বা উদাহরণ অবস্থা অর্থ জমার প্রমাণ নয়।'
+  },
+  {
+    termEn: 'Example Payment Record',
+    termBn: 'উদাহরণ পেমেন্ট রেকর্ড',
+    category: 'RECORD',
+    definitionEn: 'A sample used to explain the service. It is not a real payment, Treasury settlement, or official tax-credit entry.',
+    definitionBn: 'সেবা বোঝাতে ব্যবহৃত নমুনা। এটি প্রকৃত পেমেন্ট, ট্রেজারিতে অর্থ জমা বা সরকারি কর-ক্রেডিট এন্ট্রি নয়।'
   }
 ];

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Language, 
   UserRole, 
@@ -29,7 +29,15 @@ import {
 } from '../data/mockData';
 
 export type BannerPaymentService = 'TAX_WITH_RETURN' | 'ADVANCE_TAX' | 'SOURCE_TAX_DEPOSIT' | 'TRAVEL_TAX';
-export interface PaymentBeneficiaryPrefill { tin: string; name: string; additional?: { tin: string; name: string }[]; }
+export interface PaymentBeneficiaryPrefill {
+  tin: string;
+  name: string;
+  additional?: { tin: string; name: string }[];
+  /** Optional handoff from the isolated parallel entry; no payment or authorization is implied. */
+  parallelSource?: true;
+  parallelForSelf?: boolean;
+  parallelAllocations?: { taxpayerTin: string; headId: number; assessmentYear: string; amount: string }[];
+}
 export interface BeneficiarySavePrefill { ownerUid: string; tin: string; name: string; }
 
 export interface TaxStateContextType {
@@ -38,6 +46,8 @@ export interface TaxStateContextType {
   setPaymentServiceChoiceOpen: (open: boolean) => void;
   paymentServiceInitialSelection: BannerPaymentService | null;
   openPaymentServiceChoice: (service?: BannerPaymentService) => void;
+  openAllTaxPayments: () => void;
+  unifiedPaymentEntryRequested: boolean;
   paymentBeneficiaryPrefill: PaymentBeneficiaryPrefill | null;
   pendingBeneficiarySave: BeneficiarySavePrefill | null;
   startBeneficiarySave: (request: BeneficiarySavePrefill) => void;
@@ -101,6 +111,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [languagePreferenceError,setLanguagePreferenceError]=useState(false);
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
+  const [unifiedPaymentEntryRequested, setUnifiedPaymentEntryRequested] = useState(false);
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
   const [pendingBeneficiarySave, setPendingBeneficiarySave] = useState<BeneficiarySavePrefill | null>(null);
   const [paymentReuse, setPaymentReuse] = useState<PaymentReuse | null>(null);
@@ -113,11 +124,13 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!signedInOwner && !previewOwner) return;
     setPaymentBeneficiaryPrefill(null);
     setPaymentServiceInitialSelection(null);
+    setUnifiedPaymentEntryRequested(false);
     setPaymentReuse(copy);
     setPaymentServiceChoiceOpenState(true);
   };
   const setPaymentServiceChoiceOpen = (open: boolean) => {
     if (!open) {
+      setUnifiedPaymentEntryRequested(false);
       setPaymentServiceInitialSelection(null);
       setPaymentBeneficiaryPrefill(null);
       setPaymentReuse(null);
@@ -125,9 +138,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPaymentServiceChoiceOpenState(open);
   };
   const openPaymentServiceChoice = (service?: BannerPaymentService) => {
+    setUnifiedPaymentEntryRequested(false);
     setPaymentBeneficiaryPrefill(null);
     setPaymentReuse(null);
     setPaymentServiceInitialSelection(service ?? null);
+    setPaymentServiceChoiceOpenState(true);
+  };
+  // Only the explicitly approved Home action replaces the legacy payer/service
+  // chooser. Keep drafts, receipts, header Pay Tax and Travel Tax untouched.
+  const openAllTaxPayments = () => {
+    setPaymentBeneficiaryPrefill(null);
+    setPaymentReuse(null);
+    setPaymentServiceInitialSelection(null);
+    setUnifiedPaymentEntryRequested(true);
     setPaymentServiceChoiceOpenState(true);
   };
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
@@ -140,6 +163,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return routeContextFromUrl(validRoute(search.get('action')), search);
   });
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
+  useLayoutEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const [previewAccount, setPreviewAccount] = useState<DemoUser | null>(storedPreviewAccount);
   const [legacyDemoUser, setLegacyDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const demoUser = previewAccount ?? legacyDemoUser;
@@ -177,10 +203,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? DEMO_TAXPAYERS['WITHHOLDING_DEDUCTOR']
       : DEMO_TAXPAYERS['INDIVIDUAL_REGULAR'];
   // First-time scenarios retain empty financial records but have named test identities.
-  const firstTimeDemo = Boolean(demoUser && ['user7','user8','user9','user10'].includes(demoUser.id));
+  const firstTimeDemo = Boolean(demoUser && (['user7','user8','user9','user10'].includes(demoUser.id) || Number(demoUser.id.slice(4)) >= 31));
   const taxpayerProfile: TaxpayerProfile = firstTimeDemo
-    ? {tin:demoUser!.tin,nameEn:demoUser!.nameEn,nameBn:demoUser!.nameBn,type:'INDIVIDUAL',taxZone:'',taxCircle:demoUser!.taxCircle,
-       phone:'',email:'',address:'',isWithholdingEntity:false,
+    ? {tin:demoUser!.tin,nameEn:demoUser!.nameEn,nameBn:demoUser!.nameBn,type:demoUser!.role==='TAXPAYER_CORPORATE'?'COMPANY':'INDIVIDUAL',taxZone:'',taxCircle:demoUser!.taxCircle,
+       phone:'',email:'',address:'',isWithholdingEntity:demoUser!.role==='WITHHOLDING_AGENT',
        representativeScope:{isAuthorized:false}}
     : demoUser
       ? {...baseTaxpayerProfile,tin:demoUser.tin,taxCircle:demoUser.taxCircle,
@@ -451,6 +477,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPaymentServiceChoiceOpen,
         paymentServiceInitialSelection,
         openPaymentServiceChoice,
+        openAllTaxPayments,
+        unifiedPaymentEntryRequested,
         paymentBeneficiaryPrefill,
         setPaymentBeneficiaryPrefill,
         pendingBeneficiarySave,

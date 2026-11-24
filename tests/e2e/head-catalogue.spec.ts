@@ -39,6 +39,9 @@ test('seven source group filter and Bengali translation are available by keyboar
   }
   await expect(page.getByRole('heading', { name: 'মূল v11 কর পরিশোধের খাতের তালিকা' })).toBeVisible();
   await expect(page.getByText('অনুসন্ধানে পাওয়া খাত: 127 / 170')).toBeVisible();
+  const banglaSelector=page.getByLabel('মূল উৎসের বিভাগ');
+  await expect(banglaSelector.locator('option[value="Source Tax"]')).toHaveText('উৎস কর');
+  await expect(page.getByText('ID 8 · উৎস কর',{exact:true})).toBeVisible();
 });
 
 test('mobile-first content stays within viewport and controls provide touch-friendly targets', async ({ page }) => {

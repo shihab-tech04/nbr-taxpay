@@ -1,12 +1,14 @@
 /** COR-001: unverified intake ONLY. Cannot open a verified correction, change
  * financial attribution, award a credit or verify claimant/official receipt. */
 export type ProposedAttributionField='ASSESSMENT_YEAR'|'CIRCLE'|'PAYMENT_HEAD'|'ATTRIBUTION';
+export type CorrectionCaseKind='CORRECTION_REVIEW'|'UNSOLICITED_PAYMENT_REPORT';
 export type ProposedAttribution=Readonly<{
   field:ProposedAttributionField;
   previousValue:string;
   proposedValue:string;
 }>;
 export type CorrectionInquiryInput=Readonly<{
+  caseKind?:CorrectionCaseKind;
   change?:ProposedAttribution | null;
   originalReference:string;
   reason:string;
@@ -28,6 +30,8 @@ export function validateCorrectionInquiry(input: CorrectionInquiryInput):Correct
   const reason=input.reason.trim();
   const outcome=input.desiredOutcome.trim();
   const diff=input.change;
+  if (input.caseKind && !['CORRECTION_REVIEW','UNSOLICITED_PAYMENT_REPORT'].includes(input.caseKind))
+    return fail('Unsupported correction inquiry type.');
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{5,79}$/.test(reference))
     return fail('Enter a 6–80 character original reference. This does not verify an official receipt.');
   if (reason.length<10 || reason.length>1000)

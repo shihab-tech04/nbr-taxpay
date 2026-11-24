@@ -14,7 +14,7 @@ const exactReference = {
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
   const enter = page.getByRole('button', { name: 'Explore taxpayer workspace' });
-  const dashboard = page.getByRole('heading', { name: 'Overview' });
+  const dashboard = page.getByRole('heading',{name:'Overview'});
   await expect(enter.or(dashboard).first()).toBeVisible();
   if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
@@ -84,11 +84,11 @@ test('approved desktop rail adapts between 901px and 1439px without changing 144
   await page.setViewportSize({width:1600,height:900});
   await openSampleTaxpayer(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  for (const width of [901,1024,1199,1200,1280,1366,1439,1440,1600,2048]) {
+  for (const width of [901,1024,1199,1200,1280,1366,1439,1440,1600,1920,2048]) {
     await page.setViewportSize({width,height:900});
     const expectedRailWidth = width < 1440
       ? Math.min(239, Math.max(180, width * 0.17))
-      : width >= 1920 ? 260 : width >= 1536 ? 250 : 240;
+      : width >= 1536 ? 250 : 240;
     const railBox = await rail.boundingBox();
     expect(railBox,'rail is visible at '+width).not.toBeNull();
     expect(Math.abs(railBox!.width - expectedRailWidth),'rail width at '+width).toBeLessThanOrEqual(1);
@@ -100,7 +100,7 @@ test('approved desktop rail adapts between 901px and 1439px without changing 144
     await expect(page.locator('.citizen-header')).toBeHidden();
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
     await expect(rail.getByRole('button',{name:'Overview',exact:true}))
-      .toHaveCSS('font-size', width < 1200 ? '14px' : '16px');
+      .toHaveCSS('font-size', '16px');
     if (width < 1200) await expect(rail).toHaveCSS('padding-left','10px');
     await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('box-shadow','none');
     await expect(page.locator('.citizen-pay')).toBeHidden();
@@ -174,8 +174,9 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link:visible');
-    await expect(items).toHaveCount(9);
+    await expect(items).toHaveCount(10);
     await expect(nav.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Gift Tax',exact:true})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Tax Credit Certificates'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Correction Requests'})).toHaveCount(0);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
@@ -275,12 +276,11 @@ test('Guest numbers retain IBM Plex Mono, signed-in workspace uses Noto Sans',as
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Noto Sans/);
 });
 
-test('Public homepage hides only temporary payment steps and questions',async({page})=>{
+test('Public homepage omits retired steps and FAQ but retains record search',async({page})=>{
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
-  await expect(page.locator('#public-how-it-works')).toBeHidden();
-  await expect(page.locator('#public-faq')).toBeHidden();
-  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
+  await expect(page.locator('#public-how-it-works, #public-faq')).toHaveCount(0);
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(0);
   await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
 });
 test('Public keyboard Tab order and skip link remain operable with hidden FAQ',async({page})=>{

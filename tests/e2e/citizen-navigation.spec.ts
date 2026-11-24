@@ -1,12 +1,12 @@
 import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
 
 test('public hero opens payment while standalone receipt search stays accessible',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.locator('[data-banner-service="intro"]').getByRole('button', {name: /^(?:Other Tax|অন্যান্য কর)$/})).toBeVisible();
  await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
@@ -16,19 +16,20 @@ test('public hero opens payment while standalone receipt search stays accessible
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
  await expect(page.locator('#public-how-it-works')).toBeHidden();
- await page.getByRole('button',{name:'Pay Tax'}).click();
- const services=page.getByRole('dialog',{name:'Pay Tax'});
- await expect(services).toBeVisible();
- await expect(services.locator('.tax-service-choice__card')).toHaveCount(2);
- await enterTaxPayService(services, 'TAX_WITH_RETURN');
+ await page.locator('.citizen-public-hero__actions').getByRole('button',{name:'Pay Tax',exact:true}).click();
+ const payment=page.getByRole('dialog',{name:'Pay Tax'});
+ await expect(payment.getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+ await expect(payment.locator('[data-payer-relationship]')).toHaveCount(0);
+ await payment.getByRole('button',{name:'Walk-in Payment'}).click();
  await expect(page).toHaveURL(/action=landing/);
- await expect(services.locator('.payment-form-section')).toHaveCount(1);
- await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+ await expect(payment.getByRole('progressbar',{name:'Payment progress'})).toHaveAttribute('aria-valuemax','3');
+ await expect(payment.getByTestId('unified-tin-input')).toBeVisible();
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
   await page.goto('/?action=ledger');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
@@ -100,7 +101,7 @@ test('public information header and sections fit all requested widths',async({pa
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   const heroActions=page.locator('.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions').first();
   const pay=await heroActions.getByRole('button',{name:'Pay Tax',exact:true}).boundingBox();
-  const travel=await heroActions.getByRole('button',{name:'Pay Travel Tax',exact:true}).boundingBox();
+  const travel=await heroActions.getByRole('button',{name:'Other Tax',exact:true}).boundingBox();
   const search=page.locator('.public-record-search');
   const searchBox=await search.boundingBox();
   const heroBox=await page.locator('.public-hero-carousel').boundingBox();
@@ -181,7 +182,7 @@ test('leaving an active payment through the logo confirms before discarding ente
 });
 
 
-test('taxpayer full and compact views remain usable at six audited widths', async ({page},info) => {
+test('taxpayer persistent mobile navigation remains usable at six audited widths', async ({page},info) => {
   test.skip(info.project.name!=='mobile-320','Single runner captures the full viewport matrix');
   for (const width of [320,360,375,390,768,1280]) {
     await page.setViewportSize({width,height:812});
@@ -204,12 +205,16 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
       await expect(page.getByRole('button',{name:'Pay Tax menu'})).toBeVisible();
     }
     if(width<=900) {
+      const header=page.locator('.citizen-header');
       await page.evaluate(()=>window.scrollTo(0,450));
-      await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);
-      await expect(page.locator('.citizen-header')).toHaveCSS('visibility','hidden');
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Notifications'})).toBeVisible();
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
-      await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
+      await expect(header).not.toHaveClass(/citizen-header--hidden/);
+      await expect(header).not.toHaveAttribute('inert','');
+      await expect(header).toBeVisible();
+      const bottomNav=page.locator('.citizen-bottom-nav');
+      await expect(bottomNav).toBeVisible();
+      for(const name of ['Overview','Activity','Tax Ledger']) await expect(bottomNav.getByRole('button',{name})).toBeVisible();
+      await expect(page.locator('.citizen-corners')).toHaveCount(0);
+      await page.screenshot({path:'test-results/screenshots/taxpayer-persistent-'+width+'.png',fullPage:false});
     } else {
       await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
       await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeHidden();
@@ -240,7 +245,7 @@ test('public header centers icons within the approved width and routes to User G
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  const bounds=await page.locator('.public-information-hub').boundingBox();
  expect(bounds).not.toBeNull();
- // Home, Guide and Report share the original 1100px public content width.
+ // Home, Guide and Report share the same approved 1100px rail.
  expect(bounds!.width).toBeGreaterThanOrEqual(1099);
  expect(bounds!.width).toBeLessThanOrEqual(1101);
  await faq.click();
@@ -270,7 +275,7 @@ test('public mobile menu opens guide and report in EN/BN without exposing privat
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();
 });
 
-test('taxpayer mobile header, compact corners and two-tier full-width menu are accessible',async({page},info)=>{
+test('taxpayer mobile header, persistent dock and two-tier full-width menu are accessible',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','One mobile workflow verifies requested navigation behavior');
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=taxpayer_home');
@@ -304,10 +309,13 @@ test('taxpayer mobile header, compact corners and two-tier full-width menu are a
  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
  await dialog.getByRole('button',{name:'Close'}).click();
  await page.evaluate(()=>window.scrollTo(0,500));
- await expect(header).toHaveClass(/citizen-header--hidden/);
- const corners=page.locator('.citizen-corners');
- for(const name of ['Open menu','Notifications','Home'])await expect(corners.getByRole('button',{name})).toBeVisible();
- await expect(page.locator('.citizen-pay--compact')).toBeVisible();
+ await expect(header).not.toHaveClass(/citizen-header--hidden/);
+ await expect(header).not.toHaveAttribute('inert','');
+ const bottomNav=page.locator('.citizen-bottom-nav');
+ await expect(bottomNav).toBeVisible();
+ for(const name of ['Overview','Activity','Tax Ledger'])await expect(bottomNav.getByRole('button',{name})).toBeVisible();
+ await expect(page.locator('.citizen-corners')).toHaveCount(0);
+ await expect(page.locator('.citizen-pay--expanded')).toBeVisible();
 });
 
 // Banner-dependent browser checks use explicitly published CMS rows;

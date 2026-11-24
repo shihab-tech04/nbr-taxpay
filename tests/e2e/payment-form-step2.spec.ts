@@ -1,10 +1,12 @@
 import { fillTravelDetails } from './travel-tax-test-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 // These are disconnected layout checks: never write synthetic UI fixtures to
 // the hosted payment database from a browser regression.
 async function mockPayment(page: import('@playwright/test').Page, expectedMinor: number | number[]) {
+  await mockSubmittedPaymentSqlReadback(page);
   const expected = Array.isArray(expectedMinor) ? expectedMinor : [expectedMinor];
   const received: number[] = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
@@ -26,20 +28,20 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   test.skip(info.project.name === 'desktop-1280', 'Mobile regression at 320px and 375px');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const footer = dialog.locator('.taxpay-modal__footer');
   const progress = dialog.locator('.taxpay-modal__progress');
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await expect(progress).toHaveCSS('height', '10px');
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   // The same shared form stays borderless on narrow screens and never creates horizontal scroll.
   await expect(dialog.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
-  await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).not.toContainText('Other Tax Payment & Travel Tax');
   await expect(dialog.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
-  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveCSS('font-size', '14px');
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveCSS('font-size', '16px');
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -79,7 +81,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const originalUrl = page.url();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   const summary = dialog.locator('.payment-form-summary');
@@ -107,7 +109,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(batch).toBeVisible();
   await expect(summary).toBeVisible();
   await expect(summary.locator('[data-payment-service]')).toHaveCount(0);
-  await expect(summary.locator('.payment-form-summary__eyebrow')).toHaveCSS('font-size', '14px');
+  await expect(summary.locator('.payment-form-summary__eyebrow')).toHaveCSS('font-size', '12px');
   const columns = await dialog.locator('.payment-flow-embedded__content').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
   expect(columns).toBe(2);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
@@ -127,13 +129,13 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await dialog.getByRole('button', { name: /Pay ৳ 12,000/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });
 test('single-head return service remains intact and Other Tax selected amounts remain readable', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Desktop amount layout');
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'OTHER');
   await dialog.locator('#guest-tin').fill('444444444444');
@@ -173,7 +175,7 @@ test('single-head return service remains intact and Other Tax selected amounts r
 test('four and five selected Other Tax heads remain readable and avoid horizontal overflow on desktop and mobile', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await dialog.locator('#guest-tin').fill('444444444444');
@@ -198,7 +200,7 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
   const submitted = await mockPayment(page, 150000);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -258,12 +260,12 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN');
 
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   const continueButton = payment.getByRole('button', { name: 'Continue to purpose & amount' });
   await expect(continueButton).toBeDisabled();
   await payment.locator('#guest-tin').fill('123456789012');
@@ -329,7 +331,7 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   test.skip(info.project.name !== 'desktop-1280', 'Desktop pinned rail acceptance');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -381,7 +383,7 @@ for (const locale of ['en', 'bn'] as const) {
   test(`Other Tax self Step 1 uses the approved single card, looks up the name and clears the TIN (${locale})`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
     await modal.locator('[data-payer-relationship="SELF"]').click();
     await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -391,7 +393,7 @@ for (const locale of ['en', 'bn'] as const) {
     const card = modal.getByTestId('other-tax-primary-taxpayer');
     await expect(card).toBeVisible();
     await expect(modal.getByTestId('other-tax-taxpayer-list')).toHaveClass(/taxpay-taxpayer-list--single/);
-    await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toBeVisible();
+    await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toHaveCount(0);
     await expect(modal.locator('.taxpay-taxpayer-list__count')).toHaveCount(0);
     await expect(modal.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details', exact: true })).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);

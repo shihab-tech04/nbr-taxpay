@@ -1,11 +1,19 @@
 import { expect, test } from '@playwright/test';
 
+// CI route/auth checks must not download large live CMS artworks; app fallback stays intact.
+test.beforeEach(async ({ page }) => {
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+});
+
 const site = '/nbr-taxpay/';
 const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'beneficiaries', 'services'];
 
 test('the public TaxPay login restores the approved User ID/password modal', async ({ page }) => {
   await page.goto(site + '?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('User ID',{exact:true})).toBeVisible();
   await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -20,29 +28,49 @@ test('the public TaxPay login restores the approved User ID/password modal', asy
 test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',async({page})=>{
   for(const route of privateRoutes){
     await page.goto(site+'?action='+route+'&demoUser=user1');
-    if(route==='beneficiaries'){
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
-      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
-    }else{
-      await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
-    }
+    await expect(page.locator('#public-home-title')).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+    await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
+    await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+    await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
   }
   await page.evaluate(()=>history.replaceState({taxpayRoute:'taxpayer_home',taxpaySampleRole:'TAXPAYER_INDIVIDUAL'},'','?action=taxpayer_home'));
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
 });
 
 test('User ID login continues into the taxpayer workspace and survives refresh',async({page})=>{
   await page.goto(site+'?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  const demoOtp=dialog.getByTestId('demo-otp-input');
+  await expect(demoOtp).toBeVisible();
+  await demoOtp.fill('111111');
+  await dialog.getByTestId('taxpayer-login-submit').click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  // Confirm the approved private dashboard heading in the account's saved EN/BN language.
+  await expect(page.locator('.taxpayer-dashboard-header').getByRole('heading',{
+    name:/^(?:Overview|Your tax overview|সংক্ষিপ্ত বিবরণ|আপনার করের সারসংক্ষেপ)$/
+  })).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
+  // Production regression: page visibility alone is insufficient. Both approved
+  // beneficiary entry points must open their existing dialogs; cancel makes no write.
+  await page.getByRole('button',{name:/^(?:Create list|তালিকা তৈরি)$/}).click();
+  const createList=page.getByRole('dialog',{name:/^(?:Create list|তালিকা তৈরি)$/});
+  await expect(createList).toBeVisible();
+  await createList.getByRole('button',{name:/^(?:Cancel|বাতিল)$/}).click();
+  await expect(createList).toHaveCount(0);
+  await page.getByRole('button',{name:/^(?:Add beneficiary|উপকারভোগী যোগ)$/}).click();
+  const beneficiaryEntry=page.getByRole('dialog',{name:/^(?:Beneficiary entry|উপকারভোগী যোগ)$/});
+  await expect(beneficiaryEntry).toBeVisible();
+  await beneficiaryEntry.getByRole('button',{name:/^(?:Cancel|বাতিল)$/}).click();
+  await expect(beneficiaryEntry).toHaveCount(0);
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });

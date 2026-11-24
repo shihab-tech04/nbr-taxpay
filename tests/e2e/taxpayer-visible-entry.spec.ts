@@ -7,8 +7,9 @@ test('default taxpayer entry exposes the fully designed interactive dashboard', 
   await example.click();
   await expect(page).toHaveURL(/action=taxpayer_home&demoUser=user1/);
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'By payment service' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'By beneficiary relationship' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Payment recipients' })).toBeVisible();
+  await expect(page.getByTestId('dashboard-payment-analytics')).toContainText('No itemized account payments');
+  await expect(page.getByTestId('dashboard-chart-source')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Monthly activity' })).toHaveCount(0);
 });
 
@@ -35,5 +36,5 @@ test('Bengali demo entry preserves language when moving to the interactive view'
   await example.click();
   await expect(page).toHaveURL(/action=taxpayer_home&demoUser=user1&lang=bn/);
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'সংক্ষিপ্ত বিবরণ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'আপনার করের সারসংক্ষেপ' })).toBeVisible();
 });

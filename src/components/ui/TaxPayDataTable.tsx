@@ -1,5 +1,6 @@
 import '../../styles/taxpay-unified-table.css';
 import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
+import {compactRecordItems} from './compactRecordItems';
 import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
 /** Shared Korbritto table primitives.
@@ -80,10 +81,14 @@ export function TaxPayOfficeRegisterToolbar({
       </span>
     </div>
     <div className="taxpay-office-register__actions">
-      {onSearchChange&&<label className="taxpay-record-toolbar__search">
-        <Search size={16} aria-hidden="true"/>
-        <input type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
-          aria-label={searchLabel??'Search'} placeholder={searchPlaceholder??'Search…'}/>
+      {onSearchChange&&<label className="taxpay-office-register__search" title={searchLabel??'Search'}>
+        <span className="taxpay-office-register__search-label">{searchLabel??'Search'}</span>
+        <span className="taxpay-record-toolbar__search" title={searchPlaceholder??searchLabel??'Search'}>
+          <Search size={16} aria-hidden="true"/>
+          <input type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
+            aria-label={searchLabel??'Search'} title={searchPlaceholder??searchLabel??'Search'}
+            placeholder={searchPlaceholder??'Search…'}/>
+        </span>
       </label>}
       {onToggleFilters&&<TaxPayTableFilterToggle expanded={Boolean(filtersOpen)}
         onToggle={onToggleFilters} label={filterLabel??'Filter'}/>}
@@ -217,9 +222,36 @@ export function TaxPayRecordList({variant,headers,children,className,'aria-label
  * this component owns headers, row identity, responsive rendering and rhythm.
  * Official receipt and certificate print tables are excluded.
  */
+/** A bounded identity summary for dense transaction cells and mobile cards.
+ * The owner still supplies the original record and opens its full details;
+ * no allocation, tag, reference or authorization is discarded.
+ */
+export function TaxPayCompactCellList<Item>({items,getKey,renderItem,moreLabel,onShowAll,visibleCount=1}:{
+  items:readonly Item[];
+  getKey:(item:Item)=>string;
+  renderItem:(item:Item)=>ReactNode;
+  moreLabel:(hiddenCount:number,totalCount:number)=>string;
+  onShowAll:()=>void;
+  visibleCount?:number;
+}) {
+  const projection=compactRecordItems(items,visibleCount);
+  const hidden=projection.hiddenCount;
+  return <div className="taxpay-compact-cell-list">
+    {projection.visible.map(item=><div className="taxpay-compact-cell-list__item" key={getKey(item)}>
+      {renderItem(item)}
+    </div>)}
+    {hidden>0&&<button type="button" className="taxpay-compact-cell-list__more"
+      aria-label={moreLabel(hidden,items.length)}
+      onClick={event=>{event.stopPropagation();onShowAll();}}>
+      {moreLabel(hidden,items.length)}
+    </button>}
+  </div>;
+}
+
 export type TaxPayDataColumn<Row> = {
   key: string;
   header: string;
+  headerContent?: ReactNode;
   renderCell: (row:Row) => ReactNode;
   cellClassName?: string;
   headerClassName?: string;
@@ -251,7 +283,7 @@ export function TaxPayDataGrid<Row>({
   if(variant==='ledger'||variant==='tabular') {
     const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
       className={merge(variant==='ledger'?'taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table':'taxpay-unified-table hidden min-w-full w-full text-left text-sm md:table',className)}>
-      <thead><tr>{columns.map(column=><th scope="col" key={column.key} className={merge('p-3',column.headerClassName)}>{column.header}</th>)}</tr></thead>
+      <thead><tr>{columns.map(column=><th scope="col" key={column.key} data-column-key={column.key} className={merge('p-3',column.headerClassName)}>{column.headerContent??column.header}</th>)}</tr></thead>
       <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}
         data-selected={isSelected?.(row)?'true':'false'}
         data-clickable-row={onViewRow?'true':undefined} tabIndex={onViewRow?0:undefined}
@@ -264,7 +296,7 @@ export function TaxPayDataGrid<Row>({
             event.preventDefault();onViewRow(row);
           }
         }:undefined}>
-        {columns.map(column=><td key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
+        {columns.map(column=><td key={column.key} data-column-key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
       </tr>)}</tbody>
     </TaxPayUnifiedTable>;
     return <>
@@ -272,7 +304,7 @@ export function TaxPayDataGrid<Row>({
       {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:
        error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<button type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</button>}</TaxPayTableState>:
        rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:<>
-      {variant==='tabular'?<TaxPayTableViewport className="hidden md:block">{desktopTable}</TaxPayTableViewport>:desktopTable}
+      {variant==='tabular'?<TaxPayTableViewport className="hidden md:block" role="region" aria-label={ariaLabel} tabIndex={0}>{desktopTable}</TaxPayTableViewport>:desktopTable}
     <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
       {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}
         role={!renderMobileCard&&onViewRow?'button':undefined}

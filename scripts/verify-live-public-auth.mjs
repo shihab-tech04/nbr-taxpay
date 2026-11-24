@@ -10,26 +10,39 @@ if (base.protocol !== 'https:' || base.hostname !== 'shihab-tech04.github.io' ||
 await mkdir('test-results', { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
+ 
+// Repeated CI smoke runs must not download megabytes of public CMS artwork.
+// This guard applies only to verification browsers, not to the published app.
+// The image onError path uses the existing bundled fallback artwork; all
+// payment/API/auth traffic remains subject to the existing test assertions.
+const openBudgetSafePage = async options => {
+  const page = await browser.newPage(options);
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+  return page;
+};
 try {
   for (const [name, viewport, isMobile] of [
     ['desktop', { width: 1280, height: 850 }, false],
     ['mobile', { width: 375, height: 812 }, true]
   ]) {
-    const page = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const page = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const url = new URL(base);
-    url.searchParams.set('action','account_profile');
+    url.searchParams.set('action','taxpayer_home');
     await page.goto(url.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
-    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible({timeout:30_000});
+    await expect(page.locator('#public-home-title')).toBeVisible({timeout:30_000});
+    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+    const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+    await expect(dialog).toBeVisible({timeout:30_000});
     await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     if(overflow>2)throw new Error('Private entry overflow: '+overflow+'px');
 
     {
-      // Current published baseline and candidate both use the approved User ID/password flow.
-      const userIdEntry=page.getByRole('link',{name:'Sign In'});
-      await expect(userIdEntry).toHaveAttribute('href',/action=taxpayer_login/);
-      await userIdEntry.click();
-      const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      // The published private-route entry now opens the existing approved
+      // sign-in dialog directly; there is no duplicate intermediate gate.
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
       await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -37,6 +50,17 @@ try {
       await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+      // The approved first-sign-in OTP checkpoint must complete before
+      // verifying the private dashboard route; never bypass the login flow.
+      const demoOtp = dialog.getByTestId('demo-otp-input');
+      await expect.poll(async () =>
+        await demoOtp.isVisible().catch(() => false) || /action=taxpayer_home/.test(page.url()),
+        {timeout:15_000}
+      ).toBe(true);
+      if (await demoOtp.isVisible().catch(() => false)) {
+        await demoOtp.fill('111111');
+        await dialog.getByRole('button',{name:'Verify code'}).click();
+      }
       // A real edge-backed preview login may take longer than Playwright's
       // default five seconds on a cold mobile session. Do not skip login:
       // require successful navigation, and preserve visible failure evidence.
@@ -50,71 +74,34 @@ try {
           url:page.url(),messages,buttonDisabled
         }),{cause:error});
       }
-      await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+      await expect(page.getByRole('heading',{name:/^(Your tax overview|আপনার করের সারসংক্ষেপ)$/})).toBeVisible();
       // Only a deployed build can certify the NEW dashboard UI. PR preflight
       // runs against the older published version and must not pre-approve it.
       if(process.env.GITHUB_EVENT_NAME!=='pull_request'){
-        // The live dashboard uses the new source-separated bento, not the old
-        // static beneficiary chart. Verify a real interactive instance in
-        // Chromium (no production writes and no invented Treasury totals).
-        const bento=page.getByTestId('taxpayer-overview-bento');
-        await expect(bento).toBeVisible({timeout:30_000});
-        const chart=bento.getByTestId('dashboard-payment-analytics');
-        await expect(chart).toBeVisible({timeout:30_000});
-        await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
-        await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
-        const sources=chart.getByTestId('dashboard-chart-source');
-        await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
-        // Source-aware Overview defaults to recorded allocations when present,
-        // otherwise to available examples. Live evidence must accept either
-        // truthful source, not demand an empty Recorded chart as the default.
-        const initialSource=await chart.getAttribute('data-chart-source');
-        if(initialSource!=='recorded'&&initialSource!=='example')
-          throw new Error('Live dashboard has no explicit source selection: '+initialSource);
-        await expect(sources.getByRole('button',{name:initialSource==='recorded'?'Recorded':'Examples'}))
-          .toHaveAttribute('aria-pressed','true');
-        // Keep the manually selected account-recorded view available, including
-        // its honest missing-data state, without inventing a zero balance.
-        await sources.getByRole('button',{name:'Recorded'}).click();
-        await expect(sources.getByRole('button',{name:'Recorded'}))
-          .toHaveAttribute('aria-pressed','true');
-        const noItemized=await chart.getByTestId('dashboard-service-breakdown')
-          .getByText('No itemized recorded payments',{exact:false}).count();
-        if(noItemized){
-          await expect(chart.getByTestId('dashboard-service-breakdown')
-            .locator('.taxpay-bento-analytics__total')).toHaveText('—');
+        // Production-only: assert the CURRENT approved fictional-account overview,
+        // not removed legacy bento metrics or unverified Treasury totals.
+        const workspace=page.getByTestId('user1-synthetic-workspace');
+        await expect(workspace).toBeVisible({timeout:30_000});
+        await expect(workspace).toHaveAttribute('data-dashboard-view','true');
+        await expect(page.getByRole('region',{name:/Payment and request summary|পেমেন্ট ও আবেদনের সারসংক্ষেপ/})).toBeVisible();
+        await expect(workspace).toHaveAttribute('data-payment-source-state','ready',{timeout:30000});
+        const analytics=page.getByTestId('dashboard-payment-analytics');
+        await expect(analytics).toBeVisible();
+        await expect(analytics).toHaveAttribute('data-chart-source','recorded');
+        await expect(analytics.getByTestId('dashboard-chart-source')).toHaveCount(0);
+        // Populated SQL retains its existing chart layout; empty SQL uses its
+        // approved empty state, never hardcoded example totals or identities.
+        if(await analytics.getAttribute('data-empty')==='true'){
+          await expect(analytics.getByText(/No itemized account payments|চার্টে দেখানোর মতো/)).toBeVisible();
+        }else{
+          await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
+          await expect(page.getByRole('heading',{name:/Payment relationships|পেমেন্টের সম্পর্ক/})).toBeVisible();
         }
-        // Example amounts are independently selected and must never be
-        // asserted as bank settlements or combined with SQL-recorded totals.
-        await sources.getByRole('button',{name:'Examples'}).click();
-        await expect(sources.getByRole('button',{name:'Examples'}))
-          .toHaveAttribute('aria-pressed','true');
-        const services=chart.getByTestId('dashboard-service-breakdown');
-        const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
-        await expect(services.locator('[data-service]')).not.toHaveCount(0);
-        await expect(spending.locator('[data-tag]')).not.toHaveCount(0);
-        const numbers=await spending.evaluate(root=>{
-          const normalize=text=>{
-            const bengali='০১২৩৪৫৬৭৮৯';
-            const raw=String(text??'').replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.]/g,'');
-            return raw?Math.round(Number(raw)*100):NaN;
-          };
-          const total=normalize(root.querySelector('.taxpay-bento-analytics__total')?.textContent);
-          const amounts=[...root.querySelectorAll('[data-tag]')]
-            .map(node=>normalize(node.querySelector('strong')?.textContent));
-          return {total,sum:amounts.reduce((a,b)=>a+b,0),count:amounts.length};
-        });
-        if(!Number.isFinite(numbers.total)||numbers.total!==numbers.sum||numbers.count<1)
-          throw new Error('Live bento beneficiary amounts did not reconcile: '+JSON.stringify(numbers));
-        const selection=services.locator('[data-service]').first();
-        await selection.click();
-        await expect(selection).toHaveAttribute('aria-pressed','true');
-        await expect(services.getByRole('button',{name:'Show all payment services'})).toBeVisible();
-        await services.getByRole('button',{name:'Show all payment services'}).click();
-        // Selecting a tag updates the details rather than switching routes or
-        // rewriting financial records.
-        await spending.locator('[data-tag]').first().click();
-        await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
+        await expect(workspace.getByText(/DEMO-PAY-|DEMO-ETDS-|DEMO-REFUND-/)).toHaveCount(0);
+        await expect(page.getByRole('heading',{name:/My Tax Journey|আমার কর যাত্রা/})).toBeVisible();
+        const yearSelect=page.getByRole('combobox',{name:/Assessment year|করবর্ষ/});
+        await yearSelect.selectOption('2025-2026');
+        await expect(yearSelect).toHaveValue('2025-2026');
         await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
       }
       const beneficiaryUrl=new URL(base);
@@ -123,7 +110,7 @@ try {
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
       await page.reload();
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
       await page.screenshot({path:'test-results/live-auth-restored-'+name+'.png',fullPage:true});
     }
     await page.close();
@@ -131,7 +118,7 @@ try {
     // Only the already-published Pages bundle can certify MOBILE public navigation LIVE.
     // PR preflight must not assert this against the previously published version.
     if (isMobile && process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      const publicMobile = await browser.newPage({ viewport, isMobile, hasTouch: true });
+      const publicMobile = await openBudgetSafePage({ viewport, isMobile, hasTouch: true });
       const mobileUrl = new URL(base);
       mobileUrl.searchParams.set('action','landing');
       await publicMobile.goto(mobileUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
@@ -223,7 +210,7 @@ try {
     // A post-deploy check of the actual published bundle, not a PR preview.
     // Keep the pre-merge readback compatible with the older currently-live UI.
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      const guestPayment = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+      const guestPayment = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
       const guestPaymentUrl = new URL(base);
       guestPaymentUrl.searchParams.set('action', 'guest');
       await guestPayment.goto(guestPaymentUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -237,7 +224,7 @@ try {
     // Beneficiaries are private in the already-live baseline as well as the
     // candidate release. Enforce the same signed-out boundary in both PR
     // preflight and the deployed production browser check.
-    const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const beneficiaries = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -289,7 +276,7 @@ try {
     // Check the signed-out navigation without changing hosted payment data.
     // Keep session-scoped event reads available by direct link, not a guest bell.
     // Mock only the two SQL-backed read endpoints; never emulate a settlement.
-    const guest = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const guest = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const sessionId = '22222222-2222-4222-8222-222222222222';
     const paymentId = '33333333-3333-4333-8333-333333333333';
     await guest.addInitScript(session => {

@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('desktop beneficiary selection retains the calculation rail when the modal scrolls', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280');
   await page.setViewportSize({ width: 1280, height: 700 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   const summary = dialog.locator('.payment-flow-embedded__identity > .payment-form-summary');
   await expect(summary).toBeVisible();

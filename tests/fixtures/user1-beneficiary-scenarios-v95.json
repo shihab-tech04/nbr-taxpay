@@ -1,0 +1,166 @@
+{
+  "fixture_id": "sohojkor-ws2-user1-beneficiaries-v95",
+  "scope": "NONPROD_ISOLATED_ONLY",
+  "owner_preview_id": "user1",
+  "owner_real_supabase_auth_id": null,
+  "eligible_identity_sources": [
+    "src/data/demoUsers.ts",
+    "src/data/sampleTinSuggestions.ts"
+  ],
+  "notes": [
+    "Fictional preview identities and 12-digit lookup aliases; NOT production Auth accounts or issued taxpayer TINs.",
+    "List names get a unique suffix inside the disposable Playwright acceptance to prevent collisions.",
+    "No financial transactions or official receipts/certificates are seeded; WS1 owns payment fixtures and WS3 owns isolated SQL/Office synchronization.",
+    "UI-side owner account isolation and first/second browser persistence are tested by tests/e2e/demo-profile-persistence-real-local.spec.ts."
+  ],
+  "groups": [
+    {
+      "key": "clients",
+      "display": "Clients",
+      "category": "clients",
+      "recipient_numbers": [
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "key": "friends_family",
+      "display": "Friends & Family",
+      "category": "friends_family",
+      "recipient_numbers": [
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "key": "others",
+      "display": "Others",
+      "category": "others",
+      "recipient_numbers": [
+        11,
+        12
+      ]
+    }
+  ],
+  "beneficiaries": [
+    {
+      "recipient_preview_id": "user2",
+      "display_name": "Meghna Trading Ltd.",
+      "tin_alias": "222222222222",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user3",
+      "display_name": "Rupali Textiles Ltd.",
+      "tin_alias": "333333333333",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user4",
+      "display_name": "Nusrat Jahan",
+      "tin_alias": "444444444444",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user5",
+      "display_name": "Mahmud Hasan",
+      "tin_alias": "555555555555",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user6",
+      "display_name": "Farzana Akter",
+      "tin_alias": "666666666666",
+      "tag": "friends_family",
+      "relationship": "father",
+      "other_label": null,
+      "list_key": "friends_family"
+    },
+    {
+      "recipient_preview_id": "user7",
+      "display_name": "Sadia Islam",
+      "tin_alias": "777777777777",
+      "tag": "friends_family",
+      "relationship": "mother",
+      "other_label": null,
+      "list_key": "friends_family"
+    },
+    {
+      "recipient_preview_id": "user8",
+      "display_name": "Tanvir Ahmed",
+      "tin_alias": "888888888888",
+      "tag": "friends_family",
+      "relationship": "siblings",
+      "other_label": null,
+      "list_key": "friends_family"
+    },
+    {
+      "recipient_preview_id": "user9",
+      "display_name": "Imran Hossain",
+      "tin_alias": "999999999999",
+      "tag": "friends_family",
+      "relationship": "friends",
+      "other_label": null,
+      "list_key": "friends_family"
+    },
+    {
+      "recipient_preview_id": "user11",
+      "display_name": "Taxpayer Account 11",
+      "tin_alias": "909000000011",
+      "tag": "others",
+      "relationship": null,
+      "other_label": "Professional contact",
+      "list_key": "others"
+    },
+    {
+      "recipient_preview_id": "user12",
+      "display_name": "Taxpayer Account 12",
+      "tin_alias": "909000000012",
+      "tag": "others",
+      "relationship": null,
+      "other_label": "Community representative",
+      "list_key": "others"
+    }
+  ],
+  "payment_scenario_handoff": {
+    "payer_preview_id": "user1",
+    "recipient_preview_ids": [
+      "user2",
+      "user3",
+      "user4",
+      "user5",
+      "user6",
+      "user7",
+      "user8",
+      "user9",
+      "user11",
+      "user12"
+    ],
+    "scenarios": [
+      "individual allocations",
+      "combined parent with multiple beneficiaries and heads",
+      "multiple assessment years",
+      "payer versus recipient readback",
+      "one receipt and eligible internal certificate per recorded parent"
+    ],
+    "payment_implementation_owner": "WS1",
+    "backend_fixture_owner": "WS3",
+    "payment_fixture_status": "NOT_CREATED"
+  }
+}

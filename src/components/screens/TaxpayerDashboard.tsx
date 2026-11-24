@@ -17,6 +17,7 @@ import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
 import {CorrectionInquiries} from './CorrectionInquiries';
 import { DashboardPaymentDrafts } from './DashboardPaymentDrafts';
+import {PreviewDashboardBento} from './PreviewDashboardBento';
 import type { PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
@@ -24,7 +25,7 @@ type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
 const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
 export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: PaymentFormDraft) => void }> = ({ onResumePaymentDraft }) => {
-  const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt, openPaymentServiceChoice } = useTaxState();
+  const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt, openAllTaxPayments } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
@@ -38,20 +39,14 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
   // Keep that prior working default when the v11 dashboard becomes visible.
   // Do not change the historical sample-only assessment-year list.
   const [yearChoice,setYearChoice] = useState<string|null>(null);
-  const [exampleMode,setExampleMode]=useState(false);
-  const [yearBeforeExample,setYearBeforeExample]=useState<string|null>(null);
+  // Signed-in financial figures must never switch to fictional examples.
+  // Keep the verified-empty state until account-linked assessments are available.
+  const [exampleMode]=useState(false);
   const accountYears=user ? [...new Set(['2026-2027',...ASSESSMENT_YEARS,...illustrativeDashboardYears])] : ASSESSMENT_YEARS;
   const defaultYear=user ? '2026-2027' : (ASSESSMENT_YEARS[0] || '2026-2027');
   const year=yearChoice&&accountYears.includes(yearChoice) ? yearChoice : defaultYear;
   const setYear=(value:string)=>setYearChoice(value);
   const exampleYear=exampleMode?getIllustrativeDashboardYear(year):null;
-  const toggleExample=()=>{
-    if(!exampleMode){
-      setYearBeforeExample(year);
-      if(!getIllustrativeDashboardYear(year))setYear('2025-2026');
-    } else if(yearBeforeExample) setYear(yearBeforeExample);
-    setExampleMode(!exampleMode);
-  };
   const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
   // Explicit demo activity ONLY. Payer-TIN fixtures do not establish credit ownership.
@@ -91,10 +86,11 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
   </div>;
   const csv=()=>{
     const esc=(x:string|number)=>'"'+String(x).replace(/"/g,'""')+'"';
-    const body=[['Reference','Category','Assessment year','Amount ৳','Treasury status'],...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?'Treasury status not verified':r.treasuryStatus])]
+    const headings=bn?['রেফারেন্স','কর পরিশোধের ধরন','করবর্ষ','পরিমাণ ৳','ট্রেজারি অবস্থা']:['Reference','Category','Assessment year','Amount ৳','Treasury status'];
+    const body=[headings,...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?(bn?'ট্রেজারি অবস্থা যাচাই করা হয়নি':'Treasury status not verified'):r.treasuryStatus])]
       .map(r=>r.map(esc).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Sohojkor_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
   // Fail closed: there is no verified owner/year-scoped external assessment response.
   const verifiedExternalTaxPositionReady = false;
@@ -105,6 +101,20 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
     </div>
     <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
   </section>;
+  // Keep the approved recipient-first layout identical for fictional preview accounts.
+  // Account capability controls all payments/recipient data; empty means no owner records.
+  if (previewAccount && demoUser && !user) {
+    return <PreviewDashboardBento
+      key={previewAccount.id}
+      profileId={previewAccount.id}
+      demoUserId={demoUser.id}
+      name={visibleName}
+      language={language}
+      onNavigate={route=>navigate(route)}
+      onPay={()=>openAllTaxPayments()}
+      onResumePaymentDraft={onResumePaymentDraft}
+    />;
+  }
   return <div className={`mx-auto max-w-[1510px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
     <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
@@ -127,22 +137,13 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
         <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
       </div></div>}
       {serviceShortcut}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3" data-testid="dashboard-example-controls">
-        <p className="min-w-0 text-sm text-taxpay-muted">{exampleMode
-          ? tr('Example figures — not your tax records or confirmed payments.','উদাহরণের পরিমাণ — আপনার কর রেকর্ড বা নিশ্চিত পরিশোধ নয়।')
-          : tr('View the dashboard with optional fictional example figures.','চাইলে কাল্পনিক উদাহরণের পরিমাণ দিয়ে ড্যাশবোর্ড দেখুন।')}</p>
-        <button type="button" aria-pressed={exampleMode} onClick={toggleExample}
-          className="min-h-11 shrink-0 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
-          {exampleMode?tr('Hide examples','উদাহরণ বন্ধ করুন'):tr('View examples','উদাহরণ দেখুন')}
-        </button>
-      </div>
       {verifiedExternalTaxPositionReady && <div className="taxpay-bento-grid" data-testid="authenticated-overview-bento">
         <section className="taxpay-bento-hero" aria-labelledby="account-bento-hero-title">
           <p className="text-xs font-semibold">{tr('NEXT STEPS','পরবর্তী করণীয়')} · {year}</p>
           <h2 id="account-bento-hero-title">{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
           <p className="text-sm">{tr('Start a payment, continue saved work or review your transaction history. No unverified amount is treated as tax due.','পেমেন্ট শুরু করুন, সংরক্ষিত কাজ চালিয়ে যান অথবা লেনদেন দেখুন। যাচাই হয়নি এমন অর্থ বকেয়া কর হিসেবে দেখানো হয় না।')}</p>
           <div className="taxpay-bento-hero__actions">
-            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
+            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openAllTaxPayments()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
           </div>
           <p className="mt-auto text-xs">{tr('Your saved account records are kept separate from illustrative examples.','আপনার সংরক্ষিত রেকর্ড উদাহরণের পরিমাণ থেকে পৃথক রাখা হয়।')}</p>
         </section>
@@ -187,7 +188,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       <h2>{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
       <p>{tr('Use the existing payment journey or start separate travel tax.','বিদ্যমান পেমেন্ট যাত্রা অথবা পৃথক ভ্রমণ কর শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
+        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openAllTaxPayments()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
       </div>
     </section>}
     {previewAccount && onResumePaymentDraft && <div className="taxpay-bento-drafts">

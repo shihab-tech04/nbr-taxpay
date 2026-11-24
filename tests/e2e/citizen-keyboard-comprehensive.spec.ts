@@ -40,15 +40,25 @@ test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return wh
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   await expect(search).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Payment status & receipt' })).toHaveCount(0);
-  const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Pay Travel Tax' });
+  const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Other Tax' });
   await open.focus();
   await page.keyboard.press('Enter');
+  const access = page.locator('.taxpay-modal[data-public-service="login"]');
+  await expect(access).toBeVisible();
+  await access.getByRole('button', { name: 'Walk-in Payment' }).click();
+  const chooser = page.getByRole('dialog', { name: 'Other tax payments' });
+  await expect(chooser).toBeVisible();
+  await chooser.getByRole('button', {name:/Travel Tax/}).click();
   const dialog = page.getByRole('dialog', { name: 'Travel tax' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close modal' })).toBeFocused();
   await page.keyboard.press('Escape');
+  const discard = dialog.getByRole('alertdialog', {name:'Discard tax payment?'});
+  await expect(discard).toBeVisible();
+  await expect(discard.getByRole('button', {name:'Keep editing'})).toBeFocused();
+  await discard.getByRole('button', {name:'Discard tax payment'}).click();
   await expect(dialog).toHaveCount(0);
-  await expect(open).toBeFocused();
+  await expect(open).toBeVisible();
 });
 
 test('Taxpayer dashboard contains two-line section introductions and keyboard-operable filters', async ({ page }) => {
@@ -83,17 +93,24 @@ test('Citizen route matrix never adds static text and containers to the Tab sequ
   }
 });
 
-test('Scrolled-away mobile header is inert rather than an invisible Tab trap', async ({ page }) => {
+test('Signed-in mobile navigation keeps the header and bottom dock available after scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   const header = page.locator('.citizen-header');
   await page.evaluate(() => window.scrollTo(0, 650));
-  await expect(header).toHaveAttribute('inert', '');
-  await expect(header).toHaveCSS('visibility', 'hidden');
-  await header.locator('button').first().evaluate((button) => (button as HTMLButtonElement).focus());
-  expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.citizen-header')))).toBe(false);
+  await expect(header).not.toHaveAttribute('inert', '');
+  await expect(header).toBeVisible();
+  const bottomNav = page.locator('.citizen-bottom-nav');
+  await expect(bottomNav).toBeVisible();
+  for (const label of ['Overview', 'Activity', 'Tax Ledger']) {
+    await expect(bottomNav.getByRole('button', { name: label })).toBeVisible();
+  }
+  const menuButton = header.getByRole('button', { name: 'Open menu' });
+  await menuButton.focus();
+  await expect(menuButton).toBeFocused();
+  expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.citizen-header')))).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(header).not.toHaveAttribute('inert', '');
 });

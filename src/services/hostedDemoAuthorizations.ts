@@ -1,5 +1,6 @@
 import { DEMO_USERS, type DemoUserId } from '../data/demoUsers';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import {activePreviewSession} from './previewAccountSession';
 
 /** Shared SQL demo consent. Fictional account names are NOT authenticated taxpayer identities. */
 export type HostedAuthorizationStatus = 'PENDING' | 'CODE_ISSUED' | 'ACTIVE' | 'DENIED' | 'REVOKED' | 'EXPIRED' | 'CANCELLED';
@@ -14,6 +15,12 @@ export type HostedAuthorization = {
 
 const API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const headers={apikey:TAXPAY_PUBLIC_ENDPOINT.publishableKey};
+function verifiedHeaders(actor:DemoUserId):Record<string,string>{
+  const session=activePreviewSession();
+  if(!session||session.profileId!==actor)
+    throw new Error('Sign in to the selected demo account to manage its authorizations.');
+  return {...headers,'x-taxpay-guest-capability':session.capability};
+}
 type ResponseEnvelope<T>={success?:boolean;data?:T;error?:string;requestId?:string;mirrored?:boolean};
 export class AuthorizationSyncError extends Error {
   constructor(public readonly requestId: string) {
@@ -29,7 +36,7 @@ async function unwrap<T>(response:Response):Promise<T>{
   throw Error((payload.error??'AUTHORIZATION_UNAVAILABLE').replaceAll('_',' '));
 }
 export const getHostedAuthorizations=async(actor:DemoUserId):Promise<HostedAuthorization[]>=>{
-  const response=await fetch(`${API}/authorizations?actor=${encodeURIComponent(actor)}`,{cache:'no-store',headers});
+  const response=await fetch(`${API}/authorizations?actor=${encodeURIComponent(actor)}`,{cache:'no-store',headers:verifiedHeaders(actor)});
   const data=await unwrap<HostedAuthorization[]>(response);
   if(!Array.isArray(data))throw Error('Invalid authorization response');
   return data;
@@ -38,14 +45,14 @@ export type AuthorizationAction='request'|'accept'|'confirm'|'decline'|'revoke'|
 export async function performHostedAuthorization(actor:DemoUserId,action:AuthorizationAction,
   options:{id?:string;tin?:string;code?:string}={}):Promise<{id:string;status:HostedAuthorizationStatus;consentCode?:string|null;attempts:number}> {
   const response=await fetch(API+'/authorizations',{
-    method:'POST',headers:{...headers,'Content-Type':'application/json'},
+    method:'POST',headers:{...verifiedHeaders(actor),'Content-Type':'application/json'},
     body:JSON.stringify({actor,action,...options}),
   });
   return unwrap(response);
 }
-export async function retryHostedAuthorizationSync(requestId:string):Promise<void>{
+export async function retryHostedAuthorizationSync(requestId:string,actor:DemoUserId):Promise<void>{
   const response=await fetch(API+'/authorizations/sync',{
-    method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({id:requestId}),
+    method:'POST',headers:{...verifiedHeaders(actor),'Content-Type':'application/json'},body:JSON.stringify({id:requestId,actor}),
   });
   await unwrap(response);
 }

@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function openGuestOtherTax(page: Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('222222222222');
   await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
@@ -32,10 +32,15 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
   await expect(next).toBeDisabled();
   await payer.getByRole('button', { name: 'Search payer TIN' }).click();
   await expect(payer.locator('#guest-payer-tin-name')).toHaveValue('User 1');
+  const review=payer.getByTestId('walkin-payer-search-result');
+  await expect(review).toContainText('111*********');
+  await expect(review.getByRole('button',{name:'Reveal TIN'})).toBeVisible();
+  await expect(review.getByRole('button',{name:/copy/i})).toHaveCount(0);
+
   await expect(next).toBeDisabled();
   await payer.getByRole('button', { name:'Confirm payer' }).click();
   await expect(dialog.locator('#guest-payer-name')).toHaveValue('User 1');
-  await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByTestId('confirmed-taxpayer-summary')).toContainText('222222222222');
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByTestId('confirmed-taxpayer-summary')).toContainText('222*********');
   await expect(next).toBeEnabled();
 
   await payerTin.fill('333333333333');
@@ -51,6 +56,7 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
 test('confirmed payer TIN stays distinct from allocations and receipt on one SQL payment', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280');
   const submissions: Record<string, unknown>[] = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submissions.push(route.request().postDataJSON());
     await route.fulfill({status:200,contentType:'application/json',

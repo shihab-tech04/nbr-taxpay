@@ -64,9 +64,58 @@ begin
   if (select count(*) from public.sim_tax_service_records) <> 19 then
     raise exception 'Anonymous PostgREST client cannot read fictional service records';
   end if;
-  if (select count(*) from public.sim_payment_users where role_code is not null) <> 30 then
+  if (select count(*) from public.sim_payment_users where role_code is not null) <> 55 then
     raise exception 'Anonymous PostgREST client cannot read synthetic profile metadata';
   end if;
 end;
 $$;
 rollback;
+
+
+-- Fifty-five individual demo capability exchanges must work in disposable SQL;
+-- none of these fictional identities may create a real Supabase Auth user.
+do $test_55_profiles$
+declare
+ n integer;
+ data jsonb;
+ cap text;
+ sid text;
+ seen_caps text[] := '{}';
+ seen_sessions text[] := '{}';
+ before_auth bigint;
+begin
+ select count(*) into before_auth from auth.users;
+ for n in 1..55 loop
+   data := public.taxpay_demo_profile_login('user'||n,'user'||n);
+   if data->>'profileId' is distinct from 'user'||n then
+     raise exception 'Incorrect demo capability profile for user number %',n;
+   end if;
+   cap := data->>'capability';
+   sid := data->>'paymentSessionId';
+   if coalesce(cap,'') !~ '^[A-Za-z0-9_-]{43}$'
+      or coalesce(sid,'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then
+     raise exception 'Missing server-issued capability/session for profile number %',n;
+   end if;
+   if cap=any(seen_caps) or sid=any(seen_sessions) then
+     raise exception 'Different preview profiles share a capability/session';
+   end if;
+   seen_caps := array_append(seen_caps,cap);
+   seen_sessions := array_append(seen_sessions,sid);
+ end loop;
+ if (select count(*) from auth.users) <> before_auth then
+   raise exception 'Synthetic login must never create real Auth accounts';
+ end if;
+ begin
+   perform public.taxpay_demo_profile_login('user56','user56');
+   raise exception 'Out-of-range fictional identity unexpectedly accepted';
+ exception when others then
+   if sqlerrm <> 'INVALID_DEMO_LOGIN' then raise; end if;
+ end;
+ begin
+   perform public.taxpay_demo_profile_login('user55','incorrect');
+   raise exception 'Incorrect fictional credentials unexpectedly accepted';
+ exception when others then
+   if sqlerrm <> 'INVALID_DEMO_LOGIN' then raise; end if;
+ end;
+end;
+$test_55_profiles$;

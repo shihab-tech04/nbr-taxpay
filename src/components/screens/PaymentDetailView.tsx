@@ -26,10 +26,14 @@ function SyncedCertificate({transactionId,docAction,embedded=false}:{transaction
   useEffect(()=>{
     if(!receipt||!docAction)return;
     // Render ReceiptView first, then execute the requested document action.
-    const timer=window.setTimeout(()=>{
+    const timer=window.setTimeout(async()=>{
       try{
         if(docAction==='print')window.print();
-        if(docAction==='download')downloadDisplayedCertificate(receipt);
+        if(docAction==='download'){
+          const paper=document.querySelector<HTMLElement>('.receipt-view__paper');
+          if(!paper)throw new Error('Document is not ready');
+          await downloadDisplayedCertificate(receipt,paper);
+        }
       }catch(err){setActionError(err instanceof Error?err.message:'Certificate action failed');}
     },450);
     return()=>window.clearTimeout(timer);
@@ -38,7 +42,7 @@ function SyncedCertificate({transactionId,docAction,embedded=false}:{transaction
   if(!receipt)return <main className="mx-auto max-w-3xl p-6" role="status">Loading payment certificate…</main>;
   return <div className="mx-auto max-w-5xl pb-4">
     {actionError&&<p role="alert">{actionError}</p>}
-    <ReceiptView receipt={receipt} embedded={embedded} onBack={()=>window.close()}/>
+    <ReceiptView receipt={receipt} embedded={embedded} certificate onBack={()=>window.close()}/>
   </div>;
 }
 

@@ -3,7 +3,7 @@ import {openTravelTaxFromBanner} from './public-travel-tax-entry';
 
 async function previewLogin(page:Page) {
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user2');
   await login.getByLabel('Password',{exact:true}).fill('user2');
   await login.getByRole('button',{name:'Sign In'}).click();
@@ -12,7 +12,7 @@ async function previewLogin(page:Page) {
 
 async function assertUnifiedTravel(modal:Locator, width:number) {
   await expect(modal).toBeVisible();
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
   await expect(modal.locator('.tax-service-choice--travel')).toHaveCount(0);
   await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
   await expect(modal.locator('.travel-flow')).toBeVisible();
@@ -30,8 +30,8 @@ async function assertUnifiedTravel(modal:Locator, width:number) {
   const [left,right,bar]=await Promise.all([save.boundingBox(),next.boundingBox(),footer.boundingBox()]);
   expect(left && right && bar).toBeTruthy();
   if (left && right && bar) {
-    expect(Math.abs(left.y-right.y),'aligned footer actions at '+width+'px').toBeLessThan(7);
-    expect(left.x+left.width,'Save Draft is left of Continue').toBeLessThanOrEqual(right.x+2);
+    expect(left.y + left.height,'Save Draft precedes the full-width primary action at '+width+'px').toBeLessThanOrEqual(right.y+2);
+    expect(right.width,'Continue fills the footer at '+width+'px').toBeGreaterThanOrEqual(bar.width-60);
     expect(right.x+right.width,'Continue stays inside modal').toBeLessThanOrEqual(bar.x+bar.width+2);
   }
   const formWidth=await modal.locator('.travel-flow__main').evaluate(node=>node.getBoundingClientRect().width);
@@ -78,8 +78,67 @@ test('Bengali Travel Tax retains identical stage heading and single primary foot
  await page.goto('/?action=landing&lang=bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
+ await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রীর তথ্য');
  await expect(modal.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
  await expect(modal.locator('.taxpay-modal__footer .travel-flow__primary')).toHaveCount(1);
+});
+
+
+test('Travel Tax passport lookup is full-width on tablet and phone without changing desktop pairing', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Cross-breakpoint regression executes once');
+  await page.goto('/?action=landing');
+  await openTravelTaxFromBanner(page);
+  const dialog = page.getByRole('dialog', {name: 'Travel tax'});
+  const passport = dialog.locator('.travel-flow__passport-row').first();
+  const field = passport.locator('.travel-flow__passport-input');
+  const action = passport.locator('.travel-flow__passport-action');
+  for (const width of [375, 650, 768]) {
+    await page.setViewportSize({width, height: 830});
+    // The approved Travel Tax dialog animates its width for 300 ms. Sample
+    // row and action in the same settled layout, not during different frames
+    // of that transition. Keep the strict two-pixel geometry gate unchanged.
+    await dialog.evaluate(async element => {
+      await Promise.all(
+        element.getAnimations({subtree: false})
+          .filter(animation => animation.playState === 'running')
+          .map(animation => animation.finished.catch(() => undefined))
+      );
+      await new Promise<void>(resolve => requestAnimationFrame(() =>
+        requestAnimationFrame(() => resolve())));
+    });
+    const [row, input, button] = await Promise.all([
+      passport.boundingBox(), field.boundingBox(), action.boundingBox()
+    ]);
+    expect(row && input && button, 'Passport controls are visible at '+width).toBeTruthy();
+    if (!row || !input || !button) continue;
+    expect(input.width, 'Passport input fills the tablet/phone row').toBeGreaterThanOrEqual(row.width - 2);
+    expect(button.width, 'Check Passport fills the tablet/phone row').toBeGreaterThanOrEqual(row.width - 2);
+    expect(button.y, 'Check Passport is below the passport field').toBeGreaterThanOrEqual(input.y + input.height);
+    expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
+  }
+  await page.setViewportSize({width:1280,height:830});
+  // Returning from the full-width phone/tablet layout also starts the
+  // approved 300 ms dialog width transition. Measure the desktop pairing only
+  // after that transition settles; keep the strict 3 px alignment limit.
+  await dialog.evaluate(async element => {
+    await Promise.all(
+      element.getAnimations({subtree: false})
+        .filter(animation => animation.playState === 'running')
+        .map(animation => animation.finished.catch(() => undefined))
+    );
+    await new Promise<void>(resolve => requestAnimationFrame(() =>
+      requestAnimationFrame(() => resolve())));
+  });
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve => requestAnimationFrame(() =>
+      requestAnimationFrame(() => resolve())));
+  });
+  const [input,button] = await Promise.all([field.boundingBox(),action.boundingBox()]);
+  expect(input && button).toBeTruthy();
+  if (input && button) {
+    expect(button.x).toBeGreaterThanOrEqual(input.x + input.width);
+    expect(Math.abs(button.y + button.height - input.y - input.height)).toBeLessThanOrEqual(3);
+  }
 });

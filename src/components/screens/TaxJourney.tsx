@@ -1,5 +1,4 @@
 import React, {useEffect,useMemo,useState} from 'react';
-import {ArrowRight, BookOpen, CircleUserRound, FileCheck2, FilePenLine, Receipt, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadAccountTaxJourney,type AccountJourneyItem} from '../../services/accountTaxJourney';
@@ -7,20 +6,12 @@ import {formattedReviewAmount} from '../../services/accountReviewHistory';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {AccountSqlPaymentJourney} from './AccountSqlPaymentJourney';
 
-const destinations=[
-  {route:'account_profile',title:{en:'Profile',bn:'প্রোফাইল'},Icon:CircleUserRound},
-  {route:'history',title:{en:'Payment activity',bn:'পেমেন্টের তথ্য'},Icon:Receipt},
-  {route:'secure_workspace',title:{en:'Saved payment drafts',bn:'সংরক্ষিত পেমেন্ট খসড়া'},Icon:WalletCards},
-  {route:'ledger',title:{en:'Tax ledger',bn:'কর লেজার'},Icon:BookOpen},
-  {route:'certificates',title:{en:'Certificates',bn:'সনদপত্র'},Icon:FileCheck2},
-  {route:'corrections',title:{en:'Corrections',bn:'সংশোধন'},Icon:FilePenLine},
-] as const;
 type LoadState={uid:string|null;phase:'loading'|'ready'|'error';events:AccountJourneyItem[]};
 
 /** Real accounts show only recorded owner-owned review events. A request never
  * implies a Treasury receipt, tax credit or officially posted liability. */
 export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
-  const {navigate,language}=useTaxState();
+  const {language}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -57,7 +48,7 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
   };
   return <div className="mx-auto max-w-4xl space-y-5 pb-12">
     <TaxpayerPageHeading id="taxpay-journey-title" title={tr('My tax journey','আমার কর কার্যক্রম')}
-      description={tr('Recorded account activity and links to the related tax services.','অ্যাকাউন্টের নথিভুক্ত কার্যক্রম এবং সংশ্লিষ্ট করসেবার লিংক।')}/>
+      description={tr('Recorded account activity.','অ্যাকাউন্টের নথিভুক্ত কার্যক্রম।')}/>
     {activityTabs&&<TaxpayerActivityTabs />}
     {ownerUid&&<AccountSqlPaymentJourney ownerUid={ownerUid} language={language}/>}
     {ownerUid&&<section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="account-journey-events-title"
@@ -117,15 +108,5 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
         </li>)}
       </ol>}
     </section>}
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="taxpay-journey-links-title">
-      <h2 id="taxpay-journey-links-title" className="text-lg font-semibold text-taxpay-text">{tr('Related services','সংশ্লিষ্ট সেবা')}</h2>
-      <nav aria-label={tr('Tax services','করসেবা')} className="mt-3 grid gap-3 sm:grid-cols-2">
-        {destinations.map(({route,title,Icon})=><button key={route} type="button" onClick={()=>navigate(route)}
-          className="flex min-h-14 items-center gap-3 rounded-xl border border-taxpay-border bg-white p-4 text-left text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
-          <Icon size={19} aria-hidden={true}/><span className="min-w-0 flex-1">{bn?title.bn:title.en}</span>
-          <ArrowRight size={17} aria-hidden={true}/>
-        </button>)}
-      </nav>
-    </section>
   </div>;
 };

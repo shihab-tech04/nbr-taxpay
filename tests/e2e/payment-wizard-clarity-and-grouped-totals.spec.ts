@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('payment stepper has connected numbered states and shows completed progression', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
   const progress = dialog.locator('.taxpay-modal__progress');
@@ -21,7 +21,7 @@ test('payment stepper has connected numbered states and shows completed progress
 
 test('guest Other Tax shows one collapsible calculation group per beneficiary and exact subtotal', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -33,12 +33,14 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]').fill('234567890123');
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
+  // Identity step contains no premature empty-head taxpayer breakdown.
   const grouped = dialog.getByTestId('grouped-taxpayer-calculation');
-  await expect(grouped.locator('details')).toHaveCount(2);
-  await expect(grouped).toContainText('123456789012');
-  await expect(grouped).toContainText('234567890123');
+  await expect(grouped).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
+  await expect(grouped.locator('details')).toHaveCount(2);
+  await expect(grouped).toContainText('123****');
+  await expect(grouped).toContainText('234****');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
@@ -55,8 +57,23 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
     await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
     await expect(mobileCalculation).toHaveAttribute('open', '');
   }
-  await grouped.locator('details').nth(1).locator('summary').click();
-  await expect(grouped.locator('details').nth(1)).toHaveAttribute('open', '');
+  const secondGroup = grouped.locator('details').nth(1);
+  const groupHeading = secondGroup.locator('summary .payment-form-summary__taxpayer-name strong');
+  await expect(secondGroup).not.toHaveAttribute('open', '');
+  await groupHeading.click();
+  await expect(secondGroup).toHaveAttribute('open', '');
+  await secondGroup.getByRole('button', { name: 'Reveal TIN' }).click();
+  await expect(secondGroup).toHaveAttribute('open', '');
+  await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234567890123');
+  await secondGroup.getByRole('button', { name: 'Hide TIN' }).click();
+  await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234*********');
+  // Only Profile permits TIN copying. Calculations retain explicit Reveal/Hide.
+  await expect(secondGroup.getByRole('button', { name: 'Copy TIN' })).toHaveCount(0);
+  await expect(secondGroup.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
+  await groupHeading.click();
+  await expect(secondGroup).not.toHaveAttribute('open', '');
+  await groupHeading.click();
+  await expect(secondGroup).toHaveAttribute('open', '');
   await expect(grouped.locator('details').nth(1)).toContainText('68B');
   expect(await dialog.locator('.taxpay-modal__body').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
 });
@@ -67,7 +84,7 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await page.getByRole('textbox', { name: 'Password' }).fill('user1');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
   // Signed-in SELF uses the approved read-only account card rather than
@@ -120,7 +137,7 @@ test('account beneficiary lists keep selection separate from taxpayer consent', 
   await page.getByRole('textbox',{name:'Password'}).fill('user1');
   await page.getByRole('button',{name:'Sign In'}).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   let dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   let picker=dialog.getByTestId('saved-beneficiary-picker');
@@ -134,7 +151,7 @@ test('account beneficiary lists keep selection separate from taxpayer consent', 
   // Reopen with the same saved list and now-active independent consent for both people.
   currentStatus='ACTIVE';
   await page.reload();
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   picker=dialog.getByTestId('saved-beneficiary-picker');

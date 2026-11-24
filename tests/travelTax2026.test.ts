@@ -87,3 +87,59 @@ test('planned travel dates use Dhaka midnight and reject past or invalid dates',
   assert.equal(isPlannedTravelDate('2027-02-29', now), false);
   assert.equal(isPlannedTravelDate('2026-13-01', now), false);
 });
+
+
+// F-150-C01 / US-147-T01–T03: account for each birthday on the selected
+// travel date. All bands below are explicitly illustrative, not law/issuer proof.
+test('F-150 US-147: travel-day age boundaries use birthdays, not the current clock',()=>{
+  const cases:Array<[string,string,number,number]>=[
+    ['2020-11-15','2026-11-14',5,0],
+    ['2020-11-15','2026-11-15',6,500],
+    ['2014-11-16','2026-11-15',11,500],
+    ['2014-11-16','2026-11-16',12,500],
+    ['2013-11-16','2026-11-15',12,500],
+    ['2013-11-16','2026-11-16',13,1000],
+    ['2021-11-16','2026-11-15',4,0],
+    ['2021-11-16','2026-11-16',5,0],
+  ];
+  for(const [birthDate,travelDate,expectedAge,expectedAmount] of cases){
+    const passenger={...makeTravelPassenger('age-boundary','FOREIGN'),passport:'FOREIGN123',
+      name:'BOUNDARY PASSENGER',birthDate,country:'India'};
+    assert.equal(travelPassengerAge(birthDate,travelDate),expectedAge,birthDate+' '+travelDate);
+    assert.equal(assessTravelPassenger(passenger,1000,travelDate)?.amount,
+      expectedAmount,birthDate+' '+travelDate);
+  }
+});
+
+test('F-150 US-147: invalid dates and future DOB cannot become an age or amount',()=>{
+  const malformed=['2026-02-30','2027-02-29','2026-13-01','2026-00-10','not-a-date',''];
+  for(const date of malformed){
+    assert.equal(travelPassengerAge(date,'2026-11-16'),null,'DOB '+date);
+  }
+  assert.equal(travelPassengerAge('2026-11-17','2026-11-16'),null);
+  const passenger={...makeTravelPassenger('future','FOREIGN'),
+    passport:'FOREIGN123',name:'FUTURE PASSENGER',country:'India',birthDate:'2026-11-17'};
+  assert.equal(assessTravelPassenger(passenger,1000,'2026-11-16'),null);
+  assert.match(validateTravelParty([passenger],'2026-11-16')??'',/date of birth/);
+});
+
+test('F-150 US-147: changing travel date recalculates all ages but keeps passenger identities',()=>{
+  const base={...makeTravelPassenger('first','FOREIGN'),passport:'FOREIGN123',
+    name:'TRAVELLER ONE',country:'India',birthDate:'2020-11-16'};
+  const sibling={...makeTravelPassenger('second','FOREIGN'),passport:'FOREIGN456',
+    name:'TRAVELLER TWO',country:'India',birthDate:'2013-11-16'};
+  const party=[base,sibling];
+  const before=structuredClone(party);
+  assert.equal(travelPartyTotal(party,1000,'2026-11-15'),500);
+  assert.equal(travelPartyTotal(party,1000,'2026-11-16'),1500);
+  assert.equal(validateTravelParty(party,'2026-11-16'),null);
+  assert.deepEqual(party,before,'Changing selected date does not rewrite confirmed passenger data');
+});
+
+test('F-150 US-147: Dhaka local day, not UTC day, determines whether DOB is future',()=>{
+  const now=new Date('2026-11-14T20:00:00.000Z');
+  assert.equal(now.toISOString().slice(0,10),'2026-11-14');
+  assert.equal(dhakaTravelDate(now),'2026-11-15');
+  assert.equal(travelPassengerAge('2026-11-15',dhakaTravelDate(now)),0);
+  assert.equal(travelPassengerAge('2026-11-16',dhakaTravelDate(now)),null);
+});

@@ -1,7 +1,10 @@
+import {maskTinForDisplay} from '../../src/services/tinDisplay';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
+import {demoLoginOtpCompletedState} from './demo-login-test-state';
 import {randomUUID} from 'node:crypto';
-import type {DemoUserId} from '../../src/data/demoUsers';
+import {DEMO_USERS,type DemoUserId} from '../../src/data/demoUsers';
+import {sampleTinForUserNumber} from '../../src/data/sampleTinSuggestions';
 
 /** Real browser + local Edge Function/Postgres only. Never use hosted credentials. */
 test('demo User ID retains nonempty lists, tagged beneficiary and language across sign-out, refresh and browsers',async({browser},info)=>{
@@ -20,7 +23,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   const otherUser:DemoUserId='user9';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
-    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport,
+      storageState:demoLoginOtpCompletedState});
     contexts.push(context);
     return context;
   };
@@ -34,6 +38,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   const openBeneficiaries=async(page:Page)=>{
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+    await page.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   };
   const openMobileAccountMenu=async(page:Page)=>{
     const dialog=page.locator('.citizen-dialog');
@@ -53,6 +58,24 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
       await dialog.locator('.citizen-dialog-language').click();
     }
     await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',target);
+    // The visual language toggle is optimistic; do not navigate/reload before
+    // the capability-scoped SQL preference confirms the exact saved language.
+    // This catches actual failed persistence instead of racing an in-flight
+    // Edge write and incorrectly attributing another browser's old language.
+    await expect.poll(async()=>{
+      return page.evaluate(async({url,key})=>{
+        const session=JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null');
+        if(!session?.capability)return null;
+        const res=await fetch(url+'/functions/v1/taxpay-guest-beneficiaries',{
+          method:'POST',cache:'no-store',
+          headers:{apikey:key,'content-type':'application/json','x-taxpay-guest-capability':session.capability},
+          body:JSON.stringify({action:'demo-settings'}),
+        });
+        if(!res.ok)return null;
+        const body=await res.json();
+        return body.success===true?body.data?.language??null:null;
+      },{url:api.origin,key});
+    },{timeout:15000}).toBe(target);
   };
   const signOut=async(page:Page)=>{
     const rail=page.locator('.taxpayer-reference-rail-bottom');
@@ -96,19 +119,34 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await first.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     // Direct Add Beneficiary opens the single-entry modal.
     dialog=first.getByRole('dialog',{name:'Beneficiary entry'});
+    await expect(dialog).toBeVisible();
+    await expect(first.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
+    await expect(first.getByText('Import from Excel',{exact:true})).toHaveCount(0);
     await dialog.locator('#beneficiary-tin').fill(tin);
     await dialog.locator('#beneficiary-name').fill(personName);
     await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
     await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     await expect(first.getByTestId('beneficiary-records')).toContainText(personName);
-    await expect(first.getByTestId('beneficiary-records')).toContainText(tin);
+    await expect(first.getByTestId('beneficiary-records')).toContainText(maskTinForDisplay(tin));
+    await expect(first.getByTestId('beneficiary-records')).not.toContainText(tin);
 
     const firstProfile=await first.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(firstProfile?.profileId).toBe(firstUser);
     const payment=await first.evaluate(async({apiUrl,key,capability,paymentSessionId,idempotencyKey,payerName,profileId})=>{
+      // One exclusive Return head, independent of the combined Other Tax route.
+      // The valid local source may remain pending Office synchronization, but
+      // it must not be rejected for an incomplete accounting/receipt envelope.
+      const taxpayerTin='1010101010101';
+      const assessmentYear='2026-27';
+      const receiptReference='SIM-'+idempotencyKey;
+      const line={beneficiary:profileId,category:'TAX_WITH_RETURN',headId:125,
+        assessmentYear,amountMinor:12345,totalAmount:123.45};
       const data={origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,sessionId:paymentSessionId,idempotencyKey,
-        details:{payerId:profileId,payerName,lines:[{beneficiary:profileId,category:'TAX_WITH_RETURN',
-          assessmentYear:'2026-27',amountMinor:12345}]}};
+        details:{payerId:profileId,payerName,payerMode:'SELF',payerTin:taxpayerTin,
+          taxpayerTin,assessmentYear,receiptReference,lines:[line],
+          receiptSnapshot:{paymentCategory:'TAX_WITH_RETURN',payerTin:taxpayerTin,
+            taxpayerTin,assessmentYear,challanNo:receiptReference,totalAmount:123.45,
+            items:[{headId:125,totalAmount:123.45}]}}};
       const response=await fetch(apiUrl+'/functions/v1/demo-story1-taxpay/payments',{
         method:'POST',headers:{apikey:key,'x-taxpay-guest-capability':capability,'content-type':'application/json'},
         body:JSON.stringify(data)
@@ -163,10 +201,12 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(second.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
     await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
-    await expect(second.getByTestId('beneficiary-records')).toContainText(tin);
+    await expect(second.getByTestId('beneficiary-records')).toContainText(maskTinForDisplay(tin));
+    await expect(second.getByTestId('beneficiary-records')).not.toContainText(tin);
     const secondProfile=await second.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(secondProfile?.paymentSessionId).toBe(firstProfile.paymentSessionId);
     await second.reload();
+    await second.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
     await second.goto('/?action=history');
@@ -178,6 +218,26 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const otherContext=await makeContext();
     const other=await otherContext.newPage();
     await login(other,otherUser);
+    await setLanguage(other,'en');
+    // Phase 1 / M02: a new preview account has no issued e-TIN. Keep all 24
+    // approved fields in the same structure, but never invent identity values.
+    // This runs at both 1280px desktop and 375px mobile against real local SQL.
+    await other.goto('/?action=account_profile');
+    const profilePanel=other.getByTestId('taxpayer-unified-profile-page').getByTestId('user1-taxpayer-profile');
+    await expect(profilePanel).toBeVisible();
+    await expect(profilePanel.locator('[data-profile-field]')).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field="tin"]')).toContainText('Not available');
+    await expect(profilePanel.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+    const profileWidth=await profilePanel.evaluate(element=>({
+      left:element.getBoundingClientRect().left,
+      right:element.getBoundingClientRect().right,
+      viewport:window.innerWidth,
+    }));
+    expect(profileWidth.left).toBeGreaterThanOrEqual(-1);
+    expect(profileWidth.right).toBeLessThanOrEqual(profileWidth.viewport+1);
+    await setLanguage(other,'bn');
+    await expect(profilePanel.locator('[data-profile-field]')).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field="tin"]')).toContainText('পাওয়া যায়নি');
     await setLanguage(other,'en');
     await openBeneficiaries(other);
     await expect(other.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
@@ -218,6 +278,180 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     expect(otherSnapshot.body.data.profileId).toBe(otherUser);
     expect(otherSnapshot.body.data.people.some((person:{tin:string})=>person.tin===tin)).toBe(false);
     expect(otherSnapshot.body.data.lists.some((list:{name:string})=>list.name===listName)).toBe(false);
+  }finally{
+    await Promise.all(contexts.map(context=>context.close()));
+  }
+});
+
+
+/** WS2 Stage 5: isolated disposable User1 *preview* capability, not a real
+ * production Supabase Auth account or settled finance record. The ten aliases
+ * are existing eligible public fixture profiles, never issued TINs. */
+test('User1 fixture has ten beneficiary recipients in three owned lists with cross-browser and other-user isolation',async({browser},info)=>{
+  test.setTimeout(150_000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  if(!raw||!key)throw Error('Disposable Supabase configuration required');
+  const target=new URL(raw);
+  if(target.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(target.hostname))
+    throw Error('Refusing User1 fixture writes to a hosted environment');
+  const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
+  const suffix=randomUUID().slice(0,8);
+  const names={
+    clients:'User1 Clients '+suffix,
+    family:'User1 Friends & Family '+suffix,
+    others:'User1 Others '+suffix,
+  };
+  const categories=[
+    {name:names.clients,tag:'clients',recipients:[2,3,4,5],relations:[null,null,null,null],labels:[null,null,null,null]},
+    {name:names.family,tag:'friends_family',recipients:[6,7,8,9],
+      relations:['father','mother','siblings','friends'],labels:[null,null,null,null]},
+    {name:names.others,tag:'others',recipients:[11,12],relations:[null,null],
+      labels:['Professional contact','Community representative']},
+  ] as const;
+  const expected=categories.flatMap(group=>group.recipients.map((n,i)=>({
+    tin:sampleTinForUserNumber(n),display_name:DEMO_USERS[('user'+n) as DemoUserId].nameEn,
+    tag:group.tag,relationship:group.relations[i],other_label:group.labels[i],list:group.name,
+  })));
+  expect(expected).toHaveLength(10);
+  expect(new Set(expected.map(row=>row.tin)).size).toBe(10);
+  expect(expected.every(row=>typeof row.tin==='string'&&/^\d{12}$/.test(row.tin))).toBe(true);
+
+  const contexts:BrowserContext[]=[];
+  const newContext=async()=>{
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+    contexts.push(context);
+    return context;
+  };
+  const signIn=async(page:Page,id:'user1'|'user2')=>{
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox',{name:'User ID'}).fill(id);
+    await page.getByLabel('Password',{exact:true}).fill(id);
+    await page.getByRole('button',{name:'Sign In',exact:true}).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    const session=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
+    expect(session?.profileId).toBe(id);
+    expect(typeof session.capability).toBe('string');
+    return session as {profileId:string;capability:string};
+  };
+  const apiRequest=async(page:Page,capability:string,action:string,fields:Record<string,unknown>={})=>
+    page.evaluate(async({url,key,capability,action,fields})=>{
+      const response=await fetch(url+'/functions/v1/taxpay-guest-beneficiaries',{
+        method:'POST',cache:'no-store',
+        headers:{apikey:key,'content-type':'application/json','x-taxpay-guest-capability':capability},
+        body:JSON.stringify({action,...fields}),
+      });
+      return {status:response.status,body:await response.json()};
+    },{url:target.origin,key,capability,action,fields});
+  try{
+    const first=await (await newContext()).newPage();
+    const user1=await signIn(first,'user1');
+    const lists:{name:string;id:string}[]=[];
+    for(const category of categories){
+      const created=await apiRequest(first,user1.capability,'create-list',{name:category.name});
+      expect(created.status,JSON.stringify(created.body)).toBe(200);
+      expect(created.body.success).toBe(true);
+      const listId=created.body.data?.id as string;
+      expect(listId).toMatch(/^[a-f\d-]{36}$/i);
+      lists.push({name:category.name,id:listId});
+      const rows=category.recipients.map((n,i)=>({
+        tin:sampleTinForUserNumber(n),
+        display_name:DEMO_USERS[('user'+n) as DemoUserId].nameEn,
+        tag:category.tag,relationship:category.relations[i],other_label:category.labels[i],
+      }));
+      const added=await apiRequest(first,user1.capability,'add',{listId,rows});
+      expect(added.status,JSON.stringify(added.body)).toBe(200);
+      expect(added.body.success).toBe(true);
+      expect(added.body.data).toBe(category.recipients.length);
+    }
+    const snapshot=async(page:Page,cap:string)=>{
+      const result=await apiRequest(page,cap,'snapshot');
+      expect(result.status,JSON.stringify(result.body)).toBe(200);
+      expect(result.body.success).toBe(true);
+      return result.body.data as {profileId:string;lists:Array<{id:string;name:string}>;
+        people:Array<{id:string;list_id:string;tin:string;display_name:string;
+          tag:string;relationship:string|null;other_label:string|null}>};
+    };
+    const firstRead=await snapshot(first,user1.capability);
+    expect(firstRead.profileId).toBe('user1');
+    for(const category of categories){
+      const list=lists.find(item=>item.name===category.name)!;
+      expect(firstRead.lists).toContainEqual(expect.objectContaining({id:list.id,name:list.name}));
+      const saved=firstRead.people.filter(person=>person.list_id===list.id);
+      expect(saved).toHaveLength(category.recipients.length);
+      for(let i=0;i<category.recipients.length;i++){
+        const original=expected.find(e=>e.tin===sampleTinForUserNumber(category.recipients[i]))!;
+        expect(saved).toContainEqual(expect.objectContaining({
+          tin:original.tin,display_name:original.display_name,tag:original.tag,
+          relationship:original.relationship,other_label:original.other_label,
+        }));
+      }
+    }
+    await first.goto('/?action=beneficiaries');
+    await expect(first.getByTestId('beneficiaries-page')).toBeVisible();
+    if(!await first.locator('#beneficiary-list').isVisible())
+      await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await first.locator('#beneficiary-list').click();
+    await first.locator('#beneficiary-list-menu').getByRole('button',{name:names.clients,exact:true}).click();
+    await expect(first.getByTestId('beneficiary-records')).toContainText(expected[0].display_name);
+    const search=first.getByRole('searchbox',{name:/^(Search this list|এই তালিকায় খুঁজুন)$/});
+    await search.fill(expected[0].tin!);
+    await expect(first.getByTestId('beneficiary-records')).toContainText(expected[0].display_name);
+    await expect(first.getByTestId('beneficiary-records')).not.toContainText(expected[1].display_name);
+    await search.fill('');
+    // Selection is stored through an asynchronous, capability-scoped SQL
+    // settings write. Wait for its actual server confirmation before reload;
+    // otherwise mobile browsers can abort the write mid-flight and create a
+    // false persistence failure (or hide a real server error).
+    await expect.poll(async()=>{
+      const setting=await apiRequest(first,user1.capability,'demo-settings');
+      expect(setting.status,JSON.stringify(setting.body)).toBe(200);
+      return setting.body.data?.selectedListId;
+    },{timeout:15000}).toBe(lists.find(list=>list.name===names.clients)!.id);
+    await first.reload();
+    if(!await first.locator('#beneficiary-list').isVisible())
+      await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await expect(first.locator('#beneficiary-list')).toContainText(names.clients);
+
+    // A fresh browser with User1's independently reissued capability reads
+    // the same three owned SQL lists. Do not share the first browser session.
+    const again=await (await newContext()).newPage();
+    const secondUser1=await signIn(again,'user1');
+    const reread=await snapshot(again,secondUser1.capability);
+    for(const entry of expected){
+      const list=lists.find(item=>item.name===entry.list)!;
+      expect(reread.people).toContainEqual(expect.objectContaining({
+        list_id:list.id,tin:entry.tin,tag:entry.tag,relationship:entry.relationship,
+        other_label:entry.other_label,
+      }));
+    }
+    await again.goto('/?action=beneficiaries');
+    await expect(again.getByTestId('beneficiaries-page')).toBeVisible();
+    if(!await again.locator('#beneficiary-list').isVisible())
+      await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await again.locator('#beneficiary-list').click();
+    // The open mobile picker is a fixed-position popover. It must sit above
+    // the sticky header and mobile bottom nav rather than trapping list actions.
+    await expect.poll(async()=>Number(await again.locator('.beneficiary-directory__list-filter .beneficiary-list-picker').evaluate(
+      picker=>getComputedStyle(picker).zIndex
+    ))).toBeGreaterThan(55);
+    await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click({timeout:15000});
+    await expect(again.getByTestId('beneficiary-records')).toContainText('Professional contact');
+    await expect(again.getByTestId('beneficiary-records')).toContainText('Community representative');
+
+    const foreign=await (await newContext()).newPage();
+    const user2=await signIn(foreign,'user2');
+    const foreignRead=await snapshot(foreign,user2.capability);
+    for(const entry of expected){
+      expect(foreignRead.people.some(row=>row.tin===entry.tin&&
+        lists.some(list=>list.id===row.list_id))).toBe(false);
+    }
+    for(const list of lists)expect(foreignRead.lists.some(row=>row.id===list.id)).toBe(false);
+    await foreign.goto('/?action=beneficiaries');
+    await expect(foreign.getByTestId('beneficiaries-page')).toBeVisible();
+    for(const list of lists)await expect(foreign.getByTestId('beneficiaries-page')).not.toContainText(list.name);
+    // No settled financial record is created: WS1/WS3 own associated
+    // payment/allocation fixtures and payer/recipient readback.
   }finally{
     await Promise.all(contexts.map(context=>context.close()));
   }

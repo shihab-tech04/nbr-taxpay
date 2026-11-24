@@ -1,8 +1,9 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {test,expect,type Page} from '@playwright/test';
 
 async function submitTenTaka(page:Page){
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
@@ -23,7 +24,7 @@ async function submitTenTaka(page:Page){
 }
 
 test('durable SQL simulation reconciles a delayed Office mirror without a new payment key',async({page})=>{
-  const attempts: Array<{idempotencyKey:string;sessionId:string}>=[];
+  const attempts: Array<{idempotencyKey:string;sessionId:string;amountMinor:number;service:string;details:Record<string,unknown>}>=[];
   const paymentId='11111111-2222-4333-8444-555555555555';
   await page.route('**/*.supabase.co/**',route=>route.abort());
   await page.route('**/functions/v1/demo-story1-taxpay/payments/*',async route=>{
@@ -32,13 +33,14 @@ test('durable SQL simulation reconciles a delayed Office mirror without a new pa
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       success:true,simulationOnly:true,data:{id:paymentId,status:'SIMULATED_SUCCESS',
         data:{idempotencyKey:attempts[0].idempotencyKey,sessionId:attempts[0].sessionId,
-          amountMinor:1000,service:'TAX_WITH_RETURN'}}
+          amountMinor:attempts[0].amountMinor,service:attempts[0].service,details:attempts[0].details}}
     })});
   });
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
     if(route.request().method()!=='POST')return route.abort();
-    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string};
-    attempts.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId});
+    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string;amountMinor:number;service:string;details:Record<string,unknown>};
+    attempts.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId,
+      amountMinor:input.amountMinor,service:input.service,details:input.details});
     const body=attempts.length===1
       ?{success:false,error:'OFFICE_SYNC_PENDING',requestId:paymentId,retryable:true,simulationOnly:true}
       :{success:true,id:paymentId,status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true};
@@ -57,16 +59,26 @@ test('durable SQL simulation reconciles a delayed Office mirror without a new pa
 });
 
 test('temporarily unreadable Office-pending SQL is never presented as a gateway decline',async({page})=>{
-  const requests: Array<{idempotencyKey:string;sessionId:string}>=[];
+  const requests: Array<{idempotencyKey:string;sessionId:string;service:string;amountMinor:number;details:Record<string,unknown>}>= [];
   const paymentId='33333333-2222-4333-8444-555555555555';
   await page.route('**/*.supabase.co/**',route=>route.abort());
-  await page.route('**/functions/v1/demo-story1-taxpay/payments/*',route=>
-    route.fulfill({status:503,contentType:'application/json',
-      body:JSON.stringify({success:false,error:'RECORD_UNAVAILABLE'})}));
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*',async route=>{
+    const sessionId=new URL(route.request().url()).searchParams.get('sessionId');
+    if (requests.length<2 || sessionId!==requests[0]?.sessionId) {
+      await route.fulfill({status:503,contentType:'application/json',
+        body:JSON.stringify({success:false,error:'RECORD_UNAVAILABLE'})});
+      return;
+    }
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,simulationOnly:true,
+      data:{id:paymentId,status:'SIMULATED_SUCCESS',data:requests[0]}
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
     if(route.request().method()!=='POST')return route.abort();
-    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string};
-    requests.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId});
+    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string;service:string;amountMinor:number;details:Record<string,unknown>};
+    requests.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId,
+      service:input.service,amountMinor:input.amountMinor,details:input.details});
     await route.fulfill({status:requests.length===1?503:200,contentType:'application/json',
       body:JSON.stringify(requests.length===1
         ?{success:false,error:'OFFICE_SYNC_PENDING',requestId:paymentId,retryable:true}

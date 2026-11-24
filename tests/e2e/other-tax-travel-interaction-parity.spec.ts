@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 for (const locale of ['en', 'bn'] as const) {
-  test(`Other Tax matches Travel Tax search → details → add → another sequence (${locale})`, async ({page}) => {
+  test(`Other Tax keeps search → inline name review → add → another sequence (${locale})`, async ({page}) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', {name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true}).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', {name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax'});
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -17,13 +17,14 @@ for (const locale of ['en', 'bn'] as const) {
     const tin = primary.locator('#guest-tin');
     const addName = locale === 'bn' ? 'করদাতা যোগ করুন' : 'Add taxpayer';
     const nextName = locale === 'bn' ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer';
-    await expect(primary.locator('.tin-lookup__name')).toBeHidden();
+    await expect(primary.locator('.tin-lookup__name')).toBeVisible();
+    await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
     await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await expect(primary.getByRole('button', {name: addName})).toHaveCount(0);
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
     const before = await primary.evaluate(el => el.getBoundingClientRect().height);
     await tin.focus();
-    const suggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    const suggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়' : 'Sample TIN suggestions — not NBR verified'});
     await expect(suggestions).toHaveCount(0); // Focus does not open all suggestions.
     await tin.fill('1');
     await expect(suggestions).toBeVisible();
@@ -34,34 +35,39 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(suggestions).toHaveCount(0); // Selecting must not reopen the dropdown.
     await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await primary.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
-    const detail = primary.getByTestId('searched-taxpayer-card');
-    await expect(detail).toBeVisible();
-    await expect(detail).toContainText(locale === 'bn' ? 'ইউজার 1' : 'User 1');
-    await expect(detail).toContainText('111111111111');
-    await expect(detail.getByRole('button', {name: addName})).toHaveCount(0);
+    await expect(primary.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার 1' : 'User 1');
+    await expect(primary.locator('#guest-tin')).toHaveValue('111111111111');
+    await expect(primary.getByTestId('searched-taxpayer-card')).toBeVisible();
+    await expect(primary.getByTestId('shared-taxpayer-tin-lookup').getByRole('button', {name: addName})).toHaveCount(0);
     await expect(primary.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
     await expect(primary.getByRole('button', {name: addName})).toBeVisible();
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
     await primary.getByRole('button', {name: addName}).click();
-    await expect(primary.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
+    await expect(primary.getByTestId('confirmed-taxpayer-card')).toContainText('111*********');
     await expect(modal.getByRole('button', {name: nextName})).toBeVisible();
     await modal.getByRole('button', {name: nextName}).click();
     const second = modal.getByTestId('other-tax-taxpayer').last();
     await expect(second.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
+    // A fully entered valid TIN dismisses optional suggestions so the Search
+    // action stays directly tappable even inside a 320px payment dialog.
+    await expect(modal.getByRole('listbox', {name: locale === 'bn'
+      ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়'
+      : 'Sample TIN suggestions — not NBR verified'})).toHaveCount(0);
     await second.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
-    await expect(second.getByTestId('searched-taxpayer-card')).toContainText(locale === 'bn' ? 'ইউজার 2' : 'User 2');
-    await expect(second.getByTestId('searched-taxpayer-card').getByRole('button', {name: addName})).toHaveCount(0);
+    await expect(second.locator('input[id^="other-tax-name-"]')).toHaveValue(locale === 'bn' ? 'ইউজার 2' : 'User 2');
+    await expect(second.getByTestId('searched-taxpayer-card')).toBeVisible();
+    await expect(second.getByTestId('shared-taxpayer-tin-lookup').getByRole('button', {name: addName})).toHaveCount(0);
     await expect(second.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
     await second.getByRole('button', {name: addName}).click();
-    await expect(second.getByTestId('confirmed-taxpayer-card')).toContainText('222222222222');
+    await expect(second.getByTestId('confirmed-taxpayer-card')).toContainText('222*********');
     await second.getByRole('button', {name: locale === 'bn' ? 'সম্পাদনা' : 'Edit'}).click();
     await expect(second.getByTestId('confirmed-taxpayer-card')).toHaveCount(0);
     const clear = second.getByRole('button', {name: locale === 'bn' ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'});
     await expect(clear).toBeVisible();
     await clear.click();
     const secondTin = second.locator('input[id^="other-tax-tin-"]');
-    const secondSuggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    const secondSuggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়' : 'Sample TIN suggestions — not NBR verified'});
     await expect(secondTin).toHaveValue('');
     await expect(secondTin).toBeFocused();
     await expect(secondSuggestions).toHaveCount(0); // Clear X restores focus without opening.
@@ -79,8 +85,13 @@ for (const locale of ['en', 'bn'] as const) {
     await secondTin.press('Escape');
     await expect(secondSuggestions).toHaveCount(0);
     await expect(modal).toBeVisible(); // Escape closes suggestions, never the payment modal.
+    // Reopen with a partial TIN. A completed 12-digit TIN deliberately
+    // hides suggestions; Escape at that point would close the payment modal.
+    await secondTin.press('Backspace');
     await secondTin.press('0');
+    await expect(secondSuggestions).toBeVisible();
     await secondTin.press('ArrowDown');
+    await expect(secondSuggestions.getByRole('option', {name: '000000000000'})).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(secondSuggestions).toHaveCount(0);
     await expect(secondTin).toBeFocused();
@@ -93,14 +104,14 @@ for (const locale of ['en', 'bn'] as const) {
 // beneath the field in a scrollable overlay without growing the modal.
 test('Other Tax TIN suggestions open below and remain reachable near the fixed footer', async ({page}) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', {name: 'Pay Tax', exact: true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const modal = page.getByRole('dialog', {name: 'Pay Tax'});
   await enterTaxPayService(modal, 'OTHER_TAX_PAYMENT', 'OTHER');
   const first = modal.getByTestId('other-tax-primary-taxpayer');
   const input = first.locator('#guest-tin');
   await input.evaluate(element => element.scrollIntoView({block: 'end', inline: 'nearest', behavior: 'instant'}));
   await input.focus();
-  const options = modal.getByRole('listbox', {name: 'Suggested TIN numbers'});
+  const options = modal.getByRole('listbox', {name: 'Sample TIN suggestions — not NBR verified'});
   await expect(options).toHaveCount(0);
   await input.fill('9');
   await expect(options).toBeVisible();

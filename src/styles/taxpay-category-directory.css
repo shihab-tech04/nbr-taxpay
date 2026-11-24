@@ -1,0 +1,193 @@
+/* Reuse the original grouped Payment Head editor in the consolidated walk-in flow.
+   The seven categories are compact accessible accordions, NOT a duplicate table.
+   Keep the legacy/Travel Tax UI, controls, and accounting behavior untouched. */
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 h3.other-tax-category-heading,
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcut-section h3 {
+  margin: 6px 0 6px;
+  color: #203a5c;
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+/* Keep the restored grouped Tax Head editor compact. Global responsive
+   utility rules promote .text-xs and status copy to 16px in payment modals;
+   secondary catalogue guidance is metadata, not a second heading. Scope these
+   corrections to this editor so Gift/Travel, return, receipts, and forms retain
+   their established typography and 16px required control labels. */
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-tax-head-heading {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  padding: 12px 0 4px;
+}
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-selection-status {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #526781;
+}
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] span.text-xs:not(.taxpay-type-micro) {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] > label > span.text-sm {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-catalogue-shell {
+  min-width: 0;
+  width: 100%;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-testid="other-tax-head-catalogue"] {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dce4ef;
+  border-radius: 8px;
+  background: #fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group][open] {
+  border-color: #b8cdea;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  list-style: none;
+  background: #fff;
+  color: #203a5c;
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger::-webkit-details-marker { display: none; }
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger:hover {
+  background: #f5f8fc;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group][open] > .other-tax-category-trigger {
+  background: #f2f6fc;
+  border-bottom: 1px solid #dce4ef;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger:focus-visible {
+  outline: 2px solid #2c5ead;
+  outline-offset: -3px;
+  border-radius: 9px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__name {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__count {
+  color: #526781;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__selected {
+  border: 1px solid #c9ddf2;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #eaf3fd;
+  color: #245a9c;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__error {
+  color: #ab2828;
+  font-size: 12px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__chevron {
+  flex-shrink: 0;
+  margin-left: 2px;
+  color: #3b6298;
+  transition: transform 150ms ease;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group][open] > .other-tax-category-trigger .other-tax-category-trigger__chevron {
+  transform: rotate(180deg);
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcut-section {
+  min-width: 0;
+  max-width: 100%;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  padding: 3px 3px 6px;
+  gap: 8px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  max-width: 190px;
+  padding: 6px 10px;
+  border: 1px solid #cedded;
+  border-radius: 8px;
+  background: #fff;
+  color: #2c5ead;
+  font-size: 14px;
+  font-weight: 600;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts button:is(:hover,:focus-visible) {
+  border-color: #9ebbe0;
+  background: #f2f6fc;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts button:focus-visible {
+  outline: 2px solid #2c5ead;
+  outline-offset: 2px;
+}
+@media (max-width: 420px) {
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger {
+    padding: 8px 10px;
+    gap: 4px 7px;
+  }
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__name {
+    flex-basis: 130px;
+  }
+}
+
+/* Keep the exact-head shortcuts one compact horizontal row, even when the
+   translated label is long. The original catalogue retains the full label. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-frequent-head__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: start;
+  line-height: 1.35;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-frequent-head__copy small {
+  font-size: 12px;
+  font-weight: 500;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-frequent-head__copy > span {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts button > svg {
+  flex-shrink: 0;
+}

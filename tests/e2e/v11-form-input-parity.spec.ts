@@ -1,9 +1,10 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 
 test('payer relationship is required at entry and head choice is still validated in Step 2', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
@@ -12,7 +13,7 @@ test('payer relationship is required at entry and head choice is still validated
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.getByLabel('Your name')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Sample Agent');
@@ -29,7 +30,7 @@ test('payer relationship is required at entry and head choice is still validated
   await continueToPurpose.click();
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('169 available non-return payment heads');
+  await expect(batch).toContainText('169 payment heads available');
   await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   await expect(batch.locator('#other-tax-target')).toHaveCount(0);
@@ -43,8 +44,8 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
   // A legacy v11 category is still testable through its explicit guest deep link.
   await page.goto('/?action=guest&initialCategory=PENALTY');
   const dialog = page;
-  await dialog.getByRole('radio', { name: 'My tax liability' }).check();
-  await expect(dialog.getByRole('radio', { name: 'My tax liability' })).toBeChecked();
+  await dialog.getByRole('radio', { name: 'My Tax Liability' }).check();
+  await expect(dialog.getByRole('radio', { name: 'My Tax Liability' })).toBeChecked();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#guest-notice-ref').fill('DN-2026-001187');
@@ -70,7 +71,15 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await expect(travel.locator('#travel-tax-route-1')).toBeChecked();
   await travel.getByRole('button', { name: 'Continue to review' }).click();
 
-  const submit = travel.getByRole('button', { name: 'Confirm preview payment' });
+  // Final Preview checks receipt contact before the separate payment-channel screen.
+  await expect(travel.getByRole('button', { name: 'Make Payment' })).toBeVisible();
+  await travel.getByRole('button', { name: 'Make Payment' }).click();
+  await expect(travel.getByRole('alert')).toContainText('11-digit receipt mobile number');
+  await expect(travel.locator('#travel-mobile')).toBeVisible();
+  await travel.locator('#travel-mobile').fill('01712345678');
+  await travel.getByRole('button', { name: 'Make Payment' }).click();
+  await expect(travel.getByTestId('travel-payment-channel-screen')).toBeVisible();
+  const submit = travel.getByRole('button', { name: 'Confirm sample payment' });
   await expect(submit).toBeDisabled();
   const online = travel.getByRole('button', { name: 'Pay online' });
   await expect(online).toHaveAttribute('aria-pressed', 'false');
@@ -80,6 +89,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.getByRole('radio', { name: 'bKash' }).check();
   await expect(submit).toBeDisabled();
   await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
+  // Changing the payment method requires a fresh acknowledgement.
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(travel.locator('.receipt-view__paper')).toContainText('SIM-', { timeout: 10000 });
@@ -89,7 +99,7 @@ for (const locale of ['en', 'bn'] as const) {
   test('Other Tax payer and taxpayer sections use concise grouped copy (' + locale + ')', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -101,7 +111,7 @@ for (const locale of ['en', 'bn'] as const) {
     const payer = modal.locator('.payment-form-section:has(#guest-payer-name)');
     const taxpayers = modal.locator('.payment-form-section:has([data-testid="other-tax-taxpayer-list"])');
     await expect(payer.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details');
-    await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toBeVisible();
+    await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toHaveCount(0);
     await expect(taxpayers.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'করদাতারা' : 'Taxpayers');
     await expect(payer.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);
     await expect(taxpayers.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);

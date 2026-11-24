@@ -47,21 +47,26 @@ for (const [index, service] of serviceCatalog.entries()) {
     if (service.code) await expect(active).toHaveAttribute('data-payment-service', service.code);
     else await expect(active).not.toHaveAttribute('data-payment-service');
     await expect(active.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-    await expect(active.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+    await expect(active.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
     await expect(active.locator('.public-guest-action')).toHaveCount(2);
+    await expect(active.locator('.public-hero-carousel__gift-link')).toHaveCount(0);
 
     await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(modal).toBeVisible();
-    await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
-    await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+    await expect(modal.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+    await expect(modal.locator('[data-payer-relationship]')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Close payment services' }).click();
-    await active.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+    await active.getByRole('button', { name: 'Other Tax', exact: true }).click();
+    const otherAccess = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(otherAccess.locator('.taxpayer-login-dialog')).toBeVisible();
+    await otherAccess.getByRole('button', { name: 'Walk-in Payment' }).click();
+    await page.getByTestId('other-tax-chooser').getByRole('button', {name:/Travel Tax/}).click();
     await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   });
 }
 
-test('Source Tax image never bypasses the current generic Pay Tax chooser', async ({ page }) => {
+test('Source Tax image keeps the generic Pay Tax entry', async ({ page }) => {
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await carousel.focus();
@@ -70,7 +75,6 @@ test('Source Tax image never bypasses the current generic Pay Tax chooser', asyn
   await expect(active).toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
   await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toBeVisible();
-  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toBeVisible();
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
 });

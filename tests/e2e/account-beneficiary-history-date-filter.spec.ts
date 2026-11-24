@@ -134,7 +134,7 @@ for(const language of ['en','bn'] as const){
     const firstDownloadEvent=page.waitForEvent('download');
     await exportButton.click();
     const firstDownload=await firstDownloadEvent;
-    expect(firstDownload.suggestedFilename()).toBe('Korbritto_payment_history.csv');
+    expect(firstDownload.suggestedFilename()).toBe('Sohojkor_payment_history.csv');
     const firstCsv=await readFile((await firstDownload.path())!,'utf8');
     const secondDownloadEvent=page.waitForEvent('download');
     await exportButton.click();

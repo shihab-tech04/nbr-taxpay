@@ -9,7 +9,7 @@ const themeTokens = [null, '--service-return-bg', '--service-advance-bg',
 
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
 
-test('five published images and palettes retain fixed copy and the same two payment actions', async ({ page }, info) => {
+test('five published images and palettes retain approved fixed copy and the three tax destinations', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -24,7 +24,7 @@ test('five published images and palettes retain fixed copy and the same two paym
     await expect(slide).toHaveAttribute('data-banner-kind', index === 0 ? 'intro' : 'service');
   }
   await expect(carousel.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-  await expect(carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+  await expect(carousel.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
   await carousel.focus();
   for (let index = 1; index < 5; index++) {
     await page.keyboard.press('ArrowRight');
@@ -38,8 +38,9 @@ test('five published images and palettes retain fixed copy and the same two paym
       name: info.project.name === 'desktop-1280' ? 'Tax payments, without the confusion' : 'Pay tax with confidence',
     })).toBeVisible();
     await expect(slide.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-    await expect(slide.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+    await expect(slide.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
     await expect(slide.locator('.public-guest-action')).toHaveCount(2);
+    await expect(slide.locator('.public-hero-carousel__gift-link')).toHaveCount(0);
   }
 });
 
@@ -47,21 +48,27 @@ test('initial banner request does not download hidden images before the visible 
   const requests: string[] = [];
   let releaseFirst!: () => void;
   const heldFirst = new Promise<void>(resolve => { releaseFirst = resolve; });
-  await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp/, async route => {
-    // Vite also imports the asset URL as a JavaScript module. Intercept only
-    // the image bytes; pausing the module would deadlock initial navigation.
+  // The first paint uses the checksum-verified published CMS snapshot. A
+  // subsequent SQL refresh may replace it with a newly published intro image.
+  // Both are visible artwork; neither may trigger hidden-banner downloads.
+  await page.route(/(?:taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp|branding[/]published[/]banner-(intro|return|advance|withholding|travel)[.](?:jpg|png))/, async route => {
+    // Vite also imports asset URLs as JavaScript modules; intercept only the
+    // image bytes so a deliberately held image never deadlocks navigation.
     if (route.request().resourceType() !== 'image') { await route.continue(); return; }
     const url = route.request().url();
     requests.push(url);
-    if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
+    if (/banner-intro[.]jpg|taxpay-hero-intro-v9[.]webp/.test(url)) await heldFirst;
     await route.continue();
   });
-  // A deliberately held image must not block the navigation lifecycle under test.
   await page.goto('/?action=landing', { waitUntil: 'domcontentloaded' });
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
-  await expect.poll(() => requests.length).toBe(1);
-  expect(requests[0]).toContain('taxpay-hero-intro-v9.webp');
+  await expect.poll(() => requests.length).toBeGreaterThan(0);
+  // Wait for the mocked CMS response to settle, then assert the network still
+  // contains ONLY the currently visible intro (snapshot or refreshed image).
+  await expect(carousel.locator('.public-hero-carousel__slide').first().locator('img'))
+    .toHaveAttribute('src', /taxpay-hero-intro-v9|branding[/]published[/]banner-intro/);
+  expect(requests.every(url => /banner-intro[.]jpg|taxpay-hero-intro-v9[.]webp/.test(url))).toBe(true);
   for (const index of [1, 2, 3, 4]) {
     await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
       .toHaveAttribute('data-deferred-src', new RegExp(`taxpay-hero-${illustrations[index]}`));
@@ -192,7 +199,7 @@ test('desktop keeps full-width service artwork, equal intro buttons, and a consi
     return {
       height: rect.height,
       imageWidthRatio: imageRect.width / rect.width,
-      buttonsEqual: buttons.length === 2 && Math.abs(buttons[0].width - buttons[1].width) <= 2,
+      buttonsEqual: buttons.length === 2 && buttons.every(button => Math.abs(button.width - buttons[0].width) <= 2),
       background: getComputedStyle(element).backgroundColor,
     };
   });
@@ -250,10 +257,19 @@ test('both fixed buttons keep the same two payment entry routes on every slide',
   await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(payment).toBeVisible();
+  await expect(payment.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+  await expect(payment.locator('[data-payer-relationship]')).toHaveCount(0);
   await payment.getByRole('button', { name: 'Close payment services' }).click();
-  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  await carousel.getByRole('button', { name: 'Other Tax', exact: true }).click();
+  const otherAccess = page.locator('.taxpay-modal[data-public-service="login"]');
+  await expect(otherAccess.locator('.taxpayer-login-dialog')).toBeVisible();
+  await otherAccess.getByRole('button', { name: 'Walk-in Payment' }).click();
+  await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Travel Tax/}).click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   await page.getByRole('dialog', { name: 'Travel tax' }).getByRole('button', { name: /close/i }).first().click();
+  const exit=page.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
   await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();

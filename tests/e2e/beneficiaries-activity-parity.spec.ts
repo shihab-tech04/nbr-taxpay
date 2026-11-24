@@ -60,10 +60,22 @@ for(const language of ['en','bn'] as const){
     await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
+    // Same compact heading + Search + Filter layout as Transaction History.
+    // The selected list belongs in the filter panel, not the toolbar.
+    if(page.viewportSize()!.width>=1180){
+      const toolbar=screen.locator('.beneficiary-register-frame > .taxpay-office-register__toolbar');
+      const bounds=await toolbar.boundingBox();
+      expect(bounds?.height,'Beneficiaries toolbar must match compact Transaction History height').toBeLessThanOrEqual(90);
+      await expect(toolbar.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')})).toHaveCount(0);
+      await expect(filters.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')})).toBeVisible();
+      await expect(screen.locator('.beneficiary-register-frame > .beneficiary-directory__count')).toBeHidden();
+      await expect(directory.locator('thead').getByRole('checkbox',{
+        name:t('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')})).toBeVisible();
+    }
     const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
-    await expect(rows.first()).toContainText('123456789012');
+    await expect(rows.first()).toContainText('123*********');
     await expect(rows.first()).toContainText('Neighbour');
     await expect(screen.locator('.beneficiary-directory__table.taxpay-data-table')).toBeVisible();
     const theme=await screen.locator('.beneficiary-directory__table').evaluate(el=>{
@@ -77,9 +89,22 @@ for(const language of ['en','bn'] as const){
     // Hidden desktop <thead> has zero layout height at mobile widths.
     // Assert the shared header on desktop, and the record-card touch targets on mobile.
     if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
-    else await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toHaveCSS('min-height','44px');
+    else {
+      const paymentButton=rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')});
+      const actionGroup=rows.first().locator('.taxpay-mobile-table-card__actions');
+      const [buttonBox,groupBox]=await Promise.all([paymentButton.boundingBox(),actionGroup.boundingBox()]);
+      expect(buttonBox?.height,'Mobile beneficiary actions keep a comfortable tap target').toBeGreaterThanOrEqual(48);
+      expect(buttonBox&&groupBox&&buttonBox.x>=groupBox.x-1&&buttonBox.x+buttonBox.width<=groupBox.x+groupBox.width+1,
+        'Mobile payment action remains inside its card').toBe(true);
+      await expect(paymentButton.locator('svg')).toHaveCSS('width','20px');
+    }
     expect(theme.rowBackground).not.toBe('transparent');
-    await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
+    const editAction=rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true});
+    await expect(editAction).toBeVisible();
+    if(page.viewportSize()!.width>=768){
+      await expect(editAction,'Edit must be an outlined secondary action, not a text link')
+        .toHaveCSS('border-top-width','1px');
+    }
     await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toHaveCount(0);
     await expect(rows.first().locator('button')).toHaveCount(2);
@@ -108,7 +133,7 @@ for(const language of ['en','bn'] as const){
       // The approved identity is name · final tag on one line, bare TIN underneath.
       const identity=rows.first().locator('.beneficiary-directory__person');
       await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Shihab · Neighbour');
-      await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123456789012');
+      await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123*********');
       await expect(identity).not.toContainText(t('TIN','টিআইএন')+': ');
       await expect(identity).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
       // At 1280px the complete two-action column must fit
@@ -125,7 +150,7 @@ for(const language of ['en','bn'] as const){
       expect(layout.mobileVisible).toBe(true);
       // Compact identity: Name · final tag; bare TIN on next line, without prefixes.
       await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('Shihab · Neighbour');
-      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('123456789012');
+      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('123*********');
       await expect(rows.first()).not.toContainText(t('TIN','টিআইএন')+': ');
       await expect(rows.first()).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
     }
@@ -195,6 +220,53 @@ for(const language of ['en','bn'] as const){
   });
 }
 
+for(const language of ['en','bn'] as const){
+  test('beneficiary actions stay readable across the approved responsive widths in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the full responsive matrix once per language');
+    await mountBeneficiaryLists(page);
+    await page.goto('/?action=beneficiaries&demoUser=user1&lang='+language);
+    const screen=page.getByTestId('beneficiaries-page');
+    await expect(screen).toBeVisible();
+    const searchLabel=language==='en'?'Search this list':'এই তালিকায় খুঁজুন';
+    const searchPlaceholder=language==='en'?'Name or TIN':'নাম বা টিআইএন';
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const directory=screen.getByTestId('beneficiary-records');
+      const toolbar=screen.locator('.taxpay-office-register__toolbar');
+      const search=toolbar.getByRole('searchbox',{name:searchLabel});
+      const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+      await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(searchLabel);
+      await expect(searchField).toBeVisible();
+      await expect(search).toHaveAttribute('placeholder',searchPlaceholder);
+      await expect(search).toHaveAttribute('title',searchPlaceholder);
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' search field width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' search field stays inside the register toolbar at '+width+'px').toBe(true);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' beneficiary page must not overflow at '+width+'px').toBeLessThanOrEqual(2);
+      if(width<768){
+        const card=directory.locator('ul.taxpay-mobile-table-cards:visible > li').first();
+        const actions=card.locator('.taxpay-mobile-table-card__actions');
+        const buttons=actions.getByRole('button');
+        await expect(buttons).toHaveCount(2);
+        for(const button of await buttons.all()){
+          const box=await button.boundingBox();
+          expect(box?.height,language+' action target at '+width+'px').toBeGreaterThanOrEqual(48);
+          const groupBox=await actions.boundingBox();
+          expect(box&&groupBox&&box.x>=groupBox.x-1&&box.x+box.width<=groupBox.x+groupBox.width+1,
+            language+' action clipping at '+width+'px').toBe(true);
+        }
+        await expect(actions.locator('button').nth(1).locator('svg')).toHaveCSS('width','20px');
+      }else{
+        const row=directory.locator('table.taxpay-unified-table tbody tr:visible').first();
+        await expect(row.getByRole('button',{name:language==='en'?'Make payment':'পেমেন্ট করুন'})).toBeVisible();
+        await expect(row.getByRole('button',{name:language==='en'?'Edit':'সম্পাদনা',exact:true})).toBeVisible();
+      }
+    }
+  });
+}
+
 test('User1 loads beneficiary tags for overview and Activity, not Profile or Settings',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Representative account navigation regression');
   let addressBookReads=0;
@@ -232,4 +304,87 @@ test('User1 loads beneficiary tags for overview and Activity, not Profile or Set
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect.poll(()=>addressBookReads).toBeGreaterThan(historyReads);
+});
+
+test('signed-in Activity shows new payments across assessment years immediately and after reload',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Exercise desktop and mobile in one owner-scoped test');
+  await mountBeneficiaryLists(page);
+  const capability='A'.repeat(43);
+  const make=(id:string,createdAt:string,assessmentYear:string,amountMinor:number)=>({
+    id,service:'OTHER_TAX_PAYMENT',amountMinor,status:'SIMULATED_SUCCESS',createdAt,
+    details:{assessmentYear,payerId:'user1',payerName:'Fictional account',taxpayerName:'Fictional account',taxpayerTin:'111111111111',payerMode:'SELF',lines:[]}
+  });
+  const old=make('00000000-0000-4000-8000-000000000901','2026-11-24T05:39:00Z','2025-26',4000);
+  const recent=make('00000000-0000-4000-8000-000000000902','2026-11-24T05:40:00Z','2026-27',452000);
+  const newest=make('00000000-0000-4000-8000-000000000903','2026-11-24T05:47:00Z','2026-27',6500);
+  let payments=[recent,old];
+  let readFailure=false;
+  await page.route(url=>url.pathname==='/functions/v1/demo-story1-taxpay/payments'||url.pathname.startsWith('/functions/v1/demo-story1-taxpay/payments/'),async route=>{
+    if(route.request().method()!=='GET'||route.request().headers()['x-taxpay-guest-capability']!==capability)
+      return route.fulfill({status:403,contentType:'application/json',body:'{}'});
+    if(readFailure)return route.fulfill({status:503,contentType:'application/json',body:'{}'});
+    const url=new URL(route.request().url());
+    const payment=payments.find(item=>url.pathname.endsWith('/'+item.id));
+    const data=url.pathname.endsWith('/payments')
+      ?{items:payments.map(({details,...summary})=>summary),total:payments.length}
+      :payment?{id:payment.id,status:payment.status,createdAt:payment.createdAt,
+        data:{origin:'TAXPAY_UI',service:payment.service,amountMinor:payment.amountMinor,details:payment.details}}:null;
+    return route.fulfill({status:data?200:404,contentType:'application/json',
+      body:JSON.stringify({success:Boolean(data),simulationOnly:true,data})});
+  });
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.goto('/?action=history');
+  const year=page.getByRole('combobox',{name:'Assessment year'});
+  const table=page.getByTestId('taxpayer-transaction-table');
+  const first=table.locator('tbody tr').first();
+  await expect(year).toHaveValue('all');
+  await expect(first.locator('td:nth-child(4)')).toContainText(recent.id);
+  await expect(table.locator('tbody tr')).toHaveCount(2);
+  await expect(table.getByText(/DEMO-/)).toHaveCount(0);
+  // Deliver the exact invalidation event produced after an acknowledged source
+  // write. Use mocked read responses only: no hosted payment mutation.
+  payments=[newest,recent,old];
+  await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered')));
+  await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
+  await expect(first).toContainText('65.00');
+  await expect(table.locator('tbody tr')).toHaveCount(3);
+  // Read failure must not silently reveal fixtures or claim a legitimate empty account.
+  await year.selectOption('2025-2026');
+  await expect(first.locator('td:nth-child(4)')).toContainText(old.id);
+  await expect(table.getByText(newest.id,{exact:true})).toHaveCount(0);
+  await expect(table.locator('tbody tr')).toHaveCount(1);
+  await page.reload();
+  await expect(year).toHaveValue('2025-2026');
+  await year.selectOption('all');
+  await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
+  await page.reload();
+  await expect(year).toHaveValue('all');
+  await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
+  await page.setViewportSize({width:375,height:812});
+  const cards=page.getByTestId('taxpayer-transaction-mobile-cards');
+  await expect(cards.locator(':scope > li').first()).toContainText(newest.id);
+  await expect(cards.locator(':scope > li')).toHaveCount(3);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await page.goto('/?action=journey');
+  await expect(page.getByTestId('taxpay-payment-journey')).toContainText(newest.id);
+  await expect(page.getByTestId('taxpay-payment-journey')).not.toContainText('DEMO-PAY-');
+  await page.goto('/?action=history');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toHaveAttribute('data-payment-source-state','ready');
+  readFailure=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered')));
+  await expect(page.getByTestId('user1-synthetic-workspace')).toHaveAttribute('data-payment-source-state','error');
+  await expect(page.locator('.taxpayer-transaction-panel').getByRole('alert').filter({hasText:'Recorded payments could not be verified.'})).toBeVisible();
+  await expect(page.getByText('No transactions yet.',{exact:true})).toHaveCount(0);
+  await expect(page.getByTestId('taxpayer-transaction-table')).toHaveCount(0);
+  readFailure=false;
+  await page.getByRole('button',{name:'Retry',exact:true}).click();
+  await expect(page.getByTestId('taxpayer-transaction-mobile-cards').locator(':scope > li').first()).toContainText(newest.id);
+  payments=[];
+  await page.goto('/?action=history');
+  await expect(page.getByText('No transactions yet.',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('taxpayer-transaction-table')).toHaveCount(0);
 });

@@ -62,3 +62,30 @@ test('sample correction picker never lists another payer and does not claim offi
   await expect(page.getByLabel('Current payment head',{exact:true})).toHaveValue('1-1141-0010-0101');
   await expect(page.getByRole('button',{name:'Save request locally'})).toBeVisible();
 });
+
+for(const language of ['en','bn'] as const){
+  test('payment-record search remains readable across approved widths in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the full responsive matrix once per language');
+    const label=language==='en'?'Find a payment record':'পেমেন্ট রেকর্ড খুঁজুন';
+    const placeholder=language==='en'?'Reference or TIN':'রেফারেন্স বা টিআইএন';
+    await page.goto('/?action=certificates&demoUser=user2&lang='+language);
+    const register=page.getByTestId('account-certificate-record-register');
+    await expect(register).toBeVisible();
+    const toolbar=register.locator('.taxpay-office-register__toolbar');
+    const search=toolbar.getByRole('searchbox',{name:label});
+    const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+    await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(label);
+    await expect(searchField).toBeVisible();
+    await expect(search).toHaveAttribute('placeholder',placeholder);
+    await expect(search).toHaveAttribute('title',placeholder);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' payment-record search field width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' payment-record search field containment at '+width+'px').toBe(true);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' payment-record viewport overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
+  });
+}

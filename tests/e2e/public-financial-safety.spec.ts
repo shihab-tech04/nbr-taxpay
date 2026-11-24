@@ -29,7 +29,7 @@ test('travel tax simulation cannot be presented as a real immigration challan',a
   await expect(page.getByRole('heading', {name:'Travel tax'})).toBeVisible();
   await expect(page.locator('#travel-passenger-tab-first-BD')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#travel-tax-route-results')).toHaveCount(0);
-  await expect(page.getByText(/Rates and age rules in this preview are illustrative/i).first()).toHaveCount(1);
+  await expect(page.getByText(/Calculated total/i).first()).toHaveCount(1);
   await expect(page.getByText(/government A-Challan issued/i)).toHaveCount(0);
 });
 

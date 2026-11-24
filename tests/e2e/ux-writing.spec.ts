@@ -38,9 +38,39 @@ test('tax journey has no fabricated completed legal obligations, dates or Treasu
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Full payment journey'}).click();
   await expect(page.getByRole('heading',{name:'My tax journey'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Saved payment drafts'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Payment activity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Related services',exact:true})).toHaveCount(0);
   await expect(page.getByText(/Requirement fulfilled|Section 154 requirement fulfilled|Due: 15 Dec 2025|Deadline: 30 Nov 2025|SCROLLED|ACTION DUE/)).toHaveCount(0);
+
+  const viewports=[320,375,390,768,1280,1920];
+  const copy={en:{nav:'Activity sections',journey:'My tax journey',transactions:'Transactions',
+    journeyTab:'Tax journey',corrections:'Issues & corrections',receipts:'Receipts & certificates'},
+    bn:{nav:'লেনদেনের বিভাগ',journey:'আমার কর কার্যক্রম',transactions:'লেনদেনসমূহ',
+      journeyTab:'কর যাত্রা',corrections:'সমস্যা ও সংশোধন',receipts:'রসিদ ও সনদপত্র'}};
+  for(const language of ['en','bn'] as const){
+    for(const width of viewports){
+      await page.setViewportSize({width,height:900});
+      await page.goto('/?action=journey&demoUser=user1&lang='+language);
+      await expect(page.getByRole('heading',{name:copy[language].journey})).toBeVisible();
+      const tabs=page.getByRole('navigation',{name:copy[language].nav});
+      await expect(tabs).toBeVisible();
+      for(const label of [copy[language].transactions,copy[language].journeyTab,
+        copy[language].corrections,copy[language].receipts]){
+        await expect(tabs.getByRole('button',{name:label,exact:true})).toBeVisible();
+      }
+      await expect(tabs.getByRole('button',{name:copy[language].journeyTab,exact:true}))
+        .toHaveAttribute('aria-current','page');
+      await expect(page.getByRole('heading',{name:language==='en'?'Related services':'সংশ্লিষ্ট সেবা',exact:true})).toHaveCount(0);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+      if(width===320){
+        await tabs.getByRole('button',{name:copy[language].transactions,exact:true}).click();
+        await expect(page.getByRole('navigation',{name:copy[language].nav})
+          .getByRole('button',{name:copy[language].transactions,exact:true})).toHaveAttribute('aria-current','page');
+        await page.getByRole('navigation',{name:copy[language].nav})
+          .getByRole('button',{name:copy[language].journeyTab,exact:true}).click();
+        await expect(page.getByRole('heading',{name:copy[language].journey})).toBeVisible();
+      }
+    }
+  }
 });
 
 test('public information copy is concise and bilingual while preserving payment safety',async({page},info)=>{

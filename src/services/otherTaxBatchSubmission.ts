@@ -155,7 +155,9 @@ export async function syncOtherTaxBatch(
   onProgress: (batch: OtherTaxBatch) => void,
   storage: BatchStorage = sessionStorage,
 ): Promise<OtherTaxBatch> {
-  if (initial.phase !== 'READY') throw new Error('BATCH_NOT_READY');
+  const retryingOfficeQueue = initial.phase === 'COMPLETE' &&
+    initial.items.some(item => item.officeMirrorPending === true);
+  if (initial.phase !== 'READY' && !retryingOfficeQueue) throw new Error('BATCH_NOT_READY');
   if (activeBatch) throw new Error('BATCH_IN_PROGRESS');
   activeBatch = initial.id;
   try {
@@ -163,13 +165,16 @@ export async function syncOtherTaxBatch(
     saveOtherTaxBatch(batch, storage);
     for (let index = 0; index < batch.items.length; index++) {
       const item = batch.items[index];
-      if (item.confirmedId) continue;
+      if (item.confirmedId && item.officeMirrorPending !== true) continue;
       const acknowledgement = await submit(item.payload);
       if (!UUID.test(acknowledgement.id) || acknowledgement.success !== true || typeof acknowledgement.mirrored !== 'boolean' ||
           acknowledgement.status !== 'SIMULATED_SUCCESS' || acknowledgement.simulationOnly !== true)
         throw new Error('OFFICE_SYNC_PENDING');
+      if (item.confirmedId && acknowledgement.id !== item.confirmedId)
+        throw new Error('BATCH_PAYMENT_ID_CHANGED');
       batch = { ...batch, items: batch.items.map((entry, i) => i === index
-        ? { ...entry, confirmedId: acknowledgement.id, officeMirrorPending: acknowledgement.mirrored === false } : entry) };
+        ? { ...entry, confirmedId: acknowledgement.id,
+          officeMirrorPending: acknowledgement.mirrored === false && acknowledgement.officeSyncStatus !== 'DISABLED' } : entry) };
       saveOtherTaxBatch(batch, storage);
       onProgress(batch);
     }

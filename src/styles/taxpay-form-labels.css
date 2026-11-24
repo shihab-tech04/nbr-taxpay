@@ -17,7 +17,8 @@
 .taxpay-citizen-shell .payment-head-amount__label,
 .taxpay-citizen-shell .other-tax-head-tools__label,
 .taxpay-citizen-shell .taxpay-auth-add label,
-.taxpay-citizen-shell .taxpayer-tin-lookup__field > label {
+.taxpay-citizen-shell .taxpayer-tin-lookup__field > label,
+.taxpay-citizen-shell .taxpayer-tin-lookup__field-heading > label {
   font-weight: var(--taxpay-form-label-weight);
 }
 
@@ -36,6 +37,11 @@
   column-gap: 12px;
   grid-column: 1 / -1;
   min-width: 0;
+}
+/* Keep the desktop lookup action's own box aligned to the input bottom. */
+.taxpay-citizen-shell .travel-flow__passport-action {
+  align-self: end;
+  justify-content: flex-end;
 }
 .taxpay-citizen-shell .travel-flow__passport-input {
   position: relative;
@@ -58,31 +64,25 @@
 .taxpay-citizen-shell .travel-flow__passport-action button:hover {
   background: var(--citizen-primary-light);
 }
-/* Passport suggestions are a true combobox popup: they do not increase
-   row/card/modal height. Lift the *whole row* above following form controls
-   so no label or medical checkbox can paint through the opaque popup. */
-.taxpay-citizen-shell .travel-flow__person-body:has(.travel-flow__passport-suggestions) {
-  position: relative;
-  z-index: 30;
-}
-.taxpay-citizen-shell .travel-flow__passport-row:has(.travel-flow__passport-suggestions) {
-  z-index: 30;
-}
+/* Native top-layer popup: no spacer, modal resize or parent scrolling. */
 .taxpay-citizen-shell .travel-flow__passport-suggestions {
-  position: absolute;
-  z-index: 31;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  width: 100%;
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   min-width: 0;
-  max-height: min(210px, 32vh);
+  max-width: none;
+  max-height: 210px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   background: var(--citizen-surface);
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
   box-shadow: 0 12px 26px rgb(18 42 77 / 20%);
+  color: var(--citizen-text);
+  font: inherit;
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
 .taxpay-citizen-shell .travel-flow__passport-no-results {
@@ -178,17 +178,38 @@
   font-size: 14px;
   font-weight: 500;
 }
-@media (max-width: 560px) {
+/* Keep the passport input and lookup action full-width on tablets and phones.
+   Desktop retains the approved inline input + Check Passport pairing. */
+@media (max-width: 800px) {
   .taxpay-citizen-shell .travel-flow__passport-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
-  /* On narrow screens the popup anchors under the stacked Check button,
-     never over the button, without expanding the passenger form. */
+  .taxpay-citizen-shell .travel-flow__passport-input,
+  .taxpay-citizen-shell .travel-flow__passport-action {
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
+  }
+  .taxpay-citizen-shell .travel-flow__passport-action {
+    align-self: stretch;
+  }
+  .taxpay-citizen-shell .travel-flow__passport-action button {
+    display: block;
+    align-self: stretch;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
+  }
+}
+@media (max-width: 560px) {
+  /* Preserve the approved phone-only suggestion and identity-card breakpoints. */
   .taxpay-citizen-shell .travel-flow__passport-suggestions {
     max-height: min(190px, 28vh);
   }
-  .taxpay-citizen-shell .travel-flow__passport-action button { width: 100%; }
   .taxpay-citizen-shell .travel-flow__identity-card dl {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -352,3 +373,92 @@
   color:var(--citizen-muted,#526681);cursor:pointer}
 .taxpay-citizen-shell .travel-flow__passport-clear:hover{background:var(--citizen-primary-light,#edf4ff);color:var(--citizen-primary-dark,#085587)}
 .taxpay-citizen-shell .travel-flow__passport-clear:focus-visible{outline:2px solid var(--citizen-primary,#085587);outline-offset:-2px}
+/* Passport verification follows the approved TIN lookup → information → Add pattern. */
+.taxpay-citizen-shell .travel-flow__identity-card .travel-flow__confirm-row {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .travel-flow__identity-card .travel-flow__confirm-passenger,
+.taxpay-citizen-shell .travel-passenger-workspace__entry > .travel-flow__confirm-row .travel-flow__confirm-passenger {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 16px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 9px;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-family: inherit;
+}
+.taxpay-citizen-shell .travel-flow__identity-card .travel-flow__confirm-passenger:hover,
+.taxpay-citizen-shell .travel-passenger-workspace__entry > .travel-flow__confirm-row .travel-flow__confirm-passenger:hover {
+  color: var(--citizen-primary-dark);
+  background: var(--citizen-primary-light);
+}
+@media (max-width: 560px) {
+  .taxpay-citizen-shell .travel-flow__identity-card .travel-flow__confirm-passenger,
+  .taxpay-citizen-shell .travel-passenger-workspace__entry > .travel-flow__confirm-row .travel-flow__confirm-passenger {
+    width: 100%;
+  }
+}
+
+/* Compact Travel Tax passport result follows approved TIN identity rows. */
+.taxpay-citizen-shell .travel-flow__identity-card--compact {
+  padding: 10px 16px 14px;
+  border-radius: 11px;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dl {
+  display: block;
+  margin: 0;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dl > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dt {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: inherit;
+  color: var(--citizen-muted);
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  font-family: inherit;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__identity-card--compact .travel-passenger-workspace__medical {
+  margin: 8px 0 0;
+  padding: 6px 0 0;
+  border-top: 0;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact .travel-flow__medical-note {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact .travel-flow__confirm-row {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 12px;
+}
+@media (max-width: 560px) {
+  .taxpay-citizen-shell .travel-flow__identity-card--compact dl > div {
+    grid-template-columns: minmax(90px, 40%) minmax(0, 1fr);
+    gap: 8px;
+  }
+}

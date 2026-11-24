@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 // Layout-only regression: never save data or submit a payment to hosted SQL.
 for (const width of [320, 375, 1280]) {
@@ -8,13 +8,13 @@ for (const width of [320, 375, 1280]) {
     test.skip(info.project.name !== expectedProject, 'The targeted viewport belongs to its own device project');
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/?action=taxpayer_login');
-    const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+    const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
     await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
     await login.getByLabel('Password', { exact: true }).fill('user2');
     await login.getByRole('button', { name: 'Sign In' }).click();
     await expect(login).toHaveCount(0);
     await page.goto('/?action=landing');
-    await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await enterTaxPayService(modal, 'TAX_WITH_RETURN', 'SELF');
     const footer = modal.locator('.taxpay-modal__footer');
@@ -25,6 +25,15 @@ for (const width of [320, 375, 1280]) {
     await expect(save).toBeVisible();
     await expect(resume).toHaveCount(0);
     await expect(next).toBeVisible();
+    if (width <= 375) {
+      // Payment actions must stay readable, even at the 320px breakpoint.
+      for (const action of [save, next]) {
+        const size = await action.evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+        expect(size, 'Payment footer action font must be at least 14px').toBeGreaterThanOrEqual(14);
+      }
+      expect(await footer.evaluate(node => node.scrollWidth - node.clientWidth),
+        'The larger type must not create horizontal scrolling').toBeLessThanOrEqual(2);
+    }
     await expect(modal.locator('.taxpay-modal__body .payment-form-draft-controls__actions')).toHaveCount(0);
     const geometry = async () => {
       const [left, right, bar] = await Promise.all([
@@ -67,7 +76,7 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
     const translated = language === 'bn';
     const label = translated ? 'কর পরিশোধ' : 'Pay Tax';
     await page.goto(translated ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', { name: label, exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: label });
     const header = modal.locator('.taxpay-modal__header');
     const title = header.locator('.taxpay-modal__title');
@@ -120,16 +129,16 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
 });
 
 
-test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }) => {
+test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }, testInfo) => {
   // No hosted writes: this suite explicitly runs with the backend disabled.
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
   await expect(payment.locator('.payment-form-draft-controls__save')).toBeVisible();
@@ -165,13 +174,30 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
     expect(saveBox.x).toBeGreaterThanOrEqual(dialogBox.x);
     expect(editBox.x + editBox.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width + 1);
     expect(discardBox.x + discardBox.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width + 1);
+    expect(discardBox.width, 'Discard is a full-width, intentionally grouped tertiary action').toBeGreaterThanOrEqual(dialogBox.width - 56);
+    expect(discardBox.x, 'Discard stays aligned with the primary actions').toBeGreaterThanOrEqual(dialogBox.x + 18);
     if ((page.viewportSize()?.width ?? 1280) < 420) {
       expect(editBox.y).toBeGreaterThan(saveBox.y);
     } else {
       expect(Math.abs(editBox.y - saveBox.y)).toBeLessThanOrEqual(1);
     }
   }
+  await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toHaveCSS('justify-content', 'center');
+  await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toHaveCSS('border-top-width', '1px');
   await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-' + (page.viewportSize()?.width ?? 1280) + '.png' });
+  if (testInfo.project.name === 'desktop-1280') {
+    const previousSize = page.viewportSize()!;
+    await page.setViewportSize({ width: 515, height: 354 });
+    const compactBox = await confirm.boundingBox();
+    expect(compactBox, 'the reported 515x354 viewport keeps the confirmation on screen').not.toBeNull();
+    expect(compactBox!.x).toBeGreaterThanOrEqual(12);
+    expect(compactBox!.y).toBeGreaterThanOrEqual(0);
+    expect(compactBox!.x + compactBox!.width).toBeLessThanOrEqual(503);
+    expect(compactBox!.y + compactBox!.height).toBeLessThanOrEqual(354);
+    expect(await confirm.evaluate(node => node.scrollWidth - node.clientWidth), 'no horizontal dialog overflow').toBeLessThanOrEqual(2);
+    await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-515x354.png' });
+    await page.setViewportSize(previousSize);
+  }
   await confirm.getByRole('button', { name: 'Keep editing' }).click();
   await expect(payment).toBeVisible();
 
@@ -186,14 +212,22 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
 });
 
 
-test('signed-out guest payment keeps original immediate X-close behavior', async ({ page }) => {
-  // The draft exit confirmation belongs only to eligible signed-in payments.
-  // Preserve the existing public guest journey and do not create payment data.
+test('signed-out guest payment uses the one reusable X-discard confirmation', async ({ page }) => {
+  // Account-owned payments retain Save Draft, but ALL signed-out Walk-in
+  // journeys require explicit confirmation before destroying entered fields.
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
   await expect(dialog.locator('.payment-form-draft-controls__save')).toHaveCount(0);
   await dialog.locator('.taxpay-modal__close').click();
+  const confirm = dialog.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(confirm).toBeVisible();
+  await expect(confirm.locator('button')).toHaveCount(2);
+  await confirm.getByRole('button',{name:'Keep editing'}).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await dialog.locator('.taxpay-modal__close').click();
+  await confirm.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(dialog).toHaveCount(0);
 });

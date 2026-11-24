@@ -4,6 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
 import { SiteLogo } from './SiteLogo';
+const GiftTaxServiceModal = React.lazy(() => import('../screens/GiftTaxEntryModal').then(module => ({default: module.GiftTaxEntryModal})));
 
 type CitizenAction = { route: string; en: string; bn: string; category?: string };
 const guestLinks: CitizenAction[] = [
@@ -38,7 +39,7 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, openPaymentServiceChoice } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, openPaymentServiceChoice, openAllTaxPayments } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -86,9 +87,13 @@ export function CitizenNavigation() {
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
-  const [compact, setCompact] = useState(false);
+  const [scrollCompact, setCompact] = useState(false);
+  // Signed-in taxpayers keep the approved mobile header, bottom dock and Pay
+  // action throughout scroll and account switching. Compact UI is guest-only.
+  const compact = scrollCompact && !isTaxpayer;
   const [menuOpen, setMenuOpen] = useState(false);
   const [payPopoverOpen, setPayPopoverOpen] = useState(false);
+  const [giftTaxOpen, setGiftTaxOpen] = useState(false);
   const payPopoverRef = useRef<HTMLDivElement>(null);
   const payButtonRef = useRef<HTMLButtonElement>(null);
   const [inputFocused, setInputFocused] = useState(false);
@@ -110,6 +115,10 @@ export function CitizenNavigation() {
     setCompact(false);
     navigate(route, params);
   };
+  const openAccountIncomeTax = () => {
+    if ((applicationUser || previewAccount) && currentRoute !== 'landing') openAllTaxPayments();
+    else openPaymentServiceChoice();
+  };
   const openPay = () => {
     setMenuOpen(false);
     if (isTaxpayer) setPayPopoverOpen(open => !open);
@@ -122,8 +131,14 @@ export function CitizenNavigation() {
       if (!payPopoverRef.current?.contains(event.target as Node) &&
           !payButtonRef.current?.contains(event.target as Node)) setPayPopoverOpen(false);
     };
+    // Menu-local onKeyDown already implements Arrow/Home/End and wraps focus.
+    // The document handles Escape only; a second global arrow handler would
+    // move focus twice on the same bubbling event.
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setPayPopoverOpen(false); payButtonRef.current?.focus(); }
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setPayPopoverOpen(false);
+      payButtonRef.current?.focus();
     };
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeOnEscape);
@@ -136,20 +151,28 @@ export function CitizenNavigation() {
     if (inTransaction && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
-    go('landing');
+    // Keep the approved guest home route, but for a signed-in taxpayer the
+    // wordmark returns to the existing private dashboard.
+    go(home);
   };
   useEffect(() => {
+    // An identity change can occur without a route/userRole change.
+    // Never retain the guest compact state after signing in.
     setCompact(false);
     setMenuOpen(false);
     setPayPopoverOpen(false);
-  }, [currentRoute, userRole]);
+  }, [currentRoute, userRole, isTaxpayer]);
 
   useEffect(() => {
     if (inTransaction) return;
     let last = window.scrollY;
     let accumulated = 0;
     const onScroll = () => {
-      if (inputFocusedRef.current) { accumulated = 0; setCompact(false); return; }
+      // Scrolling may collapse guest navigation, but must never replace the
+      // approved signed-in bottom dock with a corner-only navigation.
+      if (isTaxpayer || inputFocusedRef.current) {
+        accumulated = 0; setCompact(false); return;
+      }
       if (window.matchMedia('(min-width: 901px)').matches) { setCompact(false); return; }
       const next = window.scrollY;
       const delta = next - last;
@@ -185,7 +208,7 @@ export function CitizenNavigation() {
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
     };
-  }, [inTransaction]);
+  }, [inTransaction,isTaxpayer]);
 
   const overlayOpen = menuOpen;
   useEffect(() => {
@@ -304,12 +327,26 @@ export function CitizenNavigation() {
       )}
       {showPay && !overlayOpen && isTaxpayer && payPopoverOpen && (
         <div id="citizen-pay-popover" ref={payPopoverRef} role="menu"
-          className="citizen-pay-popover" aria-label={bn ? 'পরিশোধের ধরন' : 'Payment options'}>
-          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice();}}>
+          className="citizen-pay-popover" aria-label={bn ? 'পরিশোধের ধরন' : 'Payment options'}
+          onKeyDown={event => {
+            if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+            const options=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+            if (!options.length) return;
+            event.preventDefault();
+            const current=options.indexOf(document.activeElement as HTMLButtonElement);
+            const target=event.key==='Home'?0:event.key==='End'?options.length-1
+              :event.key==='ArrowDown'?(current+1)%options.length
+              :(current<=0?options.length-1:current-1);
+            options[target]?.focus();
+          }}>
+          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openAccountIncomeTax();}}>
             <Plus size={17} aria-hidden="true"/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}
           </button>
           <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
             <Route size={17} aria-hidden="true"/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}
+          </button>
+          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);setGiftTaxOpen(true);}}>
+            <CreditCard size={17} aria-hidden="true"/>{bn ? 'দানকর' : 'Gift Tax'}
           </button>
         </div>
       )}
@@ -328,11 +365,14 @@ export function CitizenNavigation() {
                   {isTaxpayer && <div>
                     <p className="citizen-dialog__section-label">{bn ? 'কর পরিশোধ' : 'Pay Tax'}</p>
                     <div className="citizen-dialog__links">
-                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice();}}>
+                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openAccountIncomeTax();}}>
                         <CreditCard size={19} aria-hidden="true"/><span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
                       </button>
                       <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
                         <Route size={19} aria-hidden="true"/><span>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
+                      </button>
+                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);setGiftTaxOpen(true);}}>
+                        <CreditCard size={19} aria-hidden="true"/><span>{bn ? 'দানকর' : 'Gift Tax'}</span>
                       </button>
                     </div>
                   </div>}
@@ -369,6 +409,9 @@ export function CitizenNavigation() {
           </div>
         </div>
       )}
+      {giftTaxOpen && <React.Suspense fallback={<p role="status">{bn ? 'দানকর লোড হচ্ছে…' : 'Loading Gift Tax…'}</p>}>
+        <GiftTaxServiceModal signedIn={isTaxpayer} onClose={() => setGiftTaxOpen(false)} />
+      </React.Suspense>}
     </>
   );
 }

@@ -40,7 +40,16 @@ export const AuthenticatedDashboardPosition: React.FC<{
     {en:'Advance income tax',bn:'অগ্রিম আয়কর'},
     {en:'Direct tax payments',bn:'সরাসরি কর পরিশোধ'},
   ];
-  const visibleYears=[...new Set([year,...years.slice(0,3)])];
+  // Do not silently omit older authorized years from the keyboard-accessible
+  // year table. The dashboard header remains the single year selector.
+  const visibleYears=[...new Set([year,...years])].filter(item=>/^20\d{2}-20\d{2}$/.test(item));
+  const openCorrections=()=>{
+    const target=document.getElementById('dashboard-correction-requests');
+    if(!target){onNavigate('corrections');return;}
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+    // Scrolling alone strands keyboard and screen-reader focus in Quick actions.
+    target.focus({preventScroll:true});
+  };
   return <div className="taxpay-auth-bento" data-testid="authenticated-dashboard-v11">
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
     <section aria-labelledby="account-quick-actions-title" className={panel}>
@@ -55,9 +64,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
           {en:'Correction inquiries',bn:'সংশোধনের অনুসন্ধান',route:'corrections'},
           {en:'Payment history',bn:'পেমেন্টের ইতিহাস',route:'history'},
         ] as const).map(item=><button key={item.route} type="button" className={action+' justify-between'}
-          onClick={()=>item.route==='corrections'
-            ? document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'})
-            : onNavigate(item.route)}>
+          onClick={()=>item.route==='corrections'?openCorrections():onNavigate(item.route)}>
           {tr(item.en,item.bn)}<ArrowRight size={15} aria-hidden="true"/>
         </button>)}
       </div>

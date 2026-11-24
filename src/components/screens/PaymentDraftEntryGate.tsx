@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, FileCheck2, FolderOpen } from 'lucide-react';
 import {
   listPaymentFormDrafts, type PaymentDraftActor, type PaymentDraftService,
@@ -11,6 +11,7 @@ type Props = {
   actor: PaymentDraftActor | null;
   ownerKey: string;
   enabled: boolean;
+  alwaysShowStart?: boolean;
   mode: DraftEntryMode;
   onModeChange: (mode: DraftEntryMode) => void;
   language: 'en' | 'bn';
@@ -23,6 +24,7 @@ type Props = {
 type Catalog = {
   ownerKey: string;
   status: 'loading' | 'ready' | 'error';
+  generation: number;
   rows: PaymentFormDraft[];
 };
 
@@ -45,12 +47,21 @@ export function assertResumablePaymentDraft(draft: PaymentFormDraft, language: '
  * A fresh payment still uses the original, unchanged payer/service selector.
  */
 export function PaymentDraftEntryGate({
-  actor, ownerKey, enabled, mode, onModeChange, language, serviceLabel, onResume, onBlockingChange, children,
+  actor, ownerKey, enabled, alwaysShowStart=false, mode, onModeChange, language, serviceLabel, onResume, onBlockingChange, children,
 }: Props) {
   const bn = language === 'bn';
   const tr = (en: string, bengali: string) => bn ? bengali : en;
   const [refresh, setRefresh] = useState(0);
-  const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', status: 'loading', rows: [] });
+  // A -> B -> A owner transitions cannot make a first-A network completion
+  // valid again. Include the gate's active/inactive state in the request scope.
+  const requestScope = ownerKey + ':' + String(enabled);
+  const requestRef = useRef({ scope: requestScope, generation: 0 });
+  if (requestRef.current.scope !== requestScope)
+    requestRef.current = { scope: requestScope, generation: requestRef.current.generation + 1 };
+  const requestGeneration = requestRef.current.generation;
+  const stillCurrent = () => requestRef.current.scope === requestScope &&
+    requestRef.current.generation === requestGeneration;
+  const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', generation: -1, status: 'loading', rows: [] });
   const [resuming, setResuming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,20 +69,24 @@ export function PaymentDraftEntryGate({
     let active = true;
     onModeChange('choice');
     setError(null);
-    setCatalog({ ownerKey, status: 'loading', rows: [] });
+    setResuming(null);
+    setCatalog({ ownerKey, generation: requestGeneration, status: 'loading', rows: [] });
     if (!enabled || !actor) return () => { active = false; };
     void listPaymentFormDrafts(actor).then(rows => {
-      if (active) setCatalog({ ownerKey, status: 'ready', rows });
+      if (active && stillCurrent()) setCatalog({ ownerKey, generation: requestGeneration, status: 'ready', rows });
     }).catch(() => {
-      if (active) setCatalog({ ownerKey, status: 'error', rows: [] });
+      if (active && stillCurrent()) setCatalog({ ownerKey, generation: requestGeneration, status: 'error', rows: [] });
     });
     return () => { active = false; };
     // The stable ownerKey identifies the actor; a render does not reload the list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerKey, enabled, refresh, onModeChange]);
 
-  const ready = catalog.ownerKey === ownerKey && catalog.status === 'ready';
-  const blocking = enabled && mode !== 'new' && (!ready || catalog.rows.length > 0);
+  const catalogCurrent = catalog.ownerKey === ownerKey && catalog.generation === requestGeneration;
+  const ready = catalogCurrent && catalog.status === 'ready';
+  // During an owner transition never show an earlier account's payer choices
+  // or cached draft rows, even while the parent still has mode='new'.
+  const blocking = enabled && (!catalogCurrent || (mode !== 'new' && (!ready || catalog.rows.length > 0 || alwaysShowStart)));
 
   useEffect(() => { onBlockingChange(blocking); }, [blocking, onBlockingChange]);
 
@@ -82,22 +97,23 @@ export function PaymentDraftEntryGate({
     try {
       // Never trust an earlier client snapshot; re-read the account-owned draft.
       const rows = await listPaymentFormDrafts(actor);
+      if (!stillCurrent()) return;
       const latest = rows.find(item => item.id === draft.id);
       if (!latest) throw new Error(tr('This draft is no longer available. Reload the list.', 'এই খসড়াটি আর পাওয়া যাচ্ছে না। তালিকা নতুন করে লোড করুন।'));
       assertResumablePaymentDraft(latest, language);
-      setCatalog({ ownerKey, status: 'ready', rows });
+      setCatalog({ ownerKey, generation: requestGeneration, status: 'ready', rows });
       onResume(latest);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : tr('Draft could not be opened.', 'খসড়া খোলা যায়নি।'));
+      if (stillCurrent()) setError(reason instanceof Error ? reason.message : tr('Draft could not be opened.', 'খসড়া খোলা যায়নি।'));
     } finally {
-      setResuming(null);
+      if (stillCurrent()) setResuming(null);
     }
   };
 
   if (!blocking) return <>{children}</>;
 
   return <div className="space-y-3" data-testid="account-draft-entry">
-    {catalog.ownerKey !== ownerKey || catalog.status === 'loading' ? (
+    {!catalogCurrent || catalog.status === 'loading' ? (
       <p role="status" className="py-6 text-sm text-taxpay-muted">
         {tr('Checking your saved payment drafts…', 'আপনার সংরক্ষিত পেমেন্ট খসড়া খোঁজা হচ্ছে…')}
       </p>
@@ -129,7 +145,7 @@ export function PaymentDraftEntryGate({
             </span>
             <ArrowRight className="tax-service-choice__access-arrow" size={18} strokeWidth={1.9} aria-hidden="true" />
           </button>
-          <button type="button" data-draft-entry-option="RESUME" className="tax-service-choice__card" onClick={() => onModeChange('list')}>
+          <button type="button" data-draft-entry-option="RESUME" disabled={catalog.rows.length===0} className="tax-service-choice__card" onClick={() => onModeChange('list')}>
             <span className="tax-service-choice__icon"><FolderOpen size={23} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className="tax-service-choice__copy">
               <strong>{tr('Continue from draft', 'সংরক্ষিত খসড়া থেকে চালিয়ে যান')}</strong>

@@ -13,7 +13,7 @@ test('desktop Pay Tax is an overlay that keeps navigation positions stable and c
  await trigger.click();
  const menu=rail.getByRole('menu',{name:'Payment options'});
  await expect(menu).toBeVisible();
- await expect(menu.getByRole('menuitem')).toHaveCount(2);
+ await expect(menu.getByRole('menuitem')).toHaveText(['Pay Tax','Travel Tax','Gift Tax']);
  await expect(menu).toHaveCSS('position','absolute');
  const after=await overview.boundingBox();
  expect(before).not.toBeNull();
@@ -35,7 +35,7 @@ test('desktop Travel Tax is a different payment selection and outside click dism
  await page.goto(demo);
  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
- await page.getByRole('heading',{name:'Overview'}).click();
+ await page.getByRole('heading',{name:'Your tax overview'}).click();
  await expect(rail.locator('#taxpayer-pay-menu')).toHaveCount(0);
  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
  await rail.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();
@@ -47,7 +47,7 @@ test('desktop Travel Tax is a different payment selection and outside click dism
  await expect(travel.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
 });
 
-test('mobile split Pay popup keeps approved dock visible and exposes both journeys',async({page},info)=>{
+test('mobile split Pay popup keeps approved dock visible and exposes all three journeys',async({page},info)=>{
  test.skip(info.project.name==='desktop-1280','Mobile only');
  await page.goto(demo);
  const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
@@ -56,7 +56,7 @@ test('mobile split Pay popup keeps approved dock visible and exposes both journe
  const menu=page.getByRole('menu',{name:'Payment options'});
  await expect(menu).toBeVisible();
  await expect(menu.getByRole('menuitem',{name:'Pay Tax',exact:true})).toBeVisible();
- await expect(menu.getByRole('menuitem',{name:'Travel Tax',exact:true})).toBeVisible();
+ await expect(menu.getByRole('menuitem')).toHaveText(['Pay Tax','Travel Tax','Gift Tax']);
  await expect(dock).toBeVisible();
  const rect=await menu.boundingBox();
  expect(rect).not.toBeNull();
@@ -73,7 +73,7 @@ test('mobile split Pay popup keeps approved dock visible and exposes both journe
 
 test('Bengali labels and dashboard correction details stay on the account overview',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','Single responsive language check');
- await page.goto(demo+'&lang=bn');
+ await page.goto(demo+'&qaScenario=1&lang=bn');
  const section=page.locator('#dashboard-correction-requests');
  await expect(section).toBeVisible();
  await expect(section.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
@@ -92,7 +92,7 @@ test('Bengali Travel Tax menu enters passengers directly, not the income-tax pay
  await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(travel.locator('[data-payer-relationship]')).toHaveCount(0);
  await expect(travel.locator('.tax-service-choice__selected-service')).toHaveCount(0);
- await expect(travel.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
+ await expect(travel.locator('.taxpay-modal__title')).toHaveText('যাত্রীর তথ্য');
  await expect(travel.locator('.travel-flow')).toBeVisible();
  await expect(travel.locator('.tax-service-choice--travel')).toHaveCount(0);
 });

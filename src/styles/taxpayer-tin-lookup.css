@@ -3,15 +3,18 @@
 .taxpayer-tin-lookup__field[hidden]{display:none}
 .taxpayer-tin-lookup--card{background:var(--color-taxpay-surface,#fff);border:1px solid #dce5f0;border-radius:10px;padding:14px}
 .taxpayer-tin-lookup__heading{margin:0;color:#172b4d;font-size:14px;font-weight:750;line-height:1.5}
-.taxpayer-tin-lookup__field{display:grid;align-content:start;gap:6px;min-width:0}
-.taxpayer-tin-lookup__field>label{font-size:14px;font-weight:650;color:#334b6c;line-height:1.45}
-.taxpayer-tin-lookup__search-row{display:flex;align-items:stretch;gap:8px;min-width:0;width:100%}
-.taxpayer-tin-lookup__tin-entry{position:relative;flex:1 1 0;min-width:0;display:flex}
+.taxpayer-tin-lookup__field{display:grid;align-content:start;gap:6px;min-width:0;width:100%}
+.taxpayer-tin-lookup__field-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;min-height:28px}
+.taxpayer-tin-lookup__field-heading>label{min-width:0;font-size:14px;font-weight:650;color:#334b6c;line-height:1.45}
+.taxpayer-tin-lookup__search-row{display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:stretch;gap:8px;min-width:0;width:100%}
+.taxpayer-tin-lookup__tin-entry{position:relative;min-width:0;width:100%;display:flex}
 .taxpayer-tin-lookup input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;font:inherit;font-size:14px;color:#172b4d;background:var(--color-taxpay-surface,#fff)}
 .taxpayer-tin-lookup__tin-entry>input{padding-right:48px}
 .taxpayer-tin-lookup input[readonly]{background:var(--color-taxpay-surface-subtle,#f7f9fc);cursor:default}
 .taxpayer-tin-lookup input:focus-visible{outline:2px solid var(--color-taxpay-primary,#2c5ead);outline-offset:2px}
-.taxpayer-tin-lookup__clear{position:absolute;right:1px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:44px;background:transparent;border:0;border-radius:8px;color:var(--color-taxpay-muted,#5f6b7a);cursor:pointer}
+.taxpayer-tin-lookup__clear{flex:none;position:static;transform:none;display:grid;place-items:center;
+width:28px;height:28px;min-width:28px;background:transparent;border:0;border-radius:8px;
+color:var(--color-taxpay-muted,#5f6b7a);cursor:pointer}
 .taxpayer-tin-lookup__clear:hover{color:var(--color-taxpay-primary,#2c5ead);background:var(--color-taxpay-light,#eaf2ff)}
 .taxpayer-tin-lookup__clear:focus-visible{outline:2px solid var(--color-taxpay-primary,#2c5ead);outline-offset:-3px}
 .taxpayer-tin-lookup__search{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;min-width:102px;min-height:44px;border:0;border-radius:9px;padding:9px 13px;font-size:14px;font-weight:700;color:white;background:var(--color-taxpay-primary,#2c5ead);cursor:pointer}
@@ -20,7 +23,7 @@
 .taxpayer-tin-lookup__search:focus-visible{outline:2px solid var(--color-taxpay-dark,#1e4484);outline-offset:2px}
 .taxpayer-tin-lookup__field p[role="status"]{font-size:14px;margin:0}
 .taxpay-taxpayer-row__fields--shared{grid-template-columns:minmax(0,1fr)}
-.taxpay-taxpayer-row__fields--shared>.taxpayer-tin-lookup{min-width:0}
+.taxpay-taxpayer-row__fields--shared>.taxpayer-tin-lookup{min-width:0;width:100%}
 @media(max-width:360px){.taxpayer-tin-lookup__field[hidden]{display:none}
 .taxpayer-tin-lookup--card{padding:12px}.taxpayer-tin-lookup__search{min-width:88px;padding-inline:9px}.taxpayer-tin-lookup__search-row{gap:6px}}
 
@@ -40,3 +43,183 @@
 .taxpayer-tin-lookup__suggestions [role="option"]:hover,
 .taxpayer-tin-lookup__suggestions [role="option"]:focus-visible{background:#edf4ff;outline-offset:-2px}
 .taxpayer-tin-lookup__no-results{color:#813040}
+
+/* Master TIN search presentation: identical 12 boxes across taxpayer flows.
+   The single real input remains accessible, pasteable, keyboard-operable, and
+   controlled by each host's existing validation and search callback. */
+.taxpayer-tin-lookup__tin-entry--segmented {
+  position:relative;display:grid;grid-template-columns:repeat(var(--taxpay-tin-digit-count,12),minmax(0,1fr));
+  gap:4px;min-width:0;width:100%;height:46px;
+}
+.taxpayer-tin-lookup__tin-entry--segmented > span {
+  display:flex;align-items:center;justify-content:center;min-width:0;
+  border:1px solid #d0d9e3;border-radius:7px;background:#fff;
+  color:#17345a;font-size:clamp(12px,1.2vw,15px);font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.taxpayer-tin-lookup__tin-entry--segmented > span.is-filled,
+.taxpayer-tin-lookup__tin-entry--segmented:focus-within > span {border-color:#bfcbd8}
+.taxpayer-tin-lookup__tin-entry--segmented > input,
+.taxpayer-tin-lookup__tin-entry--segmented > input[readonly] {
+  position:absolute;inset:0;z-index:1;width:100%;height:100%;min-height:0;
+  padding:0;border:0;outline:0;opacity:0;cursor:text;
+}
+.taxpayer-tin-lookup__tin-entry--segmented > input:focus-visible {outline:0}
+.taxpayer-tin-lookup__tin-entry--segmented:focus-within {
+  outline:2px solid #085587;outline-offset:2px;border-radius:8px;
+}
+/* Scoped, exact-digit focus for the unified Walk-in editor; other TIN journeys stay unchanged. */
+.taxpayer-tin-lookup__tin-entry--direct-edit:focus-within { outline:0; }
+.taxpayer-tin-lookup__tin-entry--direct-edit:focus-within > span.is-active {
+  border-color:#2c5ead;
+  background:#eaf2ff;
+  box-shadow:0 0 0 2px #2c5ead;
+  color:#143c79;
+}
+/* Preserve the tested Clear action without covering the final TIN digits. */
+.taxpayer-tin-lookup__search,
+.taxpayer-tin-lookup__search:disabled {
+  min-height:46px;border:1px solid #e1e5eb;background:#f5f6f8;
+  color:#758294;opacity:1;
+}
+.taxpayer-tin-lookup__search.is-ready:not(:disabled) {
+  background:#fff;color:#264761;border-color:#b8c8d7;
+}
+.taxpayer-tin-lookup__search.is-ready:hover:not(:disabled) {
+  background:#f3f7fa;color:#264761;border-color:#8ca4b9;
+}
+.taxpayer-tin-lookup__search:focus-visible {outline:2px solid #085587}
+@media(max-width:480px) {
+  .taxpayer-tin-lookup__search-row {grid-template-columns:minmax(0,1fr)}
+  .taxpayer-tin-lookup__search {width:100%}
+  .taxpayer-tin-lookup__tin-entry--segmented {gap:3px;height:44px}
+  .taxpayer-tin-lookup__tin-entry--segmented > span {font-size:12px;border-radius:5px}
+}
+
+/* One approved search-result surface across Taxpayer, Beneficiaries and Authorization.
+   All original identity/permission decisions stay with the owning screen. */
+.taxpayer-tin-lookup__result-card {
+  display:grid;min-width:0;gap:0;width:100%;margin-top:12px;
+  padding:9px 15px 12px;border:1px solid #c8d9ec;border-radius:12px;background:#fff;
+  font-family:inherit;color:#193956;
+}
+.taxpayer-tin-lookup__result-card dl {margin:0;min-width:0}
+.taxpayer-tin-lookup__result-card dl>div {
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:39px;border-bottom:1px solid #ecf0f5;
+}
+.taxpayer-tin-lookup__result-card dt {font-size:12px;color:#63758f;font-weight:400}
+.taxpayer-tin-lookup__result-card dd {
+  margin:0;text-align:right;font-size:13px;font-weight:650;color:#193956;
+  overflow-wrap:anywhere;
+}
+.taxpayer-tin-lookup__result-card .unified-v5-profile-name {
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:2px;
+}
+.taxpayer-tin-lookup__result-card .unified-v5-profile-name>span {
+  font-weight:600;color:#4d5d70;
+}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__masked {
+  display:flex;align-items:center;justify-content:flex-end;gap:7px;
+  font-variant-numeric:tabular-nums;
+}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__masked button {
+  width:29px;height:29px;min-width:29px;display:grid;place-items:center;padding:0;
+  border:1px solid #dbe3ef;border-radius:7px;background:#f5f8fc;color:#3b5c89;
+  cursor:pointer;
+}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__masked button:focus-visible {
+  outline:2px solid #085587;outline-offset:2px;
+}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__add {
+  min-height:43px;margin-top:10px;padding:10px 16px;display:inline-flex;
+  width:max-content;max-width:100%;align-items:center;justify-content:center;gap:7px;
+  border:1px solid #b8c8d7;border-radius:9px;background:#fff;color:#264761;
+  font-size:13px;font-weight:650;cursor:pointer;
+}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__add:hover:not(:disabled) {background:#f3f7fa}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__add:disabled {opacity:.55;cursor:not-allowed}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__add:focus-visible {
+  outline:2px solid #085587;outline-offset:2px;
+}
+.taxpayer-tin-lookup__result-card .unified-taxpayer-workspace__error {
+  margin:8px 0 0;color:#ad243e;font-size:13px;
+}
+/* Preserve the legacy Other Tax confirmation selector, not its old separate visual.
+   Shared preview owns its border and its Add action. */
+.taxpay-taxpayer-row__fields--shared > .taxpay-taxpayer-row__confirm-add {
+  border-top:0;padding-top:0;
+}
+.taxpay-taxpayer-row__confirm-add > .taxpayer-tin-lookup__result-card {
+  margin-top:0;
+}
+@media(max-width:420px) {
+  .taxpayer-tin-lookup__result-card {padding:10px 12px}
+  .taxpayer-tin-lookup__result-card dl>div {gap:8px}
+  .taxpayer-tin-lookup__result-card dd {max-width:66%}
+}
+
+/* Final master contract: the legacy .tin-lookup__row and embedded payment
+   selectors must never defeat responsive TIN slots. Explicitly outrank both. */
+.taxpayer-tin-lookup.taxpayer-tin-lookup .taxpayer-tin-lookup__search-row {
+  display:grid;grid-template-columns:minmax(0,1fr) max-content;
+  align-items:stretch;min-width:0;width:100%;gap:8px;
+}
+.taxpayer-tin-lookup .tin-lookup__result {
+  display:block;min-height:0;margin:4px 0 0;padding:0;
+  border:0;border-radius:0;background:transparent;
+  color:var(--citizen-muted,#526681);
+}
+.taxpayer-tin-lookup .tin-lookup__result>p {
+  margin:0;font-size:14px;line-height:1.5;
+}
+@media(max-width:650px) {
+  .taxpayer-tin-lookup.taxpayer-tin-lookup .taxpayer-tin-lookup__search-row,
+  .payment-flow-embedded__identity .taxpayer-tin-lookup.taxpayer-tin-lookup .taxpayer-tin-lookup__search-row {
+    grid-template-columns:minmax(0,1fr);gap:10px;
+  }
+  .taxpayer-tin-lookup.taxpayer-tin-lookup .taxpayer-tin-lookup__search {
+    width:100%;min-height:44px;
+  }
+}
+@media(max-width:420px) {
+  /* Six readable cells per row instead of twelve 9px-wide slivers on phones.
+     One real accessible input still drives all twelve cells. */
+  .taxpayer-tin-lookup .taxpayer-tin-lookup__tin-entry--segmented {
+    display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+    grid-auto-rows:40px;height:auto;gap:5px;
+  }
+  .taxpayer-tin-lookup .taxpayer-tin-lookup__tin-entry--segmented>span {
+    min-width:0;min-height:40px;font-size:14px;
+  }
+}
+
+/* Approved Search is an OUTLINED control, never an unframed text action.
+   Button resets in the embedded legacy payment shell can otherwise erase its
+   one-pixel border; pin both ready and disabled states to the shared master. */
+.taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search.is-ready:not(:disabled) {
+  border:1px solid #b8c8d7 !important;
+  background:#fff !important;
+  color:#264761 !important;
+  border-radius:9px;
+}
+.taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search:not(.is-ready),
+.taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search:disabled {
+  border:1px solid #e1e5eb !important;
+  background:#f5f6f8 !important;
+  color:#758294 !important;
+  border-radius:9px;
+}
+
+/* The original TaxPay @media(max-width:420px) selector hides the legacy
+   Search icon.  The approved master Search always shows the magnifier,
+   including on 320/375/390/420px devices.  Leave unrelated legacy inputs
+   and their responsiveness unchanged. */
+@media (max-width:420px) {
+  .taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search > svg {
+    display:block !important;
+    width:17px;
+    height:17px;
+    flex-shrink:0;
+  }
+}

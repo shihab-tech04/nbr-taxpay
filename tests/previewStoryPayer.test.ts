@@ -10,9 +10,9 @@ function payment():StoryPaymentInput {
     service:'TAX_WITH_RETURN',
     amountMinor:1000,
     details:{payerMode:'SELF',taxpayerTin:'123456789012',payerId:'untrusted-form-id',
-      lines:[{headId:1,economicCode:'1111101',totalAmount:10}],
-      assessmentYear:'2025-2026',
-      receiptSnapshot:{isSimulatedDemo:true}}
+      lines:[{headId:125,economicCode:'74',totalAmount:10}],
+      assessmentYear:'2025-26',
+      receiptSnapshot:{isSimulatedDemo:true,items:[{headId:125,totalAmount:10}]}}
   };
 }
 test('signed-in preview simulation binds the payer to server-issued profile identity, not form or beneficiary',()=>{

@@ -5,10 +5,12 @@ import {useTaxState} from '../../services/taxState';
 import { taxpayerBrandName } from '../../config/brand';
 
 type Message = {from:'user'|'assistant';value:string};
-export function PublicHelpChat(){
+type HelpProps={externalOpenRequest?:number;externalTrigger?:React.RefObject<HTMLElement|null>;hideLauncher?:boolean};
+export function PublicHelpChat({externalOpenRequest=0,externalTrigger,hideLauncher=false}:HelpProps={}){
  const {language,navigate}=useTaxState();
  const bn=language==='bn';
  const [open,setOpen]=useState(false);
+ useEffect(()=>{if(externalOpenRequest>0)setOpen(true);},[externalOpenRequest]);
  const [mobile,setMobile]=useState(false);
  const [input,setInput]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
@@ -31,6 +33,7 @@ export function PublicHelpChat(){
  const last=useRef<HTMLDivElement>(null);
  const launchRef=useRef<HTMLButtonElement>(null);
  const panelRef=useRef<HTMLElement>(null);
+ const wasOpen=useRef(false);
  useEffect(()=>{
   const query=window.matchMedia('(max-width: 650px)');
   const update=()=>setMobile(query.matches);
@@ -59,7 +62,11 @@ export function PublicHelpChat(){
   document.addEventListener('keydown',trap);
   return ()=>{document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',trap);};
  },[open,mobile]);
- const closePanel=()=>{setOpen(false);launchRef.current?.focus();};
+ const closePanel=()=>setOpen(false);
+ useEffect(()=>{
+  if(!open&&wasOpen.current){if(hideLauncher)externalTrigger?.current?.focus();else launchRef.current?.focus();}
+  wasOpen.current=open;
+ },[open,hideLauncher,externalTrigger]);
  useEffect(()=>{
   if(!open)return;
   const onKeyDown=(event:KeyboardEvent)=>{
@@ -72,17 +79,31 @@ export function PublicHelpChat(){
  const respond=(text:string)=>{
   const query=text.trim();
   if(!query)return;
-  const normalized=query.toLowerCase();
-  const terms=GUIDE_CONTENT.flatMap(group=>[{
-   keywords:[group.en,group.bn,...group.faqs.flatMap(x=>x.q)],
-   answer:group.faqs[0]?.a[bn?1:0] || group.description[bn?1:0]
-  }]);
-  const best=terms.find(row=>row.keywords.some(k=>normalized.includes(k.toLowerCase())||k.toLowerCase().includes(normalized)));
-  const answer=best?.answer||(bn?'পেমেন্ট, রসিদ বা ভ্রমণ কর সম্পর্কে প্রশ্ন করুন। বিস্তারিত User guide-এ দেখুন।':'Ask about payment, receipts or travel tax. See the user guide for more.');
+  const normalize=(value:string)=>value.toLocaleLowerCase()
+   .replace(/[?!।.,]+/g,' ').replace(/\s+/g,' ').trim();
+  const normalized=normalize(query);
+  // A one-letter or unrelated message is not permission to return an
+  // arbitrary tax/legal FAQ. Match maintained full questions or specific text.
+  const matches=(keywords:string[])=>keywords.some(keyword=>{
+   const term=normalize(keyword);
+   return term===normalized || (normalized.length>=5 && (
+     term.includes(normalized) || (term.length>=8 && normalized.includes(term))));
+  });
+  const faqAnswers=GUIDE_CONTENT.flatMap(group=>group.faqs.map(faq=>({keywords:faq.q,answer:faq.a[bn?1:0]})));
+  const matchedFaq=faqAnswers.find(row=>matches(row.keywords));
+  // Answer a known guide instruction with its current device-specific steps,
+  // rather than pretending its first FAQ addresses a different question.
+  const stepAnswers=GUIDE_CONTENT.flatMap(group=>group.steps.map(step=>({
+   keywords:step.title,answer:step[mobile?'mobile':'web'][bn?1:0]
+  })));
+  const matchedStep=stepAnswers.find(row=>matches(row.keywords));
+  const matchedTopic=GUIDE_CONTENT.find(group=>matches([group.en,group.bn]));
+  const answer=matchedFaq?.answer || matchedStep?.answer || matchedTopic?.description[bn?1:0] ||
+   (bn?'পেমেন্ট, রসিদ বা ভ্রমণ কর সম্পর্কে প্রশ্ন করুন। বিস্তারিত User guide-এ দেখুন।':'Ask about payment, receipts or travel tax. See the user guide for more.');
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };
- return <aside className="public-help-widget" aria-label={bn?'সহজকর সহায়তা':'Sohojkor help'}>
+ return <aside data-home2-hidden={hideLauncher||undefined} className="public-help-widget" aria-label={bn?'সহজকর সহায়তা':'Sohojkor help'}>
   {open&&<div className="public-help-backdrop" aria-hidden="true" onClick={closePanel}/>} 
   {open&&<section ref={panelRef} tabIndex={-1} id="public-help-panel" className="public-help-panel" role="dialog" aria-modal={mobile} aria-labelledby="public-help-title">
    <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
@@ -103,10 +124,11 @@ export function PublicHelpChat(){
     <input id="taxpay-help-message" value={input} onChange={e=>setInput(e.target.value)} placeholder={bn?'প্রশ্ন লিখুন':'Ask a question'} maxLength={250}/>
     <button type="submit" disabled={!input.trim()||(!GUIDE_CONTENT.length&&!guideLoadError)} aria-label={bn?'পাঠান':'Send'}><Send size={17}/></button>
    </form>
-   <a className="public-help-more" href={import.meta.env.BASE_URL+'?action=user_guide&lang='+language}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</a>
+   <a className="public-help-more" href={import.meta.env.BASE_URL+'?action=user_guide&lang='+language+
+     (selectedTopic ? '&category='+encodeURIComponent(selectedTopic) : '')}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</a>
    <p className="public-help-limit">{bn?'স্বয়ংক্রিয় আইন বা কর হিসাব নয়।':'Not tax advice or a calculation service.'}</p>
   </section>}
-  <button ref={launchRef} className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
-    aria-controls="public-help-panel" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<><X className="public-help-launch__close" size={23}/><MessageCircle className="public-help-launch__chat" size={23}/></>:<MessageCircle size={23}/>}<span>{bn?'সহায়তা':'Help'}</span></button>
+  {!hideLauncher&&<button ref={launchRef} className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
+    aria-controls="public-help-panel" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<><X className="public-help-launch__close" size={23}/><MessageCircle className="public-help-launch__chat" size={23}/></>:<MessageCircle size={23}/>}<span>{bn?'সহায়তা':'Help'}</span></button>}
  </aside>;
 }

@@ -1,5 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
-import {enterTaxPayService} from './pay-tax-entry-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 type Status='ACTIVE'|'PENDING'|'EXPIRED'|'REVOKED';
 function authorization(taxpayerId:'user2'|'user3',status:Status,activeUntil:number|null=null){
@@ -47,13 +48,13 @@ async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT'){
     return route.fallback();
   });
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,service,'OTHER');
   return dialog;
@@ -67,8 +68,8 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await expect(dialog.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(1);
   await expect(picker.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(0);
   await expect(picker.getByRole('button',{name:'Family'})).toHaveAttribute('aria-expanded','true');
-  await expect(picker).toContainText('2222222222222');
-  await expect(picker).toContainText('3333333333333');
+  await expect(picker).toContainText('222**********');
+  await expect(picker).toContainText('333**********');
   await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
   await expect(dialog.locator('#guest-tin')).toHaveCount(0);
@@ -210,7 +211,7 @@ test('unavailable guest capability blocks payment with actionable recovery guida
 
 test('guest input remains editable and limited to twelve digits',async({page})=>{
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   const tin=dialog.locator('#guest-tin');
@@ -227,6 +228,7 @@ test('signed-in facilitated payments produce one combined receipt with linked al
   await mockSavedBeneficiaries(page);
   await mockAuthorizations(page, null);
   const submitted: Array<Record<string, any>> = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({

@@ -19,23 +19,29 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await homeSearch.fill('NO-SUCH-DEMO-REFERENCE-12345');
  await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
  await expect(page).toHaveURL(/action=verify/);
- await expect(page.getByRole('heading',{name:'No matching record'})).toBeVisible();
+ await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'No matching record'})).toHaveCount(0);
  await page.goto('/?action=landing');
  await openTravelTaxFromBanner(page);
  const travel=page.getByRole('dialog',{name:'Travel tax'});
- await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+ await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
  await expect(travel.locator('.public-service-dialog__notice')).toHaveCount(0);
  await expect(travel.getByText('Rates and exemptions are not verified.',{exact:false})).toHaveCount(0);
  await expect(travel.locator('.travel-flow__summary')).toBeHidden();
  await fillTravelDetails(travel);
  await expect(travel.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
  await travel.getByRole('button',{name:'Continue to review'}).click();
- await expect(travel.getByRole('heading',{name:'Review & payment'})).toBeVisible();
+ await expect(travel.getByRole('heading',{name:'Final Preview'})).toBeVisible();
+ // Receipt contact is required in the final preview, not the passenger form.
+ await travel.locator('#travel-mobile').fill('01712345678');
+  await travel.getByRole('button',{name:'Make Payment'}).click();
   await travel.getByRole('button',{name:'Pay online'}).click();
   await travel.getByRole('button',{name:'Mobile banking'}).click();
  await travel.getByRole('radio',{name:'bKash'}).check();
- await travel.locator('.travel-flow__channel-option input[type="checkbox"]').check();
- await travel.getByRole('button',{name:'Confirm preview payment'}).click();
+ await travel.locator('.payment-review__ack input[type="checkbox"]').check();
+ await travel.getByRole('button',{name:'Confirm sample payment'}).click();
+ await expect(travel.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
+ await travel.getByTestId('walkin-challan-action').getByRole('button').first().click();
  await expect(travel.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible();
  await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toHaveCount(0);
  await page.keyboard.press('Escape');
@@ -50,7 +56,7 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
  await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
- await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Mobile'}).click();
  await expect(page.getByRole('button',{name:'Mobile'})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('searchbox',{name:'Search the guide'}).fill('rates');
@@ -61,6 +67,30 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  await expect(page.getByRole('button',{name:'মোবাইল'})).toHaveAttribute('aria-pressed','true');
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
+});
+
+test('NBR tax and VAT e-Payment help is current and bilingual on the public guide', async ({ page }) => {
+  for (const language of ['en', 'bn'] as const) {
+    await page.goto(`/?action=user_guide&lang=${language}`);
+    const source = page.locator('.public-guide-source').first();
+    if (language === 'en') {
+      await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
+      await expect(source).toContainText('For Tax e-Payment challan problems, call 09611-777111; for VAT e-Payment challan problems, call 16555.');
+      await expect(source.getByRole('link', { name: 'Call NBR Tax e-Payment challan support (09611-777111)' }))
+        .toHaveAttribute('href', 'tel:09611777111');
+      await expect(source.getByRole('link', { name: 'Call NBR VAT e-Payment challan support (16555)' }))
+        .toHaveAttribute('href', 'tel:16555');
+    } else {
+      await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
+      await expect(source).toContainText('আয়কর ই-পেমেন্ট চালান পেতে সমস্যায় ০৯৬১১-৭৭৭১১১ এবং ভ্যাট ই-পেমেন্ট চালান পেতে সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
+      await expect(source.getByRole('link', { name: 'এনবিআর আয়কর ই-পেমেন্ট চালান সহায়তায় কল করুন (০৯৬১১-৭৭৭১১১)' }))
+        .toHaveAttribute('href', 'tel:09611777111');
+      await expect(source.getByRole('link', { name: 'এনবিআর ভ্যাট ই-পেমেন্ট চালান সহায়তায় কল করুন (১৬৫৫৫)' }))
+        .toHaveAttribute('href', 'tel:16555');
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(2);
+  }
 });
 
 test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
@@ -83,8 +113,8 @@ test('Help Center typography and interactions remain usable at each viewport', a
   });
   expect(fontSizes.every(size => size >= 16), `Small UI text: ${fontSizes.join(', ')}`).toBe(true);
 
-  await guide.getByRole('button', { name: 'Travel tax' }).click();
-  await expect(guide.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
+  await guide.locator('.public-guide-topics').getByRole('button', { name: 'Travel tax', exact: true }).click();
+  await expect(guide.getByRole('heading', { name: 'Travel tax', exact: true })).toBeVisible();
   await guide.getByRole('searchbox', { name: 'Search the guide' }).fill('rates');
   await expect(guide.getByText('Are the rates final?')).toBeVisible();
   await guide.getByText('Are the rates final?').click();
@@ -143,16 +173,18 @@ test('User guide search and text weights follow the citizen typography contract'
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
-  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toBeVisible();
+  const mobileDefault=(page.viewportSize()?.width??1280)<=700;
+  await expect(guide.getByText(mobileDefault?'Tap Pay Tax on Home':'On Home, choose Pay Tax',
+    { exact: false })).toBeVisible();
   await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
-  await expect(guide.getByText('On Home, tap Pay Tax', { exact: false })).toBeVisible();
-  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toHaveCount(0);
+  await expect(guide.getByText('Tap Pay Tax on Home', { exact: false })).toBeVisible();
+  await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toHaveCount(0);
 
   const search = guide.getByRole('searchbox', { name: 'Search the guide' });
   await search.fill('rates');
   const travelQuestion = guide.locator('.public-guide-result-faq').filter({ hasText: 'Are the rates final?' });
   await expect(travelQuestion).toBeVisible();
-  await expect(guide.locator('.public-guide-result-group').getByRole('heading',{name:'Travel tax'})).toBeVisible();
+  await expect(guide.locator('.public-guide-result-group').getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   await search.fill('this-question-does-not-exist');
   await expect(guide.getByText('No results found')).toBeVisible();
   await search.fill('');
@@ -173,11 +205,12 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await field.fill('passport');
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
   await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Enter passenger details');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Find and add passengers');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText(/not government (?:passport )?verification/);
   await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
   await field.fill('tap Pay Tax');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('On Home, tap Pay Tax');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Tap Pay Tax on Home');
   const clear=guide.getByRole('button',{name:'Clear search'});
   await expect(clear).toHaveCount(1);
   await expect(guide.locator('.public-guide-find-controls > .public-guide-clear')).toHaveCount(0);
@@ -185,9 +218,9 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await expect(field).toBeFocused();
   await expect(clear).toHaveCount(0);
   await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
-  await guide.getByRole('button',{name:'Travel tax'}).click();
+  await guide.locator('.public-guide-topics').getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
-  await expect(guide.getByRole('button',{name:'Travel tax'})).toHaveAttribute('aria-current','true');
+  await expect(guide.locator('.public-guide-topics').getByRole('button',{name:'Travel tax',exact:true})).toHaveAttribute('aria-current','true');
 });
 
 test('User guide official reference belongs to the reading card, not a separate floating strip', async ({ page }) => {
@@ -211,7 +244,7 @@ test('Selecting a topic takes mobile readers directly to its instructions', asyn
   await expect(topic).toHaveAttribute('aria-current','true');
 });
 
-test('Home, Guide and Report retain the same approved desktop width and alignment', async ({ page }) => {
+test('Home, Guide and Report share the same public width on wide desktops', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   const views = [
     { path: '/?action=landing', selector: '.public-information-hub' },
@@ -224,9 +257,10 @@ test('Home, Guide and Report retain the same approved desktop width and alignmen
     const box = await page.locator(view.selector).boundingBox();
     expect(box, `${view.path} should have a content container`).not.toBeNull();
     bounds.push({ x: box!.x, width: box!.width });
-    // No route-specific widening of the approved public 1100px canvas.
-    expect(box!.width).toBeGreaterThanOrEqual(1099);
-    expect(box!.width).toBeLessThanOrEqual(1101);
+    // All public pages share one approved 1100px rail at wide viewports.
+    const expectedWidth = 1100;
+    expect(box!.width).toBeGreaterThanOrEqual(expectedWidth - 1);
+    expect(box!.width).toBeLessThanOrEqual(expectedWidth + 1);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `Horizontal overflow on ${view.path}`).toBeLessThanOrEqual(2);
   }
@@ -246,7 +280,7 @@ test('floating help uses guide answers and report offers an editable review with
  test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Chat support'}).click();
- await expect(page.getByRole('heading',{name:'Korbritto help'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor help'})).toBeVisible();
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('link',{name:'Open user guide'}).click();
@@ -262,6 +296,36 @@ test('floating help uses guide answers and report offers an editable review with
  await page.getByRole('button',{name:'Edit details'}).click();
  await expect(page.getByLabel('Short description')).toHaveValue('Example payment record mismatch, using fake data.');
 });
+test('help chat answers the matched FAQ in both languages and retains the conversation after close/reopen',async({page})=>{
+ await page.goto('/?action=landing');
+ const launch=page.getByRole('button',{name:'Chat support'});
+ await launch.click();
+ await expect(page.getByRole('button',{name:'Payment status',exact:true})).toBeVisible();
+ const question=page.getByLabel('Your question');
+ await question.fill('Why is my reference not found?');
+ await page.getByRole('button',{name:'Send'}).click();
+ const answers=page.locator('.public-help-message--assistant');
+ await expect(answers.last()).toContainText('Check the reference for typing errors');
+
+ // Mobile help is an aria-modal dialog with a focus trap. Close it before
+ // changing the page language, then reopen and verify the English answer
+ // stayed in the conversation.
+ await page.getByRole('button',{name:'Close chat'}).click();
+ await setWorkspaceLanguage(page,'bn');
+ const banglaLaunch=page.getByRole('button',{name:'চ্যাট সহায়তা'});
+ await banglaLaunch.click();
+ await expect(answers.last()).toContainText('Check the reference for typing errors');
+
+ const banglaQuestion=page.getByLabel('আপনার প্রশ্ন');
+ await banglaQuestion.fill('রেফারেন্স পাওয়া যাচ্ছে না কেন?');
+ await page.getByRole('button',{name:'পাঠান'}).click();
+ await expect(answers.last()).toContainText('রেফারেন্সটি সঠিকভাবে লেখা হয়েছে কি না দেখুন');
+
+ await page.getByRole('button',{name:'চ্যাট বন্ধ করুন'}).click();
+ await expect(banglaLaunch).toBeFocused();
+ await banglaLaunch.click();
+ await expect(answers.last()).toContainText('রেফারেন্সটি সঠিকভাবে লেখা হয়েছে কি না দেখুন');
+});
 test('public guide and guest launcher pass WCAG automated A/AA',async({page},info)=>{
  test.skip(info.project.name==='desktop-1280','Mobile a11y suite');
  await page.goto('/?action=user_guide');
@@ -275,6 +339,7 @@ test('guest receipt search is under the banner and opens receipt results in the 
  const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
  await expect(search).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.locator('[data-banner-service="intro"]').getByRole('button', {name: /^(?:Other Tax|অন্যান্য কর)$/})).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await search.fill('NO-SUCH-DEMO-REFERENCE-12345');
  await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
@@ -282,7 +347,8 @@ test('guest receipt search is under the banner and opens receipt results in the 
  const lookup=page.getByRole('dialog',{name:'Payment status & receipt'});
  await expect(lookup).toBeVisible();
  await expect(lookup.getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-DEMO-REFERENCE-12345');
- await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
+ await expect(lookup.getByTestId('receipt-mobile-required')).toBeVisible();
+ await expect(lookup.getByRole('heading',{name:'No matching record'})).toHaveCount(0);
  const samples=lookup.locator('.receipt-lookup__sample');
  await expect(samples).toHaveCount(3);
  await samples.first().click();
@@ -302,6 +368,7 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
  await expect(search).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.locator('[data-banner-service="intro"]').getByRole('button', {name: /^(?:Other Tax|অন্যান্য কর)$/})).toBeVisible();
  await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
  await search.fill('SYNTHETIC-NO-MATCH-2026');
  await search.press('Enter');
@@ -309,7 +376,8 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  const lookup=page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'});
  await expect(lookup).toBeVisible();
  await expect(lookup.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toHaveValue('SYNTHETIC-NO-MATCH-2026');
- await expect(lookup.getByText('কোনো মিল পাওয়া যায়নি')).toBeVisible();
+ await expect(lookup.getByTestId('receipt-mobile-required')).toContainText('১১ সংখ্যার মোবাইল নম্বর');
+ await expect(lookup.getByText('কোনো মিল পাওয়া যায়নি')).toHaveCount(0);
  await lookup.locator('.receipt-lookup__sample').first().click();
  await expect(lookup.getByRole('button',{name:'রসিদ প্রিন্ট'})).toBeVisible();
  await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
@@ -328,7 +396,7 @@ test('Travel Tax modal has a top-right close and one fixed workflow action foote
   const body=modal.locator('.taxpay-modal__body');
   const footer=modal.locator('.taxpay-modal__footer');
   const closeIcon=header.getByRole('button',{name:'Close modal'});
-  await expect(header.getByRole('heading',{name:'Passengers and receipt details',level:2})).toBeVisible();
+  await expect(header.getByRole('heading',{name:'Passenger Information',level:2})).toBeVisible();
   await expect(closeIcon).toBeVisible();
   await expect(header).toHaveCSS('border-bottom-style','solid');
   await expect(footer).toHaveCSS('border-top-style','solid');
@@ -351,6 +419,9 @@ test('Travel Tax modal has a top-right close and one fixed workflow action foote
   expect(positions.headerBottom).toBeLessThanOrEqual(positions.bodyTop+1);
   expect(positions.bodyBottom).toBeLessThanOrEqual(positions.footerTop+1);
   await closeIcon.click();
+  const exit = modal.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(modal).toHaveCount(0);
 });
 
@@ -358,7 +429,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await page.goto('/?action=landing');
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
   await expect(modal.locator('.taxpay-modal__header')).toHaveCSS('border-bottom-style','solid');
   await expect(modal.locator('.taxpay-modal__footer')).toHaveCSS('border-top-style','solid');
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
@@ -373,6 +444,9 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await page.keyboard.press('Escape');
+  const exit = modal.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(modal).toHaveCount(0);
 });
 
@@ -391,14 +465,18 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   await left.evaluate(el=>el.scrollTop=el.scrollHeight);
   expect(Math.abs((await side.evaluate(el=>el.getBoundingClientRect().top))-initial)).toBeLessThan(2);
   await modal.getByRole('button',{name:'Continue to review'}).click();
+  await modal.locator('#travel-mobile').fill('01712345678');
+  await modal.getByRole('button',{name:'Make Payment'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
-  await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await modal.getByRole('button',{name:'Confirm preview payment'}).click();
+  await modal.locator('.payment-review__ack input[type="checkbox"]').check();
+  await modal.getByRole('button',{name:'Confirm sample payment'}).click();
+  await expect(modal.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
+  await modal.getByTestId('walkin-challan-action').getByRole('button').first().click();
   await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
   await expect(modal.locator('.travel-flow__summary')).toHaveCount(0);
-  await expect(modal.locator('.taxpay-modal__body > .receipt-view--embedded')).toBeVisible();
+  await expect(modal.locator('.taxpay-modal__body .receipt-view--embedded')).toBeVisible();
   await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
   await expect(modal.getByRole('button',{name:'Download'})).toBeVisible();
 });
@@ -409,7 +487,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await setWorkspaceLanguage(page,'bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
+ await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রীর তথ্য');
  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
  await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
  await expect(modal.getByRole('button',{name:'ভ্রমণের তথ্য দিতে এগিয়ে যান'})).toBeVisible();
@@ -419,7 +497,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
 
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
- await expect(modal.getByRole('heading',{name:'পর্যালোচনা ও পেমেন্ট'})).toBeVisible();
+ await expect(modal.getByRole('heading',{name:'চূড়ান্ত পর্যালোচনা'})).toBeVisible();
  const width=await modal.evaluate(el=>({viewport:innerWidth,paper:el.getBoundingClientRect().width,scroll:document.documentElement.scrollWidth}));
  expect(width.paper).toBeLessThanOrEqual(width.viewport);
  expect(width.scroll).toBeLessThanOrEqual(width.viewport+2);
@@ -438,13 +516,16 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await expect(actions.getByRole('button',{name:'Continue to travel details'})).toBeVisible();
     await fillTravelDetails(modal);
   await actions.getByRole('button',{name:'Continue to review'}).click();
-
-    // Receipt mobile was collected in the passenger stage.
+  // Preview collects receipt contact immediately before payment.
+  await modal.locator('#travel-mobile').fill('01712345678');
+  await modal.getByRole('button',{name:'Make Payment'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
-  await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await actions.getByRole('button',{name:'Confirm preview payment'}).click();
+  await modal.locator('.payment-review__ack input[type="checkbox"]').check();
+  await actions.getByRole('button',{name:'Confirm sample payment'}).click();
+  await expect(modal.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
+  await modal.getByTestId('walkin-challan-action').getByRole('button').first().click();
   await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
   await expect(footer.locator('.travel-flow__footer-actions')).toHaveCount(0);
   await expect(footer.locator('.receipt-view__actions')).toHaveCount(1);
@@ -468,7 +549,7 @@ test('Travel Tax displays only two mode cards without fixed prices and calculate
   await expect(routes).not.toContainText('1,000');
   await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
   await modal.getByRole('button',{name:'Continue to review'}).click();
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Review & payment');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Final Preview');
 });
 
 test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page},info)=>{
@@ -500,3 +581,122 @@ test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page}
 // Banner-dependent browser checks use explicitly published CMS rows;
 // unavailable CMS must not revive unpublished bundled artwork.
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
+
+test('guide search keeps existing Travel Tax action reachable in English and Bangla', async ({ page }) => {
+  for (const language of ['en', 'bn'] as const) {
+    await page.goto('/?action=user_guide&lang=' + language);
+    const bn = language === 'bn';
+    await page.getByRole('searchbox', { name: bn ? 'নির্দেশিকা খুঁজুন' : 'Search the guide' })
+      .fill(bn ? 'ভ্রমণ কর' : 'Travel tax');
+    const result = page.locator('.public-guide-result-group').filter({
+      has: page.getByRole('heading', {name: bn ? 'ভ্রমণ কর' : 'Travel tax', exact: true})
+    });
+    await expect(result).toBeVisible();
+    await result.getByRole('button', {name: bn ? 'ভ্রমণ কর পরিশোধ করুন' : 'Pay Travel Tax'}).click();
+    await expect(page.getByRole('dialog', {name: bn ? 'ভ্রমণ কর' : 'Travel tax'})).toBeVisible();
+  }
+});
+
+test('public guide defaults to correct desktop/mobile instructions and focuses selected topic without losing device choice',async({page})=>{
+ const mobile=(page.viewportSize()?.width??1280)<=700;
+ await page.goto('/?action=user_guide&lang=en');
+ const guide=page.locator('.public-guide-page');
+ const mobileButton=guide.getByRole('button',{name:'Mobile',exact:true});
+ const webButton=guide.getByRole('button',{name:'Web',exact:true});
+ await expect(mobileButton).toHaveAttribute('aria-pressed',mobile?'true':'false');
+ await expect(webButton).toHaveAttribute('aria-pressed',mobile?'false':'true');
+ await expect(guide.getByText(mobile?'Tap Pay Tax on Home':'On Home, choose Pay Tax',{exact:false})).toBeVisible();
+
+ // A visitor can override the detected device; navigation does not discard it.
+ const override=mobile?webButton:mobileButton;
+ await override.click();
+ await expect(override).toHaveAttribute('aria-pressed','true');
+ await guide.getByRole('navigation',{name:'Guide topics'}).getByRole('button',{name:'Travel tax',exact:true}).click();
+ const article=guide.locator('.public-guide-content');
+ await expect(article).toBeFocused();
+ await expect(article.locator('.public-guide-content-head').getByRole('heading',{name:'Travel tax',exact:true})).toBeInViewport();
+ await expect(override).toHaveAttribute('aria-pressed','true');
+ await setWorkspaceLanguage(page,'bn');
+ await expect(guide.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await expect(guide.getByRole('navigation',{name:'বিষয় নির্বাচন'})
+   .getByRole('button',{name:'ভ্রমণ কর',exact:true})).toHaveAttribute('aria-current','true');
+ await expect(guide.getByRole('button',{name:mobile?'ওয়েব':'মোবাইল',exact:true})).toHaveAttribute('aria-pressed','true');
+ expect(await page.evaluate(()=>
+  document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('guide no-results has a directly operable EN/BN recovery button and Bengali search-result count',async({page})=>{
+ await page.goto('/?action=user_guide&lang=bn');
+ const guide=page.locator('.public-guide-page');
+ const input=guide.getByRole('searchbox',{name:'নির্দেশিকা খুঁজুন'});
+ await input.fill('this-topic-does-not-exist-123456789');
+ const noResults=guide.locator('.public-guide-no-results');
+ await expect(noResults).toBeVisible();
+ await noResults.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
+ await expect(input).toBeFocused();
+ await expect(input).toHaveValue('');
+ await expect(guide.getByRole('navigation',{name:'বিষয় নির্বাচন'})).toBeVisible();
+ await input.fill('passport');
+ await expect(guide.locator('.public-guide-result-step')).not.toHaveCount(0);
+ await expect(guide.locator('.public-guide-results-head [role="status"]')).toContainText(/[০-৯]/);
+ await setWorkspaceLanguage(page,'en');
+ const englishInput=guide.getByRole('searchbox',{name:'Search the guide'});
+ await englishInput.fill('another-completely-absent-topic-xyz');
+ await guide.locator('.public-guide-no-results').getByRole('button',{name:'Clear search'}).click();
+ await expect(englishInput).toBeFocused();
+ await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
+});
+
+test('glossary filters have bilingual result feedback, clear search, and full empty-result recovery',async({page})=>{
+ await page.goto('/?action=glossary&lang=en');
+ const glossary=page.locator('.public-glossary');
+ const input=glossary.getByRole('searchbox',{name:'Search terms'});
+ const category=glossary.getByRole('combobox',{name:'Topic'});
+ await input.fill('e-TIN');
+ await expect(glossary.getByRole('heading',{name:'Taxpayer Identification Number'})).toBeVisible();
+ await expect(glossary.getByRole('status')).toContainText('term');
+ await category.selectOption('PAYMENT');
+ await expect(glossary.getByRole('status')).toContainText('No terms match');
+ await glossary.getByRole('button',{name:'Clear filters'}).click();
+ await expect(input).toBeFocused();
+ await expect(input).toHaveValue('');
+ await expect(category).toHaveValue('ALL');
+ await expect(glossary.getByRole('heading',{name:'Tax with Return'})).toBeVisible();
+ await input.fill('Advance Tax');
+ await glossary.getByRole('button',{name:'Clear search'}).click();
+ await expect(input).toHaveValue('');
+
+ await setWorkspaceLanguage(page,'bn');
+ const banglaInput=glossary.getByRole('searchbox',{name:'শব্দ খুঁজুন'});
+ await banglaInput.fill('রসিদ');
+ await expect(glossary.getByRole('heading',{name:'Payment Receipt'})).toBeVisible();
+ await expect(glossary.getByRole('status')).toContainText(/[০-৯]টি শব্দ/);
+ await banglaInput.fill('চালান-নয়-অজানা-শব্দ-123xyz');
+ await expect(glossary.getByRole('status')).toContainText('এই অনুসন্ধানে কোনো শব্দ মেলেনি');
+ await glossary.getByRole('button',{name:'সব ফিল্টার মুছুন'}).click();
+ await expect(banglaInput).toBeFocused();
+ await expect(glossary.getByRole('combobox',{name:'বিষয়'})).toHaveValue('ALL');
+ expect(await page.evaluate(()=>
+  document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('public guide displays the actual maintained content revision date in EN/BN across all topics',async({page})=>{
+  await page.goto('/?action=user_guide&lang=en');
+  const guide=page.locator('.public-guide-page');
+  const updated=guide.getByTestId('public-guide-last-updated');
+  await expect(updated).toContainText('Guide last updated:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('14 November 2026');
+  const topicNav=guide.getByRole('navigation',{name:'Guide topics'});
+  for(const button of await topicNav.getByRole('button').all()){
+    await button.click();
+    await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  }
+  await setWorkspaceLanguage(page,'bn');
+  await expect(updated).toContainText('নির্দেশিকা সর্বশেষ হালনাগাদ:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('২০২৬');
+  await expect(updated.locator('time')).toContainText('নভেম্বর');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});

@@ -17,10 +17,16 @@ test('All beneficiaries selects every saved record without changing ownership or
 
 test('Beneficiaries has one Office-style search/filter toolbar and no extra list-context strip',()=>{
   assert.match(page,/<TaxPayOfficeRegisterToolbar/);
-  assert.match(page,/actions=\{lists\.length>0\?<div className="beneficiary-directory__list-toolbar">/);
+  assert.doesNotMatch(page,/actions=\{lists\.length>0\?<div className="beneficiary-directory__list-toolbar">/);
   assert.match(page,/<TaxPayOfficeRegisterFilters open=\{filtersExpanded\}/);
   assert.doesNotMatch(page,/className="beneficiary-directory__list-context"/);
-  assert.match(styles,/\.taxpay-office-register__actions \.beneficiary-directory__list-toolbar/);
+  assert.match(page,/\{lists\.length>0&&<div className="taxpayer-transaction-filter beneficiary-directory__list-filter">/);
+  assert.match(styles,/\.beneficiary-register-frame[^\n]*\.beneficiary-directory__list-filter/);
+  assert.doesNotMatch(page,/description=\{tr\('Search and manage your saved taxpayers'/);
+  assert.match(page,/headerContent:<label className="beneficiary-directory__select-all beneficiary-directory__header-select"/);
+  assert.match(page,/data-has-selection=\{selectedPeople\.length>0\?'true':'false'\}/);
+  assert.match(styles,/data-has-selection="false"/);
+  assert.match(styles,/\.beneficiary-register-frame \.beneficiary-directory__filters \{/);
 });
 
 test('Each record has exactly Edit and secondary Make payment; deletion is confirmed inside Edit',()=>{
@@ -35,7 +41,7 @@ test('Each record has exactly Edit and secondary Make payment; deletion is confi
     assert.doesNotMatch(part,/setDeletePerson\(person\)/,label+' row deletion removed');
   }
   assert.match(page,/\{editPerson&&!deletePerson&&<TaxPayModal/);
-  assert.match(page,/setDeletePerson\(editPerson\)/);
+  assert.match(page,/requestDeletePerson\(editPerson\)/);
   assert.match(page,/Delete beneficiary/);
   assert.match(page,/Confirm beneficiary removal/);
   assert.match(page,/setEditPerson\(null\);setModalError\(''\)/);

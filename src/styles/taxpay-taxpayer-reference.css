@@ -133,7 +133,7 @@
   background: transparent;
   color: var(--color-taxpay-muted);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: var(--taxpay-weight-action, 600);
   text-align: left;
 }
 .taxpayer-reference-links button > svg { flex-shrink: 0; color: var(--color-taxpay-muted); }
@@ -367,19 +367,19 @@
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
     gap: 9px;
     padding: 8px 9px;
-    font-size: 14px;
+    font-size: var(--taxpay-type-body, 16px);
   }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action {
     padding: 8px;
-    font-size: 14px;
+    font-size: var(--taxpay-type-body, 16px);
   }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button {
     padding: 8px;
-    font-size: 13px;
+    font-size: var(--taxpay-type-body, 16px);
   }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom strong {
     padding: 4px;
-    font-size: 12px;
+    font-size: var(--taxpay-type-micro, 12px);
   }
 }
 
@@ -419,11 +419,6 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { width: 250px; }
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main { margin-left: 250px; width: calc(100% - 250px); }
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > .citizen-footer { margin-left: 250px; }
-}
-@media (min-width: 1920px) {
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { width: 260px; }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main { margin-left: 260px; width: calc(100% - 260px); }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > .citizen-footer { margin-left: 260px; }
 }
 @media (max-width: 767px) {
   /* Report-composer-like full-width mobile form with an independently safe
@@ -1242,3 +1237,29 @@
   background:var(--color-taxpay-background,#f0f2f5); outline:2px solid transparent;
 }
 .taxpayer-reference-pay-option:focus-visible { outline-color:var(--color-taxpay-primary); }
+
+/* Phase 8: the logged-in taxpayer workspace uses the full available area.
+   Only the main page's content is constrained; the sidebar, bottom dock,
+   guest routes, transaction wizards and overlays retain their own layouts. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) > main#main-content > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-inline: auto;
+  }
+}
+
+/* Cap the centered content at 1300px only above 1400px viewport width. */
+@media (min-width: 1401px) {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) > main#main-content > * {
+    max-width: 1300px;
+  }
+
+  /* Existing 1150px account wrappers should not reintroduce dead space. */
+  .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) :is(.taxpayer-reference-secure, .taxpayer-account-center) {
+    width: 100%;
+    max-width: 1300px;
+    min-width: 0;
+  }
+}

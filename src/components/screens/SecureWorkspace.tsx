@@ -5,6 +5,8 @@ import { signOutApplicationAccount } from '../../services/accountIdentity';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { authRedirectUrl, verifiedDraftCategory, draftSeedForCategory, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
+import {isCompleteEmailOneTimeCode,normalizeEmailOneTimeCode} from '../../services/verifiedEmailOtp';
+import {safePrivateAuthReturnRoute} from '../../services/routeContract';
 import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
 import { CorrectionInquiries } from './CorrectionInquiries';
@@ -53,6 +55,9 @@ export const SecureWorkspace: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
+  const [codeRequestSent,setCodeRequestSent]=useState(false);
+  const [emailCode,setEmailCode]=useState('');
+  const [emailCodeMessage,setEmailCodeMessage]=useState('');
   const [message, setMessage] = useState<WorkspaceMessage | null>(null);
   const [busy, setBusy] = useState(false);
   const selectedDraftCategory = verifiedDraftCategory(routeParams?.draftCategory,
@@ -163,12 +168,41 @@ export const SecureWorkspace: React.FC = () => {
         options: { emailRedirectTo: redirect, shouldCreateUser: true }
       });
       if (error) showMessage('signInRequestFailed', error.message);
-      else showMessage('signInSuccess');
+      else {setCodeRequestSent(true);setEmailCode('');setEmailCodeMessage('');showMessage('signInSuccess');}
     } catch {
       showMessage('signInUnavailable');
     } finally {
       setBusy(false);
     }
+  };
+
+  // Supabase Auth, not the preview 111111 step, verifies this real email code.
+  // The hosted project's email template must include {{ .Token }} before it
+  // will send codes; existing one-time sign-in links remain supported.
+  const verifyEmailCode=async()=>{
+    if(!supabase||busy||!codeRequestSent||!isCompleteEmailOneTimeCode(emailCode))return;
+    setBusy(true);setEmailCodeMessage('');
+    try {
+      const {data,error}=await supabase.auth.verifyOtp({
+        email:email.trim(),token:emailCode,type:'email'
+      });
+      if(error||!data.session||!data.user){
+        setEmailCodeMessage(bn?'কোড যাচাই হয়নি। সঠিক কোড লিখে আবার চেষ্টা করুন।':'Code verification failed. Check the code and retry.');
+        return;
+      }
+      const {data:resolved,error:identityError}=await supabase.auth.getUser();
+      if(identityError||!sameAuthenticatedOwner(resolved.user?.id,data.user.id)){
+        setEmailCodeMessage(bn?'সাইন-ইন যাচাই করা যায়নি। আবার চেষ্টা করুন।':'Could not confirm your sign-in. Please retry.');
+        return;
+      }
+      setEmailCode('');setCodeRequestSent(false);setEmailCodeMessage('');setMessage(null);
+      // Authoritative identity subscriptions handle the protected screen.
+      setUser(resolved.user);setAuthLoading(false);
+      const safeReturn=safePrivateAuthReturnRoute(routeParams?.returnTo);
+      if(safeReturn)navigate(safeReturn);
+    }catch{
+      setEmailCodeMessage(bn?'কোড যাচাই সেবা অনুপলব্ধ। আবার চেষ্টা করুন।':'Code verification is unavailable. Please retry.');
+    }finally{setBusy(false);}
   };
 
   const createDraft = async (e: React.FormEvent) => {
@@ -315,11 +349,15 @@ export const SecureWorkspace: React.FC = () => {
   };
 
   const signOut = async () => {
-    if (!supabase) return;
+    if (!supabase || !user) return;
+    const requestUid=user.id;
     setBusy(true);
     try {
       // Signing out of this browser must not revoke every device session.
       const result = await signOutApplicationAccount();
+      // An already loaded different Auth owner must never be erased by a
+      // delayed sign-out response that was initiated from the prior account.
+      if(currentAuthUserId.current && currentAuthUserId.current!==requestUid)return;
       if (!result.ok) { showMessage('signOutNotConfirmed', result.error??'Please retry.'); return; }
       sessionEpoch.current++;
       setUser(null); setRows([]); setPendingDelete(null);
@@ -327,8 +365,12 @@ export const SecureWorkspace: React.FC = () => {
       draftBeforeEditing.current = null;
       showMessage('signedOut');
     } catch {
-      showMessage('signOutUnavailable');
-    } finally { setBusy(false); }
+      if(!currentAuthUserId.current || currentAuthUserId.current===requestUid)
+        showMessage('signOutUnavailable');
+    } finally {
+      if(!currentAuthUserId.current || currentAuthUserId.current===requestUid)
+        setBusy(false);
+    }
   };
 
   return (
@@ -351,7 +393,7 @@ export const SecureWorkspace: React.FC = () => {
           <h2 className="text-lg font-bold text-taxpay-dark">{copy.signInHeading}</h2>
           <p className="text-sm text-slate-600">{copy.signInDescription}</p>
           <label htmlFor="taxpay-auth-email" className="block text-sm font-semibold">{copy.emailAddress}</label>
-          <UiInput id="taxpay-auth-email" required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
+          <UiInput id="taxpay-auth-email" required type="email" autoComplete="email" value={email} onChange={e => {setEmail(e.target.value);setCodeRequestSent(false);setEmailCode('');setEmailCodeMessage('');}}
             className="min-h-11 w-full px-3 py-3 border border-slate-300 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" placeholder={copy.emailPlaceholder}/>
           <div className="flex flex-wrap items-center gap-4">
             <UiButton type="submit" disabled={busy}>{copy.sendSignInLink}</UiButton>
@@ -364,6 +406,24 @@ export const SecureWorkspace: React.FC = () => {
               {bn ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
             </a>}
           </div>
+          {codeRequestSent && <section className="border-t border-taxpay-border pt-4 space-y-3" aria-label={bn?'ইমেইলের একবারের কোড':'Email one-time code'}>
+            <p className="text-sm text-taxpay-muted">
+              {bn?'ইমেইলে ৬ সংখ্যার যাচাইকরণ কোড পেলে সেটি লিখুন। শুধু সাইন-ইন লিংক পেলে লিংকটিও ব্যবহার করতে পারবেন।':'If your email contains a six-digit verification code, enter it below. If you received a sign-in link instead, that link still works.'}
+            </p>
+            <label htmlFor="taxpay-auth-email-code" className="block text-sm font-semibold">
+              {bn?'ইমেইল যাচাইকরণ কোড':'Email verification code'}
+            </label>
+            <UiInput id="taxpay-auth-email-code" type="text" inputMode="numeric" autoComplete="one-time-code"
+              pattern="[0-9]{6}" maxLength={6} value={emailCode}
+              onChange={e=>{setEmailCode(normalizeEmailOneTimeCode(e.target.value));setEmailCodeMessage('');}}
+              onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void verifyEmailCode();}}}
+              placeholder={bn?'৬ সংখ্যার কোড':'6-digit code'} />
+            {emailCodeMessage&&<p role="alert" className="text-sm text-taxpay-error">{emailCodeMessage}</p>}
+            <UiButton type="button" onClick={()=>void verifyEmailCode()}
+              disabled={busy||!isCompleteEmailOneTimeCode(emailCode)}>
+              {busy?(bn?'যাচাই হচ্ছে…':'Verifying…'):(bn?'কোড যাচাই ও সাইন ইন':'Verify code and sign in')}
+            </UiButton>
+          </section>}
         </form>
       ) : (
         <>

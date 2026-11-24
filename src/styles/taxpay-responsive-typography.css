@@ -1,0 +1,814 @@
+/*
+ * Sohojkor citizen-only six-size responsive typography contract.
+ * Public Home's benefit tiles and footer retain component-owned compact roles;
+ * shared 16px form/body rules must not override those approved exceptions.
+ * Approved scale: 12 micro, 16 body/control, 20 subsection, 24 section,
+ * 28 page, 32 desktop display. Never scope to officer / Office UI.
+ *
+ * Protect separately approved public hero art, document print, and
+ * travel/payment-step layout: adjust type sizes, not structure or routes.
+ */
+.taxpay-citizen-shell {
+  --taxpay-font-micro: var(--taxpay-type-micro);
+  --taxpay-font-body: var(--taxpay-type-body);
+  --taxpay-font-subsection: var(--taxpay-type-h3);
+  --taxpay-font-section: var(--taxpay-type-h2);
+  --taxpay-font-page: var(--taxpay-type-h1);
+  --taxpay-font-display: 2rem;
+  font-size: var(--taxpay-font-body);
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Legacy signed-in parity styling used to shrink the entire mobile
+   workspace to 14px. Body remains 16px at every viewport width. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+  --sobaike-type-body: var(--taxpay-font-body);
+  --sobaike-type-meta: var(--taxpay-font-body);
+  --sobaike-type-action: var(--taxpay-font-body);
+}
+
+/* Semantic roles: avoid changing official challan/certificate/print tables. */
+.taxpay-citizen-shell .taxpay-type-micro {
+  font-size: var(--taxpay-font-micro);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-type-body,
+.taxpay-citizen-shell .taxpay-type-label,
+.taxpay-citizen-shell .taxpay-type-helper,
+.taxpay-citizen-shell .taxpay-type-meta,
+.taxpay-citizen-shell .taxpay-type-action {
+  font-size: var(--taxpay-font-body);
+}
+.taxpay-citizen-shell .taxpay-type-h1 {
+  font-size: var(--taxpay-font-page);
+  line-height: 1.3;
+}
+.taxpay-citizen-shell .taxpay-type-h2 {
+  font-size: var(--taxpay-font-section);
+  line-height: 1.35;
+}
+.taxpay-citizen-shell .taxpay-type-h3 {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell .taxpay-type-h4 {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-type-financial {
+  font-size: var(--taxpay-type-financial);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Input text is 16px even at 320px: readable and prevents iOS focus-zoom.
+   Native checkbox/radio labels, icon-only controls retain their geometry. */
+.taxpay-citizen-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):not(:where([data-home2-view] *)),
+.taxpay-citizen-shell .taxpay-record-toolbar__search input,
+.taxpay-citizen-shell .taxpayer-transaction-filter > select {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+/* Normalize reusable record workspaces without touching government documents. */
+.taxpay-citizen-shell .taxpay-record-toolbar__heading h3,
+.taxpay-citizen-shell .taxpay-table-toolbar__title {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell :is(.taxpay-record-toolbar__controls button, .taxpay-record-toolbar__controls select, .taxpay-table-tabs > button, .taxpayer-transaction-filter > select) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell table.taxpay-unified-table,
+.taxpay-citizen-shell .taxpay-unified-table :is(thead th, tbody td) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-table-viewport {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Exact TaxPayModal heading (entry + payment stages). Legacy mobile CSS
+ * forces 18px and the V5 route forces 21px; central role remains 20px. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] .taxpay-modal__header .taxpay-modal__title,
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title,
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+
+/* Signed-in headings preserve approved structure and English/Bengali hierarchy.
+   Extra shell specificity beats the legacy 30/26px page-header overrides. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading h1,
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-page-heading h1,
+.taxpay-citizen-shell.taxpay-taxpayer-reference .taxpayer-dashboard-header h1 {
+  font-size: var(--taxpay-font-page);
+  line-height: 1.3;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace h2,
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-workspace h2 {
+  font-size: var(--taxpay-font-section);
+  line-height: 1.35;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace h3 {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace h4 {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+
+/* ==========================================================================
+ * UNIFIED REAL COMPONENT TYPOGRAPHY — SOHOJKOR CITIZEN
+ *
+ * One user-visible size vocabulary (rem, respects zoom): 12/16/20/24/28/32.
+ * Primary headings respond at 480/768/1024px via --taxpay-type-* above.
+ * Use component/semantic selectors, not blanket * or !important overrides.
+ * Keep official print/certificate documents and officer UI out of scope.
+ * ========================================================================== */
+
+/* EN Poppins / BN Noto Sans Bengali in public AND authenticated citizen UX.
+ * Historic Sobaike parity reset the signed-in workspace to Noto Sans. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+  --font-text: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif;
+  --font-numeric: 'IBM Plex Mono', 'Noto Sans Bengali', monospace;
+  font-family: var(--font-text);
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] {
+  --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif;
+  font-family: var(--font-text);
+}
+/* iOS-safe body defaults must not override explicit component font roles.
+ * :is() borrowed the high specificity of input:not(...) for *every* button,
+ * causing 16px navigation/Help/CTA text despite later 14px component rules.
+ * :where() fixes that root cascade bug. Earlier explicit input rules still
+ * enforce 16px editable fields to prevent mobile focus-zoom. */
+.taxpay-citizen-shell :where(
+  button, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select, textarea, label
+):not(:where([data-home2-view] *)) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+/* General copy belongs to body tier; numbers and labels in data visualizations
+ * are explicitly assigned to the micro tier below. */
+.taxpay-citizen-shell:where(:not(:has(.public-home-sections))) :is(p, li, dt, dd):not(.taxpay-type-micro):not(:where(.receipt-view__paper *, .payment-certificate-document *, .print-card *, [data-home2-view] *)) {
+  font-size: var(--taxpay-font-body);
+}
+/* Public header, menu, language switcher and safe-area bottom navigation. */
+.taxpay-citizen-shell :is(
+  .public-home-nav a, .public-home-language, .public-home-menu,
+  .public-home-login-link, .citizen-nav-link, .citizen-text-action,
+  .citizen-pay, .citizen-footer__links button,
+  
+  .taxpayer-reference-links button
+) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+/* Current two-action CMS hero and its supplemental service link retain their
+ * approved geometry; both use the same readable 16px action/copy tier. */
+.taxpay-citizen-shell :is(.public-hero-carousel__slogan,.public-guest-actions .public-guest-action,.public-hero-carousel__gift-link) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+/* Public homepage: preserve hero artwork/CTA arrangement and text contrast,
+ * but never shrink primary heading to 18.4px at 320px. */
+.taxpay-citizen-shell .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy :is(h1,h2),
+.taxpay-citizen-shell .public-information-hero .citizen-public-hero__copy > h1 {
+  font-size: var(--taxpay-font-page);
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+.taxpay-citizen-shell .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow),
+.taxpay-citizen-shell :is(.citizen-public-hero__copy,.public-information-hero) .citizen-public-hero__description {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .citizen-public-hero__eyebrow,
+.taxpay-citizen-shell :is(.citizen-hub-eyebrow,.public-benefits__eyebrow) {
+  font-size: var(--taxpay-font-micro);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .public-record-discovery__heading h2 {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell .public-record-discovery__heading p,
+.taxpay-citizen-shell .public-benefits__heading p {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .public-benefits__heading h2 {
+  font-size: var(--taxpay-font-section);
+  line-height: 1.35;
+}
+/* Keep the original 24px section title on tablet/desktop and the 20px
+ * compact mobile tier. Set the desktop value as the default so short-wide
+ * layout rules cannot accidentally restore the old 20px heading. */
+.taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading h2 {
+  font-size: 24px;
+}
+@media (max-width: 767px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading h2 {
+    font-size: 20px;
+  }
+}
+/* Services/catalogues remain a readable tabular/list UI, not tiny card labels. */
+.taxpay-citizen-shell :is(
+  .citizen-hub-service-grid__copy strong, .taxpayer-service-directory__card h2,
+  .tax-service-choice__entry-heading, .tax-service-choice__copy strong,
+  .tax-service-choice__card strong, .tax-service-choice__access-option strong
+) {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell :is(
+  .citizen-hub-service-grid__copy small, .tax-service-choice__description,
+  .tax-service-choice__access-option small, .tax-service-choice__support-copy,
+  .payment-head-amount__label
+) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+/* Payment service dialogs and multi-stage flows: titles 20, labels/body 16.
+ * No stage/route/CTA-layout changes. */
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__heading .taxpay-modal__title,
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__header .taxpay-modal__title,
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title,
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] .taxpay-modal__title {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell .taxpay-modal :is(.taxpay-modal__subtitle,.taxpay-modal__description,.taxpay-modal__supporting-copy),
+.taxpay-citizen-shell :is(.tax-service-choice__stage-label--full,.tax-service-choice__stage-label--short),
+.taxpay-citizen-shell .payment-form-section__heading-copy :is(p,small,strong),
+.taxpay-citizen-shell .payment-flow-embedded .payment-form-section__heading-copy :is(p,small,strong),
+.taxpay-citizen-shell .payment-flow-embedded .payment-form-section__body :is(label,legend) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .payment-form-section__heading-copy h2,
+.taxpay-citizen-shell .payment-flow-embedded .payment-form-section__heading-copy h2 {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell .payment-form-summary :is(dt,dd,.payment-form-summary__amount-words),
+.taxpay-citizen-shell :is(.payment-form-draft-controls__save,.payment-head-search__button,.tax-service-choice__continue) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+/* Monetary totals use the existing 24px financial tier; preserve numerals. */
+.taxpay-citizen-shell :is(.payment-form-summary__total,.taxpay-type-financial) {
+  font-size: var(--taxpay-type-financial);
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Real signed-in workspace: titles/subtitles/forms/tables must not inherit
+ * legacy 14px mobile body typography or 14px data-grid header overrides. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace {
+  font-size: var(--taxpay-font-body);
+  font-family: var(--font-text);
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-workspace :is(.taxpayer-page-heading h1,.taxpayer-dashboard-header h1) {
+  font-size: var(--taxpay-font-page);
+  line-height: 1.3;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-workspace :is(h2,.taxpay-table-toolbar__title) {
+  font-size: var(--taxpay-font-section);
+  line-height: 1.35;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-workspace h3 {
+  font-size: var(--taxpay-font-subsection);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell .taxpay-record-toolbar__heading h3 {
+  font-size: var(--taxpay-font-subsection);
+}
+.taxpay-citizen-shell :is(
+  .taxpay-record-toolbar__search input, .taxpay-record-toolbar__controls select,
+  .taxpay-record-toolbar__controls button, .taxpay-table-tabs > button,
+  .taxpay-table-count, .taxpayer-transaction-filter > select,
+  .taxpayer-workspace .taxpay-bento-hero__status button
+) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-data-table table.taxpay-unified-table,
+.taxpay-citizen-shell .taxpay-data-table table.taxpay-unified-table :is(th,td),
+.taxpay-citizen-shell.taxpay-taxpayer-reference .taxpayer-workspace table:not(.taxpay-official-document) :is(th,td) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell :is(.taxpay-mobile-table-cards,.taxpay-table-state) :is(dt,dd,p,button) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+/* Small labels are deliberately limited to genuine secondary/meta roles.
+ * Under no circumstances use the 12px tier for required input labels. */
+.taxpay-citizen-shell.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+/* Utility class text-sm is a body role in payment/service flows, not a
+ * license to re-introduce 14px in status messages and row descriptions. */
+.taxpay-citizen-shell :is(.payment-flow-embedded,.taxpay-modal) .text-sm:not(.taxpay-type-micro):not(.payment-certificate-document *) {
+  font-size: var(--taxpay-font-body);
+}
+/* Summary eyebrow is a real secondary 12px micro-label. */
+.taxpay-citizen-shell.taxpay-citizen-shell .payment-form-summary__eyebrow {
+  font-size: var(--taxpay-font-micro);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-citizen-shell :is(
+  .taxpay-type-micro,.taxpay-bento-year__legend,.taxpay-bento-year__label,
+  .taxpay-bento-year__value,.taxpay-bento-position__totals dt,
+  .taxpay-unified-chart__axis,.taxpay-table-column-hint,
+  .citizen-footer__disclaimer,.public-footer__copyright,
+  .public-footer__bottom p
+) {
+  font-size: var(--taxpay-font-micro);
+  line-height: 1.5;
+}
+/* Required payment guidance (including disabled-head explanations) is not
+ * microcopy. Keep source selectors narrow to avoid official documents. */
+.taxpay-citizen-shell :is(.payment-flow-embedded,.taxpay-modal) .text-xs:not(.taxpay-type-micro),
+.taxpay-citizen-shell [data-testid="other-tax-batch"] [data-head-row] span.text-rose-700 {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
+/* Public Home footer: use the same centered content rail as the banner,
+ * search and benefit panel. The old full-bleed desktop width moved the four
+ * navigation links and copyright beyond that rail and under fixed Help.
+ * All four existing destinations and the mobile disclosure remain unchanged. */
+@media (min-width: 1121px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    max-width: var(--public-content-max);
+    width: calc(100% - 3rem);
+    margin-inline: auto;
+    padding: 8px 0;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    column-gap: 14px;
+    row-gap: 0;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    flex: 0 1 175px;
+    max-width: 175px;
+    line-height: 1.4;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 0;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    padding-left: 12px;
+  }
+}
+/* Narrow desktop leaves space for the persistent Help launcher's hit area,
+ * with copyright on its own row if all links need their full widths. */
+@media (min-width: 981px) and (max-width: 1350px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    width: calc(100% - 2rem);
+    max-width: var(--public-content-max);
+    padding-right: 104px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    row-gap: 2px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    grid-column: 1;
+    grid-row: 2;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px 14px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+/* Compact-height desktop keeps approved 16px outer card insets.
+ * Do not impose 72px height on the search input: it uses the approved 52px desktop control,
+ * not an oversized multiline field. Six benefit cells retain their grid. */
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 959px) {
+  .taxpay-citizen-shell:has(.public-home-sections) :is(.public-record-discovery,.public-benefits) {
+    padding-block: 16px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) :is(.public-record-discovery__heading,.public-benefits__heading) {
+    margin-bottom: 8px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search input {
+    min-height: 44px;
+    padding-block: 8px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__item {
+    min-height: 88px;
+    padding-block: 12px;
+  }
+}
+
+/* Inputs remain in normal reading size even if external utilities say text-xs. */
+.taxpay-citizen-shell :is(input,select,textarea)::placeholder {
+  font-size: inherit;
+}
+/* Bengali expansion: slightly more line-height, wrapping rather than clipping. */
+.taxpay-citizen-shell[lang="bn"] :is(
+  .public-home-nav a,.public-benefits__copy h3,
+  .payment-form-section__heading-copy h2,
+  .tax-service-choice__entry-heading,.taxpay-modal__title
+) {
+  line-height: 1.55;
+}
+@media (max-width: 479px) {
+  .taxpay-citizen-shell :is(
+    .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+    .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,
+    .taxpayer-page-heading h1, .taxpayer-dashboard-header h1
+  ) {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Keep controls legible without replacing stepper, CTA, or responsive layout. */
+.taxpay-citizen-shell :is(.taxpayer-reference-main-action, .taxpayer-reference-links button, .taxpay-modal__footer button, .taxpay-record-toolbar__retry) {
+  font-size: var(--taxpay-font-body);
+}
+.taxpay-citizen-shell[lang="bn"] :is(.taxpay-type-h1,.taxpay-type-h2,.taxpay-type-h3,.taxpayer-page-heading h1) {
+  line-height: 1.5;
+}
+@media (max-width: 479px) {
+  .taxpay-citizen-shell :is(.taxpayer-page-heading h1,.taxpayer-dashboard-header h1) {
+    overflow-wrap: anywhere;
+  }
+  .taxpay-citizen-shell .taxpay-record-toolbar__controls {
+    min-width: 0;
+  }
+}
+
+
+/*
+ * Signed-in taxpayer semantic typography: one source of truth for actual
+ * account register, profile, ledger, certificates and navigation components.
+ * Six existing rem size tokens (12/16/20/24/28/32px), four weights
+ * (400/500/600/700). Scoped: NO Office, public hero or receipt print changes.
+ */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+  --taxpayer-reading-size: var(--taxpay-type-body);
+  --taxpayer-section-size: var(--taxpay-type-h3);
+  --taxpayer-reading-weight: 400;
+  --taxpayer-label-weight: 500;
+  --taxpayer-emphasis-weight: 600;
+  --taxpayer-page-weight: 700;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpayer-reference-links button, .taxpayer-activity-sections button,
+      .taxpay-office-register__actions button, .taxpay-table-tabs button,
+      .taxpay-office-register__search input) {
+  font-size: var(--taxpayer-reading-size);
+  line-height: 1.5;
+  font-weight: var(--taxpayer-label-weight);
+}
+/* Keep the frozen signed-in navigation action at 600, as established by
+ * the real 320–1920px EN/BN typography regression contract. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-reference-links button {
+  font-weight: var(--taxpayer-emphasis-weight);
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpay-office-register__title, .taxpay-record-toolbar__heading h3) {
+  font-size: var(--taxpayer-section-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(table.taxpay-unified-table thead th,
+      .taxpay-record-list__columns .taxpay-record-list__heading) {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  table.taxpay-unified-table tbody td {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-reading-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpayer-transaction-row__title, .taxpay-mobile-table-card__title) {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpay-profile-field-label, .taxpay-profile-summary-label) {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-reading-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpay-profile-field-value {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-label-weight);
+  line-height: 1.6;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpay-profile-summary-value {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpay-profile-section-heading {
+  font-size: var(--taxpayer-section-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-transaction-beneficiaries--compact .text-xs {
+  font-size: var(--taxpay-type-micro);
+  line-height: 1.5;
+}
+/* Real identifier remains full in the DOM/detail modal. Desktop shows one
+ * bounded line; phone cards wrap it without page-wide overflow. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-transaction-table .taxpayer-transaction-reference {
+  font-weight: var(--taxpayer-reading-weight);
+}
+
+/*
+ * Shared citizen font-weight hierarchy (EN Poppins / BN Noto Sans Bengali).
+ * Size tiers are separately owned above. Keep font weights stable across widths:
+ * 700 for primary/page/section titles and financial totals, 600 for subordinate
+ * headings, visible labels, navigation and actions; 500 for micro metadata;
+ * 400 for reading copy and editable values. No officer/print scope.
+ * These selectors target rendered reusable controls instead of altering layout.
+ */
+.taxpay-citizen-shell {
+  --taxpay-weight-reading: 400;
+  --taxpay-weight-meta: 500;
+  --taxpay-weight-action: 600;
+  --taxpay-weight-title: 700;
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-h1, .taxpay-type-h2,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,
+  .taxpayer-page-heading h1, .taxpayer-dashboard-header h1,
+  .taxpayer-workspace > h2, .taxpayer-workspace .taxpay-table-toolbar__title,
+  .taxpay-modal__title, .taxpay-bento-hero h2
+) {
+  font-weight: var(--taxpay-weight-title);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-h3, .taxpay-type-h4, .public-benefits__copy h3,
+  .public-record-discovery__heading h2, .public-benefits__heading h2,
+  .citizen-hub-service-grid__copy strong, .tax-service-choice__entry-heading,
+  .payment-form-section__heading-copy h2, .taxpay-record-toolbar__heading h3,
+  .taxpayer-workspace h3, .taxpayer-workspace h4
+) {
+  font-weight: var(--taxpay-weight-action);
+}
+
+.taxpay-citizen-shell :is(
+  .public-home-nav a, .public-footer__navs a, .public-footer__navs button,
+  .public-home-login-link, .citizen-nav-link, .public-home-language,
+  .public-guest-actions .public-guest-action, .public-hero-carousel__travel,
+  .tax-service-choice__continue,
+  .taxpay-record-toolbar__controls button, .taxpay-record-toolbar__retry,
+  .taxpay-table-tabs > button, .taxpay-unified-table thead th,
+  .taxpay-mobile-table-cards dt, .payment-form-section__body label,
+  .payment-form-section__body legend, .payment-flow-embedded label,
+  .payment-flow-embedded legend, .taxpay-type-label, .taxpay-type-action
+) {
+  font-weight: var(--taxpay-weight-action);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-body, .taxpay-type-helper, .taxpay-type-meta,
+  .public-record-discovery__heading p, .public-benefits__heading p,
+  .public-benefits__copy p, .taxpay-modal__description,
+  .taxpay-modal__subtitle, .taxpay-modal__supporting-copy,
+  .payment-form-section__heading-copy p,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select, textarea, .taxpay-unified-table tbody td
+) {
+  font-weight: var(--taxpay-weight-reading);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-micro, .citizen-footer__disclaimer,
+  .public-footer__copyright, .public-footer__bottom p,
+  .taxpay-table-count, .taxpay-table-column-hint
+) {
+  font-weight: var(--taxpay-weight-meta);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-financial, .payment-form-summary__total,
+  .taxpay-bento-position__highlight strong,
+  .taxpay-bento-position__totals dd
+) {
+  font-weight: var(--taxpay-weight-title);
+}
+
+
+/* Baseline compact footer uses existing component layout at every width. */
+/* The signed-in register uses a specificity-frozen shared table selector.
+ * Match that real selector so the semantic heading/body weights apply. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table thead th {
+  font-weight: var(--taxpay-weight-action, 600);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody td {
+  font-weight: var(--taxpay-weight-reading, 400);
+}
+
+
+/* On the public home, the later-loaded hero carousel sets navigation to 500.
+ * Use an explicitly more specific semantic rule; do not change its geometry. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a {
+    font-weight: var(--taxpay-weight-action, 600);
+  }
+}
+
+/* ==========================================================================
+ * PUBLIC HOME VISUAL TYPE — 23 NOV 2026
+ * User-reviewed hierarchy: keep layout and payment journeys untouched.
+ * Earlier global 700/600 rules made this compact public home unnaturally bold.
+ * These homepage-owned roles override only actual public-home elements;
+ * modal, authenticated, document and Office typography remain independent.
+ * ========================================================================== */
+.taxpay-citizen-shell:has(.public-home-sections) {
+  --sohojkor-home-display: 28px;
+  --sohojkor-home-section: 20px;
+  --sohojkor-home-card: 15px;
+  --sohojkor-home-description: 14px;
+  --sohojkor-home-control: 14px;
+  --sohojkor-home-body: 15px;
+  --sohojkor-home-title-weight: 600;
+  --sohojkor-home-control-weight: 500;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy :is(h1,h2) {
+  font-size: var(--sohojkor-home-display);
+  font-weight: var(--sohojkor-home-title-weight);
+  line-height: 1.28;
+  letter-spacing: -.012em;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {
+  font-size: var(--sohojkor-home-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a,
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-language,
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-login-link {
+  font-size: var(--sohojkor-home-control);
+  font-weight: var(--sohojkor-home-control-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-guest-action {
+  font-size: var(--sohojkor-home-control);
+  font-weight: var(--sohojkor-home-control-weight);
+  line-height: 1.35;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  :is(.public-record-discovery__heading h2,.public-benefits__heading h2) {
+  font-size: var(--sohojkor-home-section);
+  font-weight: var(--sohojkor-home-title-weight);
+  line-height: 1.35;
+  letter-spacing: -.01em;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  :is(.public-record-discovery__heading p,.public-benefits__heading p) {
+  font-size: var(--sohojkor-home-description);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-benefits__copy h3 {
+  font-size: var(--sohojkor-home-card);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-benefits__copy p {
+  font-size: var(--sohojkor-home-description);
+  font-weight: 400;
+  line-height: 1.45;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p,
+.taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
+  font-size: 12px;
+  font-weight: 400;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-help-launch {
+  font-size: 14px;
+  font-weight: 500;
+}
+@media (max-width: 1023px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --sohojkor-home-display: 26px;
+  }
+}
+@media (max-width: 767px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --sohojkor-home-display: 24px;
+    --sohojkor-home-section: 18px;
+  }
+}
+@media (max-width: 479px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --sohojkor-home-display: 22px;
+  }
+}
+
+/* Homepage final visual polish — 23 Nov 2026.
+ * Deliberately scoped to the logged-out public Home: this preserves
+ * the previously fixed field geometry, navigation, content rail, EN/BN,
+ * mobile footer disclosure, signed-in pages and payment modals. */
+@media (min-width: 1121px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-block: 12px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+@media (min-width: 1400px) {
+  /* When there is unused space beyond the centered content rail, move Help
+   * above the footer rather than letting it visually sit in the same strip. */
+  .taxpay-citizen-shell:has(.public-home-sections) .public-help-widget {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 1200px) {
+  /* Preserve the grid rows; reserve actual separation above the footer.
+   * A 2px bottom inset previously made the final card look glued to it. */
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+}
+@media (min-width: 981px) {
+  /* Existing approved 52px lookup, unchanged layout and 44px hit area.
+   * Its single action now reads as an action rather than a pale nested field. */
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search button {
+    background: var(--citizen-primary);
+    color: white;
+    border-color: var(--citizen-primary);
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search button:hover:not(:disabled) {
+    background: var(--citizen-primary-dark);
+    border-color: var(--citizen-primary-dark);
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search button:disabled {
+    background: var(--citizen-primary-light);
+    border-color: var(--citizen-border);
+    color: var(--citizen-primary-dark);
+    opacity: 1;
+  }
+}

@@ -106,7 +106,8 @@ test('signed-in public mobile uses the existing private-style header, shared she
   await page.getByLabel('Password',{exact:true}).fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
   await page.locator('.citizen-brand').click();
-  await expect(page).toHaveURL(/action=landing/);
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   for(const width of [320,360,375,390]) {
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=landing');
@@ -169,7 +170,7 @@ test('mobile Services & menu sign-out is readable and actually ends the preview 
   // empty state. Use a genuinely protected private route to verify that
   // sign-out revoked the preview and not just the menu/dialog.
   await page.goto('/?action=ledger');
-  await expect(page.locator('.citizen-account-gate')).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^(Private taxpayer workspace|করদাতার ব্যক্তিগত তথ্য)$/ })).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
+  await expect(page.locator('.citizen-account-gate')).toHaveCount(0);
   await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
 });

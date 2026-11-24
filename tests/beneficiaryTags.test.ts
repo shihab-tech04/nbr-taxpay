@@ -1,13 +1,20 @@
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, normalizeOtherLabel, validBeneficiaryClassification} from '../src/services/beneficiaryTags';
+import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, matchesBeneficiaryClassification, normalizeOtherLabel, validBeneficiaryClassification, validNewBeneficiaryClassification} from '../src/services/beneficiaryTags';
 
 test('fixed beneficiary category choices and all required family relationships',()=>{
   assert.deepEqual([...BENEFICIARY_TAGS],['clients','friends_family','others']);
   assert.deepEqual([...BENEFICIARY_RELATIONS],['father','mother','siblings','son','daughter','spouse','friends']);
   assert.equal(validBeneficiaryClassification('',null),false);
   assert.equal(validBeneficiaryClassification('friends_family',null),false);
+  assert.equal(validNewBeneficiaryClassification(null,null),false);
+  assert.equal(validNewBeneficiaryClassification(undefined,null),false);
+  assert.equal(validNewBeneficiaryClassification('clients',null),true);
+  assert.equal(validNewBeneficiaryClassification('friends_family','friends'),true);
+  assert.equal(validNewBeneficiaryClassification('others',null,'Neighbour'),true);
+  assert.equal(validNewBeneficiaryClassification('others',null,'a'.repeat(80)),true);
+  assert.equal(validNewBeneficiaryClassification('others',null,'a'.repeat(81)),false);
   assert.equal(validBeneficiaryClassification('clients','father'),false);
   assert.equal(validBeneficiaryClassification('others','friends'),false);
   assert.equal(validBeneficiaryClassification('clients',null),true);
@@ -34,6 +41,17 @@ test('classifications display without assigning any fabricated tag to historical
   assert.equal(beneficiaryTagLabel(null,null,'bn'),'শ্রেণিবিহীন');
 });
 
+test('beneficiary save readback requires the exact selected tag, relation and Others text',()=>{
+  const expected={tag:'friends_family',relationship:'father',other_label:null};
+  assert.equal(matchesBeneficiaryClassification({...expected},expected),true);
+  assert.equal(matchesBeneficiaryClassification({...expected,relationship:'mother'},expected),false);
+  assert.equal(matchesBeneficiaryClassification({...expected,tag:'clients',relationship:null},expected),false);
+  assert.equal(matchesBeneficiaryClassification({...expected,other_label:'Neighbour'},expected),false);
+  assert.equal(matchesBeneficiaryClassification(null,expected),false);
+  const others={tag:'others',relationship:null,other_label:'Neighbour'};
+  assert.equal(matchesBeneficiaryClassification({...others,other_label:'Neighbour '},others),false);
+});
+
 test('Other descriptions are required across UI, SQL, guest RPC and Edge validation',()=>{
   const fs=(path:string)=>readFileSync(path,'utf8');
   const screen=fs('src/components/screens/Beneficiaries.tsx');
@@ -58,11 +76,11 @@ test('Edit beneficiary covers fixed tags, family relations, Others and optional 
   assert.match(screen,/value=\{beneficiaryChoiceValue\(editTag,editRelationship\)\}/);
   assert.doesNotMatch(screen,/id="beneficiary-edit-relationship"/);
   assert.match(screen,/id="beneficiary-edit-other-label" required maxLength=\{80\}/);
-  assert.match(screen,/editBeneficiaryClassification\(owner,editPerson,editTargetList,classification\)/);
+  assert.match(screen,/editBeneficiaryClassification\(editOwnerContext\.ownerUid,editPerson,editTargetList,classification\)/);
   assert.match(screen,/Move to list \(optional\)/);
   assert.match(screen,/setEditTargetList\(person\.list_id\)/);
   assert.match(screen,/const editLegacyMove=/);
-  assert.match(screen,/await moveBeneficiary\(owner,editPerson\.id,editPerson\.list_id,editTargetList\)/);
+  assert.match(screen,/await moveBeneficiary\(editOwnerContext\.ownerUid,editPerson\.id,editPerson\.list_id,editTargetList\)/);
   assert.doesNotMatch(screen,/editTargetList===editPerson\.list_id\}\>/);
   assert.match(service,/export async function editBeneficiaryClassification/);
   assert.match(service,/\.eq\('owner_uid',ownerUid\)\.eq\('list_id',person\.list_id\)/);
@@ -72,7 +90,7 @@ test('Edit beneficiary covers fixed tags, family relations, Others and optional 
   assert.match(sql,/revoke all on function public\.taxpay_guest_beneficiary_edit_classification/);
 });
 
-test('payment beneficiary picker shows only leaf tag beside name and bare TIN on next line',()=>{
+test('payment beneficiary picker shows only leaf tag beside name and masked TIN on next line',()=>{
   assert.equal(beneficiaryFinalTagLabel('friends_family','friends','en'),'Friends');
   assert.equal(beneficiaryFinalTagLabel('friends_family','mother','en'),'Mother');
   assert.equal(beneficiaryFinalTagLabel('friends_family','daughter','bn'),'মেয়ে');
@@ -82,8 +100,22 @@ test('payment beneficiary picker shows only leaf tag beside name and bare TIN on
   assert.equal(beneficiaryFinalTagLabel('friends_family',null,'en'),null);
   const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
   assert.ok(picker.includes('{names(person)}{finalTag&&'));
-  assert.ok(picker.includes('{person.tin}</span>'));
+  assert.ok(picker.includes('{maskTinForDisplay(person.tin)}</span>'));
   assert.ok(!picker.includes("{tr('TIN','টিআইএন')}: {person.tin}"));
   assert.ok(!picker.includes("{tr('Tag','ট্যাগ')}:"));
 
+});
+
+test('new beneficiary adds require a tag while explicit recovery preserves legacy untagged contacts',()=>{
+  const fs=(path:string)=>readFileSync(path,'utf8');
+  const service=fs('src/services/beneficiaries.ts');
+  const guest=fs('src/services/guestBeneficiaries.ts');
+  const edge=fs('supabase/functions/taxpay-guest-beneficiaries/index.ts');
+  assert.match(service,/validNewBeneficiaryClassification\(row\.tag,row\.relationship,row\.other_label\)/);
+  assert.match(service,/restoreLegacyGuestBeneficiaries\(listId,normalized\)/);
+  assert.match(service,/persistBeneficiaryRows\(ownerUid,destination\.id,rows\.slice\(offset,offset\+500\),true\)/);
+  assert.match(guest,/post\('restore-legacy-add'/);
+  assert.match(edge,/action === 'add' \|\| action === 'restore-legacy-add'/);
+  assert.match(edge,/if \(!legacyRecovery && tag === null\)/);
+  assert.match(edge,/legacyRecovery && tag === null && relationship === null/);
 });

@@ -103,7 +103,7 @@
 
 .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
   margin-top: .65rem;
-  font-size: .95rem;
+  font-size: var(--taxpay-type-body);
   line-height: 1.5;
 }
 
@@ -153,7 +153,7 @@
   max-width: 24ch;
   margin: 0;
   color: var(--citizen-text);
-  font-size: clamp(1.8rem, 2.5vw, 2rem);
+  font-size: var(--taxpay-type-h1);
   font-weight: 750;
   line-height: 1.22;
   letter-spacing: -.025em;
@@ -212,7 +212,7 @@
     padding: 1rem 1.15rem;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
-    font-size: 1.65rem;
+    font-size: var(--taxpay-type-h1);
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
     font-size: .9rem;
@@ -234,13 +234,13 @@
     text-align: center;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1 {
-    font-size: 1.65rem;
+    font-size: var(--taxpay-type-h1);
     font-weight: 700;
     line-height: 1.28;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
     max-width: none;
-    font-size: 1.55rem;
+    font-size: var(--taxpay-type-h1);
     font-weight: 700;
     line-height: 1.28;
   }
@@ -512,19 +512,19 @@
   position: relative;
   z-index: 2;
   min-width: 0;
-  padding: clamp(1rem, 3vw, 1.35rem);
+  padding: 1.25rem;
   border: 1px solid var(--citizen-border);
-  border-radius: 1rem;
+  border-radius: 10px;
   background: var(--citizen-surface);
 }
-.public-record-discovery__heading { margin-bottom: 1rem; min-width: 0; }
-.public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.125rem; line-height: 1.4; font-weight: 600; }
-.public-record-discovery__heading p { margin: .3rem 0 0; color: var(--citizen-muted); font-size: .875rem; line-height: 1.5; }
+.public-record-discovery__heading { margin-bottom: .75rem; min-width: 0; }
+.public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.25rem; line-height: 1.35; font-weight: 600; }
+.public-record-discovery__heading p { margin: .25rem 0 0; color: var(--citizen-muted); font-size: var(--taxpay-type-body); line-height: 1.5; }
 .public-record-discovery__interactive { position: relative; min-width: 0; }
 .public-record-search {
   display: flex; align-items: stretch; min-width: 0; width: 100%; min-height: 60px;
   padding: .35rem; border: 1px solid var(--citizen-border);
-  border-radius: .75rem; background: var(--citizen-surface);
+  border-radius: 8px; background: var(--citizen-surface);
   box-shadow: var(--taxpay-shadow-raised);
 }
 .public-record-search:focus-within { border-color: var(--citizen-primary); }
@@ -542,7 +542,7 @@
 .public-record-search button {
   display: grid; place-items: center; flex: 0 0 50px;
   min-height: 46px; border: 1px solid var(--citizen-border);
-  border-radius: .55rem; background: var(--citizen-primary-light);
+  border-radius: 8px; background: var(--citizen-primary-light);
   color: var(--citizen-primary-dark); cursor: pointer;
 }
 .public-record-search button:hover:not(:disabled) { background: color-mix(in srgb, var(--citizen-primary) 15%, var(--citizen-surface)); }
@@ -588,7 +588,7 @@
 }
 @media (max-width: 600px) {
   .public-record-discovery { padding: 1rem; }
-  .public-record-discovery__heading h2 { font-size: 1.05rem; }
+  .public-record-discovery__heading h2 { font-size: 1.25rem; }
   .public-record-search { min-height: 56px; padding: .25rem; }
   .public-record-search input { padding-inline: .7rem; font-size: 1rem; }
   .public-record-search button { flex-basis: 48px; }
@@ -724,12 +724,14 @@
 @media (min-width: 901px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-home-nav a,
   .taxpay-citizen-shell:has(.public-home-sections) .public-home-language {
-    font-size: .875rem;
+    font-size: var(--taxpay-type-body);
     font-weight: 500;
   }
 }
-/* Six benefits: concise and legible, with cards rather than a faux table.
-   They are informational, not additional competing payment actions. */
+/* Six informational benefit cards: hover only, without click or keyboard activation. */
+/* Home-only shared card spacing and radii; carousel design remains unchanged. */
+/* Search and benefits share the same outer geometry at each breakpoint. */
+.public-home-sections .public-benefits{min-width:0;padding:1.25rem;border:1px solid var(--citizen-border);border-radius:10px;background:var(--citizen-surface);}
 .public-benefits { min-width: 0; }
 .public-benefits__heading {
   display: flex;
@@ -737,21 +739,21 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: .25rem .9rem;
-  margin-bottom: .7rem;
+  margin-bottom: .75rem;
 }
 .public-benefits__heading h2 {
   margin: 0;
   color: var(--citizen-text);
-  font-size: 1.25rem;
+  font-size: var(--taxpay-type-h2);
   font-weight: 600;
   line-height: 1.35;
 }
 .public-benefits__heading p {
   margin: 0;
   color: var(--citizen-muted);
-  font-size: .875rem;
+  font-size: var(--taxpay-type-body);
   font-weight: 400;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 .public-benefits__grid {
   display: grid;
@@ -760,6 +762,7 @@
   gap: .7rem .75rem;
 }
 .public-benefits__item {
+  position: relative;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);
   align-items: center;
@@ -771,15 +774,47 @@
   border-radius: .8rem;
   background: var(--citizen-surface);
   color: var(--citizen-text);
+  z-index: 0;
+  box-shadow: none;
+  transition: box-shadow 180ms ease, background-color 180ms ease;
 }
+/* The approved first benefit is the only interactive card. Keep all card geometry unchanged. */
+.public-benefits__item--action {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.public-benefits__item--action:focus-visible {
+  outline: 2px solid var(--citizen-primary-dark);
+  outline-offset: 3px;
+}
+/* Keep subtle hover elevation without changing card geometry or adding actions. */
+@media (hover: hover) and (pointer: fine) {
+  .public-home-sections .public-benefits__item:hover {
+    z-index: 1;
+    background: #fbfdff;
+    box-shadow: 0 2px 12px rgb(21 61 103 / 11%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-benefits__item { transition: none; }
+}
+/* Six quiet, flat semantic accents. No gradients or status implications. */
+.public-benefits__item[data-benefit="payments"]     {--benefit-icon-bg:#e8f1fc;--benefit-icon-fg:#285fa3;}
+.public-benefits__item[data-benefit="certificates"] {--benefit-icon-bg:#e8f5fa;--benefit-icon-fg:#166d8c;}
+.public-benefits__item[data-benefit="corrections"]  {--benefit-icon-bg:#f2edfa;--benefit-icon-fg:#7651a2;}
+.public-benefits__item[data-benefit="history"]      {--benefit-icon-bg:#fcf0df;--benefit-icon-fg:#98621b;}
+.public-benefits__item[data-benefit="pay-again"]    {--benefit-icon-bg:#fbedf0;--benefit-icon-fg:#a65367;}
+.public-benefits__item[data-benefit="saved-drafts"] {--benefit-icon-bg:#eeeffb;--benefit-icon-fg:#545eaa;}
 .public-benefits__icon {
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: .65rem;
-  background: var(--citizen-primary-light);
-  color: var(--citizen-primary-dark);
+  border-radius: 9px;
+  background: var(--benefit-icon-bg, var(--citizen-primary-light));
+  color: var(--benefit-icon-fg, var(--citizen-primary-dark));
 }
 .public-benefits__icon svg { width: 20px; height: 20px; }
 .public-benefits__copy { min-width: 0; }
@@ -790,12 +825,13 @@
   font-weight: 600;
   line-height: 1.35;
 }
+.public-benefits__item:hover .public-benefits__copy h3 { color: var(--citizen-primary-dark); }
 .public-benefits__copy p {
   margin: 0;
   color: var(--citizen-muted);
   font-size: .875rem;
   font-weight: 400;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
 
@@ -825,40 +861,41 @@
   .public-home-sections .public-record-discovery {
     display: block;
     padding: 1.5rem;
-    border-radius: .75rem;
+    border-radius: 10px;
   }
   .public-home-sections .public-record-discovery__heading {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: .15rem;
-    margin-bottom: .8rem;
+    margin-bottom: .75rem;
   }
   .public-home-sections .public-record-discovery__heading h2 {
-    font-size: 1rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    line-height: 1.375;
+    line-height: 1.35;
   }
   .public-home-sections .public-record-discovery__heading p {
     margin: 0;
-    font-size: .875rem;
+    font-size: .9375rem;
     font-weight: 400;
-    line-height: 1.4;
+    line-height: 1.5;
   }
   .public-home-sections .public-record-search {
-    min-height: 46px;
-    padding: .18rem;
-    border-radius: .625rem;
+    min-height: 52px;
+    padding: 3px;
+    border-radius: 8px;
     box-shadow: 0 1px 3px rgba(12, 35, 65, .06);
   }
   .public-home-sections .public-record-search input {
-    padding: .5rem .8rem;
+    min-height: 44px;
+    padding: .5rem .875rem;
     font-size: 1rem;
   }
   .public-home-sections .public-record-search button {
-    flex-basis: 40px;
-    min-height: 40px;
-    border-radius: .5rem;
+    flex-basis: 44px;
+    min-height: 44px;
+    border-radius: 8px;
   }
   .public-home-sections .public-record-search button svg {
     width: 20px;
@@ -870,8 +907,8 @@
     max-height: none;
     overflow: visible;
     padding: 1.5rem;
-    border: 0;
-    border-radius: 1rem;
+    border: 1px solid var(--citizen-border);
+    border-radius: 10px;
     background: var(--citizen-surface);
   }
   .public-home-sections .public-benefits__heading {
@@ -881,21 +918,22 @@
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: .15rem;
-    margin-bottom: 1rem;
+    margin-bottom: .75rem;
     padding: 0;
     border: 0;
   }
   .public-home-sections .public-benefits__heading h2 {
-    font-size: 1.25rem;
+    /* Desktop section title belongs to the approved 24px tier. */
+    font-size: var(--taxpay-type-h2);
     font-weight: 600;
     line-height: 1.35;
     letter-spacing: -.012em;
   }
   .public-home-sections .public-benefits__heading p {
     margin: 0;
-    font-size: .875rem;
+    font-size: .9375rem;
     font-weight: 400;
-    line-height: 1.4;
+    line-height: 1.5;
   }
   /* The proposed design uses one panel with six connected cells and
      1px shared dividers, not six individual rounded cards. */
@@ -904,6 +942,8 @@
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 1px;
     padding: 1px;
+    border-radius: 16px;
+    overflow: hidden;
     background: var(--citizen-border);
   }
   .public-home-sections .public-benefits__item {
@@ -915,6 +955,11 @@
     border-radius: 0;
     background: var(--citizen-surface);
   }
+  /* Only the four outer grid corners are rounded at desktop widths. */
+  .public-home-sections .public-benefits__item:first-child { border-top-left-radius: 16px; }
+  .public-home-sections .public-benefits__item:nth-child(3) { border-top-right-radius: 16px; }
+  .public-home-sections .public-benefits__item:nth-child(4) { border-bottom-left-radius: 16px; }
+  .public-home-sections .public-benefits__item:last-child { border-bottom-right-radius: 16px; }
 }
 @media (min-width: 981px) and (min-height: 960px) {
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
@@ -924,7 +969,7 @@
    vertical scrolling. Tall screenshots keep the approved 24px / 136px rhythm. */
 @media (min-width: 981px) and (min-height: 821px) and (max-height: 959px) {
   .public-home-sections .public-benefits { padding: 1rem; }
-  .public-home-sections .public-benefits__heading { margin-bottom: .75rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .5rem; }
   .public-home-sections .public-benefits__item {
     min-height: 88px;
     padding: .65rem .9rem;
@@ -941,11 +986,16 @@
 /* Medium/short desktop only: keep the compact search geometry needed for
    no-overflow screens. Tall desktops use the reference's 24px card inset. */
 @media (min-width: 981px) and (max-height: 959px) {
-  .public-home-sections .public-record-discovery {
-    padding: .625rem 1rem .6875rem;
+  /* Readable headings without wasting space in the hero or between panels. */
+  .public-home-sections .public-hero-carousel__slide.public-information-hero {
+    height:270px;min-height:270px;
   }
-  .public-home-sections .public-record-discovery__heading {
-    margin-bottom: .4rem;
+  .public-home-sections > :not([hidden]) ~ :not([hidden]){margin-top:8px;}
+  .public-home-sections .public-record-discovery{
+    padding:1rem;
+  }
+  .public-home-sections .public-record-discovery__heading{
+    margin-bottom:.5rem;
   }
 }
 
@@ -961,12 +1011,12 @@
     padding-bottom: .7rem;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
-    font-size: 1.65rem;
+    font-size: var(--taxpay-type-h2);
     line-height: 1.2;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
     margin-top: .4rem;
-    font-size: .875rem;
+    font-size: var(--taxpay-type-body);
     line-height: 1.35;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
@@ -976,28 +1026,69 @@
     padding-top: 3px;
     padding-bottom: 0;
   }
-  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 5px; }
-  .public-home-sections .public-record-discovery { padding: .4rem .85rem .5rem; }
-  .public-home-sections .public-record-discovery__heading { margin-bottom: .25rem; }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 4px; }
+  .public-home-sections .public-record-discovery { padding: 1rem; }
+  .public-home-sections .public-record-discovery__heading { margin-bottom: .4rem; }
   .public-home-sections .public-benefits { padding: 1rem; }
-  .public-home-sections .public-benefits__heading { margin-bottom: .5rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .4rem; }
   .public-home-sections .public-benefits__item {
-    min-height: 84px;
-    padding: .5rem .75rem;
+    min-height: 80px;
+    padding: .4rem .75rem;
   }
 }
-@media (min-width: 981px) and (max-width: 1120px) and (max-height: 820px) {
-  .public-home-sections .public-hero-carousel__slide.public-information-hero {
-    height: 210px;
-    min-height: 210px;
+/* Short/medium wide desktops: use smaller outer chrome and inter-section gaps
+   while retaining the approved 220/270px banner, 20px section headings, 16px
+   search/benefits insets and minimum 88px benefit-cell height. */
+@media (min-width:981px) and (min-height:821px) and (max-height:959px) {
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {margin-top:4px;}
+  .public-home-sections .public-benefits__heading {margin-bottom:.5rem;}
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-top:.55rem;
+    padding-bottom:.55rem;
   }
-  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 6px; }
+}
+@media (min-width:1121px) and (max-height:820px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-header__inner {
+    min-height:72px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-top:.55rem;
+    padding-bottom:.55rem;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {margin-top:3px;}
+}
+/* 1024px short desktop: preserve the approved 220px hero and all typography.
+   Spend only unused outer vertical space, not the approved banner/CTA geometry. */
+@media (min-width:981px) and (max-width:1120px) and (max-height:820px) {
+  /* Keep full-size text and the 220px banner: use compact outer chrome. */
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-header__inner {
+    min-height:64px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-top:.25rem;
+    padding-bottom:.25rem;
+  }
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    padding-top:0;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {margin-top:4px;}
+  .public-home-sections .public-record-discovery {
+    padding-block:14px;
+  }
+  .public-home-sections .public-benefits {
+    padding-block:14px;
+  }
+  .public-home-sections .public-record-discovery__heading,
+  .public-home-sections .public-benefits__heading {
+    margin-bottom:.35rem;
+  }
   .public-home-sections .public-benefits__item {
-    grid-template-columns: 36px minmax(0, 1fr);
-    gap: .6rem;
-    padding: .5rem .65rem;
+    grid-template-columns:36px minmax(0,1fr);
+    gap:.6rem;
+    min-height:74px;
+    padding:.3rem .65rem;
   }
-  .public-home-sections .public-benefits__icon { width: 36px; height: 36px; }
+  .public-home-sections .public-benefits__icon {width:36px;height:36px;}
 }
 @media (max-width: 980px) {
   .public-benefits__heading { display: block; margin-bottom: .75rem; }
@@ -1006,7 +1097,9 @@
   .public-benefits__item { min-height: 100px; padding: .75rem; }
 }
 @media (max-width: 600px) {
-  .public-benefits__heading h2 { font-size: 1.05rem; }
+  /* Keep Home information cards equally inset on phones. */
+  .public-home-sections .public-benefits {padding:1rem;}
+  .public-benefits__heading h2 { font-size: 1.25rem; }
   .public-benefits__grid {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: auto;
@@ -1019,4 +1112,145 @@
     gap: .8rem;
   }
   .public-benefits__icon { width: 42px; height: 42px; }
+}
+
+
+/* Short desktop: resolve actual 16px/20px/24px text expansion by using
+ * unused panel space, not clipping content or scaling any typography down.
+ * Keep the approved 220px CMS hero and all two-button entry points. */
+@media (min-width: 981px) and (max-height: 820px) {
+  .public-home-sections .public-benefits {
+    padding-block: 14px;
+    padding-inline: 16px;
+  }
+  .public-home-sections .public-benefits__heading {
+    margin-bottom: 4px;
+    gap: 0;
+  }
+  .public-home-sections .public-benefits__heading :is(h2,p) {
+    line-height: 1.25;
+  }
+  .public-home-sections .public-benefits__grid {
+    grid-auto-rows: minmax(0, auto);
+  }
+  .public-home-sections .public-benefits__item {
+    min-height: 0;
+    padding: 4px 8px;
+    gap: 8px;
+  }
+  .public-home-sections .public-benefits__copy :is(h3,p) {
+    line-height: 1.25;
+  }
+  .public-home-sections .public-benefits__copy h3 {
+    margin-bottom: 2px;
+  }
+  .public-home-sections .public-record-discovery {
+    padding-block: 14px;
+  }
+  .public-home-sections .public-record-discovery__heading {
+    gap: 0;
+    margin-bottom: 4px;
+  }
+  .public-home-sections .public-record-discovery__heading :is(h2,p) {
+    line-height: 1.3;
+  }
+}
+
+/* Home and the other public pages share --public-content-max at every width.
+   Keep a single shell width so navigation, guide and landing stay aligned. */
+
+/* On normal-height wide monitors, use the available height in the banner and
+   benefit panel instead of leaving a large empty grey strip above the footer.
+   The search remains naturally sized, and the panels never clip their text. */
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 1200px) {
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    display: flex;
+    flex-direction: column;
+    /* Allow only the outer breathing room to contract on shorter wide desktops.
+       Keep the 210px hero, 88px benefit cards and section gaps unchanged. */
+    padding-top: clamp(1px, calc(8dvh - 74px), 20px);
+    padding-bottom: clamp(1px, calc(8dvh - 74px), 20px);
+  }
+  .public-home-sections {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(210px, .85fr) auto minmax(264px, 1.15fr);
+    gap: clamp(12px, 1.5dvh, 20px);
+    min-height: 0;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+  .public-home-sections > .public-hero-carousel-shell {
+    height: 100%;
+    min-height: 210px;
+  }
+  .public-home-sections .public-hero-carousel,
+  .public-home-sections .public-hero-carousel__track {
+    height: 100%;
+  }
+  .public-home-sections .public-hero-carousel__slide.public-information-hero {
+    height: 100%;
+    min-height: 210px;
+  }
+  .public-home-sections .public-record-discovery {
+    padding: clamp(16px, 1.25vw, 22px);
+  }
+  .public-home-sections > .public-benefits {
+    display: flex;
+    flex-direction: column;
+    min-height: 264px;
+    padding: clamp(16px, 1.25vw, 22px);
+  }
+  .public-home-sections .public-benefits__grid {
+    flex: 1 1 auto;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+  .public-home-sections .public-benefits__item {
+    min-height: 88px;
+    padding: clamp(12px, 1vw, 20px);
+  }
+}
+
+/* The shared 1100px public rail leaves less wrapping room on short-wide
+   monitors. Reclaim only outer whitespace, never clip the banner or the
+   six benefit cells, so the footer remains in the viewport. */
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 959px) {
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-top: .4rem;
+    padding-bottom: .4rem;
+  }
+}
+
+/* Gift Tax stays accessible without changing the fixed-left two-button banner,
+ * canonical CMS artwork, dimensions, or image transitions. */
+.public-hero-carousel__gift-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  justify-content: center;
+  margin-top: .35rem;
+  padding: 2px 4px;
+  background: transparent;
+  border: 0;
+  color: var(--citizen-primary-dark);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.public-hero-carousel__gift-link:hover { color: var(--citizen-primary); }
+.public-hero-carousel__gift-link:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+@media (max-width: 900px) {
+  .public-hero-carousel__gift-link { align-self: center; }
 }

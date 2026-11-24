@@ -1,0 +1,53 @@
+name: Authenticated received-payment notice browser acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/App.tsx'
+      - 'src/components/screens/AuthorizationRequestPopup.tsx'
+      - 'src/components/screens/AuthenticatedReceivedPaymentPopup.tsx'
+      - 'src/services/accountReceivedPaymentNotices.ts'
+      - 'tests/e2e/authenticated-received-notice-mount.spec.ts'
+      - '.github/workflows/received-payment-notice-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+# Replace only obsolete same-PR checks; Main and manual runs stay independent.
+concurrency:
+  group: taxpay-received-notice-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run test:domain
+      - name: Build isolated enabled-feature preview
+        run: npm run build
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+          VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Verify authenticated notices in English and Bengali at desktop and phone widths
+        run: >-
+          npx playwright test tests/e2e/authenticated-received-notice-mount.spec.ts
+          --project=desktop-1280 --project=mobile-320 --workers=1
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+          VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'

@@ -1,0 +1,153 @@
+export type Lang = 'en' | 'bn'
+
+const en = {
+  meta: { title: 'Sohojkor · Income tax payments' },
+  nav: { home: 'Home', guide: 'User guide', guideShort: 'Guide', report: 'Report', help: 'Help' },
+  login: 'Login',
+  langSwitch: 'বাংলা',
+  langSwitchLabel: 'Switch to Bangla',
+  eyebrow: 'Income tax, simplified',
+  heroTitle: 'Tax payments, without the confusion',
+  heroBody: 'Choose the payment you need, see what happens next, and keep the payment reference handy when you need it.',
+  payTax: 'Pay Tax',
+  otherTax: 'Other Tax',
+  trust: ['Secure payment', 'Instant challan', 'Receipts kept'],
+  slides: {
+    cert: {
+      eyebrow: 'New',
+      title: 'Tax certificates, ready to download',
+      body: 'Every verified payment comes with a certificate you can save as a PDF.',
+      cta: 'View certificates',
+    },
+    again: {
+      eyebrow: 'Faster',
+      title: 'Paid last year? Pay again in seconds',
+      body: 'Reuse a previous payment and only change what’s new.',
+      cta: 'Start from history',
+    },
+  },
+  carousel: { prev: 'Previous slide', next: 'Next slide', goTo: (n: number) => `Go to slide ${n}` },
+  find: {
+    title: 'Find a payment record',
+    body: 'Search by challan, token or transaction reference.',
+    placeholder: 'Challan, token or reference',
+    tooShort: 'Enter at least 6 characters of your reference.',
+    noRecord: (ref: string) => `No record for “${ref}”.`,
+    noRecordHint: 'Check the reference on your receipt, or log in to see all your payments.',
+    search: 'Search',
+    clear: 'Clear search',
+  },
+  help: {
+    title: 'New to paying online?',
+    body: 'Our step-by-step guide walks you through your first payment.',
+    guide: 'Read the guide',
+    chat: 'Chat with us',
+  },
+  section: { title: 'Everything in one place', body: 'Pay, organise and track your taxes.', cta: 'Log in for your dashboard' },
+  features: {
+    all: {
+      title: 'All Tax Payments',
+      body: 'Pay taxes for yourself, family or clients.',
+      chips: ['Yourself', 'Family', 'Clients'],
+      steps: ['Choose tax type', 'Pay securely', 'Get your receipt'],
+    },
+    history: { title: 'Payment History', body: 'Past payments, tax years and receipts.', taxYear: 'Tax year' },
+    certs: { title: 'Tax Certificates', body: 'Find and download available tax certificates.', short: 'Find & download' },
+    corrections: { title: 'Corrections & Requests', body: 'Request corrections and follow their progress.', short: 'Request & track' },
+    again: { title: 'Pay Again', body: 'Reuse and edit a previous payment.', short: 'Reuse & edit' },
+    drafts: { title: 'Saved Drafts', body: 'Save a payment and continue it later.', short: 'Continue later' },
+    secure: { title: 'Secure & NBR-aligned', body: 'Encrypted payments with instant challan and receipt.' },
+  },
+  links: {
+    status: 'Payment status & receipt',
+    receipts: 'Receipts & corrections',
+    security: 'Security & support',
+    nbr: 'NBR publications',
+  },
+  footer: { tagline: 'Income tax payment information', copyright: '© 2026 Sohojkor' },
+  toast: {
+    pay: 'Starting a new income tax payment…',
+    login: 'Redirecting to secure login…',
+    help: 'Connecting you to support…',
+    opening: (x: string) => `Opening ${x}…`,
+  },
+  taxYears: ['2025–26', '2024–25', '2023–24'],
+}
+
+export type Copy = typeof en
+
+const bn: Copy = {
+  meta: { title: 'সহজকর · আয়কর পরিশোধ' },
+  nav: { home: 'হোম', guide: 'ব্যবহার নির্দেশিকা', guideShort: 'নির্দেশিকা', report: 'রিপোর্ট', help: 'সহায়তা' },
+  login: 'লগইন',
+  langSwitch: 'English',
+  langSwitchLabel: 'Switch to English',
+  eyebrow: 'আয়কর, সহজভাবে',
+  heroTitle: 'বিভ্রান্তি ছাড়াই কর পরিশোধ',
+  heroBody: 'প্রয়োজনীয় পেমেন্টটি বেছে নিন, এরপর কী হবে জেনে নিন, আর দরকারের সময় পেমেন্ট রেফারেন্স হাতের কাছে রাখুন।',
+  payTax: 'কর দিন',
+  otherTax: 'অন্যান্য কর',
+  trust: ['নিরাপদ পেমেন্ট', 'তাৎক্ষণিক চালান', 'রসিদ সংরক্ষিত থাকে'],
+  slides: {
+    cert: {
+      eyebrow: 'নতুন',
+      title: 'কর সনদ, ডাউনলোডের জন্য প্রস্তুত',
+      body: 'প্রতিটি যাচাইকৃত পেমেন্টের সনদ PDF হিসেবে সংরক্ষণ করতে পারবেন।',
+      cta: 'সনদ দেখুন',
+    },
+    again: {
+      eyebrow: 'আরও দ্রুত',
+      title: 'গত বছর কর দিয়েছেন? মুহূর্তেই আবার দিন',
+      body: 'আগের পেমেন্ট আবার ব্যবহার করুন, শুধু নতুন তথ্য বদলান।',
+      cta: 'ইতিহাস থেকে শুরু করুন',
+    },
+  },
+  carousel: { prev: 'আগের স্লাইড', next: 'পরের স্লাইড', goTo: (n) => `স্লাইড ${n}` },
+  find: {
+    title: 'পেমেন্ট রেকর্ড খুঁজুন',
+    body: 'চালান, টোকেন বা লেনদেন রেফারেন্স দিয়ে খুঁজুন।',
+    placeholder: 'চালান, টোকেন বা রেফারেন্স',
+    tooShort: 'রেফারেন্সের অন্তত ৬টি অক্ষর লিখুন।',
+    noRecord: (ref) => `“${ref}”-এর কোনো রেকর্ড পাওয়া যায়নি।`,
+    noRecordHint: 'রসিদে থাকা রেফারেন্সটি যাচাই করুন, অথবা সব পেমেন্ট দেখতে লগইন করুন।',
+    search: 'খুঁজুন',
+    clear: 'মুছে ফেলুন',
+  },
+  help: {
+    title: 'অনলাইনে কর দেওয়া নতুন?',
+    body: 'ধাপে ধাপে নির্দেশিকা আপনার প্রথম পেমেন্টে সাহায্য করবে।',
+    guide: 'নির্দেশিকা পড়ুন',
+    chat: 'চ্যাট করুন',
+  },
+  section: { title: 'সবকিছু এক জায়গায়', body: 'কর পরিশোধ, সংরক্ষণ ও ট্র্যাক করুন।', cta: 'ড্যাশবোর্ড দেখতে লগইন করুন' },
+  features: {
+    all: {
+      title: 'সকল কর পরিশোধ',
+      body: 'নিজের, পরিবারের বা ক্লায়েন্টের জন্য কর দিন।',
+      chips: ['নিজের জন্য', 'পরিবার', 'ক্লায়েন্ট'],
+      steps: ['করের ধরন বাছুন', 'নিরাপদে পরিশোধ করুন', 'রসিদ নিন'],
+    },
+    history: { title: 'পেমেন্টের ইতিহাস', body: 'আগের পেমেন্ট, করবর্ষ ও রসিদ।', taxYear: 'করবর্ষ' },
+    certs: { title: 'কর সনদ', body: 'উপলব্ধ কর সনদ খুঁজুন ও ডাউনলোড করুন।', short: 'খুঁজুন ও ডাউনলোড' },
+    corrections: { title: 'সংশোধন ও অনুরোধ', body: 'সংশোধনের অনুরোধ করুন ও অগ্রগতি দেখুন।', short: 'অনুরোধ ও অগ্রগতি' },
+    again: { title: 'আবার পরিশোধ', body: 'আগের পেমেন্ট আবার ব্যবহার ও সম্পাদনা করুন।', short: 'আগের পেমেন্ট থেকে' },
+    drafts: { title: 'সংরক্ষিত খসড়া', body: 'পেমেন্ট সংরক্ষণ করে পরে চালিয়ে যান।', short: 'পরে চালিয়ে যান' },
+    secure: { title: 'নিরাপদ ও এনবিআর-সম্মত', body: 'এনক্রিপ্টেড পেমেন্ট, সঙ্গে সঙ্গে চালান ও রসিদ।' },
+  },
+  links: {
+    status: 'পেমেন্টের অবস্থা ও রসিদ',
+    receipts: 'রসিদ ও সংশোধন',
+    security: 'নিরাপত্তা ও সহায়তা',
+    nbr: 'এনবিআর প্রকাশনা',
+  },
+  footer: { tagline: 'আয়কর পরিশোধ সংক্রান্ত তথ্য', copyright: '© ২০২৬ সহজকর' },
+  toast: {
+    pay: 'নতুন আয়কর পেমেন্ট শুরু হচ্ছে…',
+    login: 'নিরাপদ লগইনে নেওয়া হচ্ছে…',
+    help: 'সহায়তার সাথে সংযোগ করা হচ্ছে…',
+    opening: (x) => `${x} খোলা হচ্ছে…`,
+  },
+  taxYears: ['২০২৫–২৬', '২০২৪–২৫', '২০২৩–২৪'],
+}
+
+export const copy: Record<Lang, Copy> = { en, bn }

@@ -98,6 +98,29 @@ test('verified SQL batch completes once even while Office mirror is queued',asyn
   assert.equal(result.items.filter(item=>item.officeMirrorPending).length,2);
   assert.equal(confirmedBatchReceipts(result).length,2);
   assert.equal(loadOtherTaxBatch(batch.sessionId,storage)?.phase,'COMPLETE');
+  const originalIds=result.items.map(item=>item.confirmedId);
+  const originalPayloads=result.items.map(item=>structuredClone(item.payload));
+  const retry=await syncOtherTaxBatch(result,async input=>{
+    const paymentId=seen.get(input.idempotencyKey);
+    assert.ok(paymentId,'Office retry must reuse the saved source idempotency key');
+    seen.set(input.idempotencyKey,paymentId);
+    return ack(paymentId);
+  },()=>{},storage);
+  assert.equal(retry.phase,'COMPLETE');
+  assert.deepEqual(retry.items.map(item=>item.confirmedId),originalIds);
+  assert.ok(retry.items.every(item=>item.officeMirrorPending===false));
+  assert.deepEqual(retry.items.map(item=>item.payload),originalPayloads);
+  assert.equal(seen.size,2,'Office retry must not create another Taxpayer SQL parent');
+});
+
+test('a deliberately disabled Office bridge is not queued for synchronization retry',async()=>{
+  const storage=memoryStorage(),batch=makeBatch();
+  let paymentIndex=0;
+  const result=await syncOtherTaxBatch(batch,async()=>({
+    ...ack(id(900+paymentIndex++)),mirrored:false,officeSyncStatus:'DISABLED',
+  }),()=>{},storage);
+  assert.equal(result.phase,'COMPLETE');
+  assert.ok(result.items.every(item=>item.officeMirrorPending===false));
 });
 
 test('storage failure blocks sending and an unfinished bank slip cannot submit', async () => {
