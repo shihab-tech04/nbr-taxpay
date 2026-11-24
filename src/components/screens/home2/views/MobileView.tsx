@@ -57,14 +57,11 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
         {/* Hero carousel */}
         <Tile>
           <div ref={car.ref} onScroll={car.onScroll} className="home2-no-scrollbar flex snap-x snap-mandatory overflow-x-auto rounded-[26px]">
-            <div className="relative h-[392px] w-full shrink-0 snap-center overflow-hidden rounded-[24px] bg-gradient-to-b from-[#e6ecfa] to-[#cad7f2]">
+            <div data-testid="home2-primary-slide" className="relative h-[392px] w-full shrink-0 snap-center overflow-hidden rounded-[24px] bg-gradient-to-b from-[#e6ecfa] to-[#cad7f2]">
               <img src={hero} alt="" className="absolute inset-x-0 bottom-0 h-[74%] w-full object-cover object-[50%_80%]" />
               <div className="absolute inset-x-0 top-0 h-[56%] bg-gradient-to-b from-[#e6ecfa] via-[#e6ecfa]/95 to-transparent" />
               <div className="relative px-5 pt-5">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#6b5a1e] uppercase ring-1 ring-[#6b5a1e]/10">
-                  <ShieldCheck className="size-3.5" /> {c.eyebrow}
-                </span>
-                <h1 className="mt-2.5 text-[26px] leading-[1.12] font-bold tracking-[-0.02em] text-[#4a3d10]">{c.heroTitle}</h1>
+                <h1 className="text-[26px] leading-[1.12] font-bold tracking-[-0.02em] text-[#4a3d10]">{c.heroTitle}</h1>
                 <p className="mt-2 max-w-[330px] text-[13px] leading-relaxed text-[#6b5f3a]">{c.heroBody}</p>
               </div>
               <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-1.5 rounded-[18px] bg-white/75 p-1.5 shadow-[0_10px_30px_-12px_rgba(74,61,16,0.45)] backdrop-blur-md">

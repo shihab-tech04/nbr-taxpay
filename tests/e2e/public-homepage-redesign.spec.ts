@@ -316,10 +316,13 @@ test('Imported Home 2 retains source typography and never clips desktop hero or 
       const hero=root.getByTestId('home2-desktop-hero');
       const copy=root.getByTestId('home2-hero-copy');
       await expect(copy.locator('p').first()).toHaveCSS('font-size','14.5px');
-      await expect(copy.locator('li').first()).toHaveCSS('font-size','12px');
+      await expect(copy.locator('li')).toHaveCount(0);
       await expect(root.getByTestId('home2-guide-action')).toHaveCSS('font-size','13px');
-      const outer=await hero.boundingBox();const trust=await root.getByTestId('home2-hero-trust').boundingBox();
-      expect(trust!.y+trust!.height,'trust labels remain inside the hero').toBeLessThanOrEqual(outer!.y+outer!.height+1);
+      const outer=await hero.boundingBox();
+      for(const id of ['home2-pay','home2-other']){
+        const action=await root.getByTestId(id).boundingBox();
+        expect(action!.y+action!.height,'payment actions remain inside the hero').toBeLessThanOrEqual(outer!.y+outer!.height+1);
+      }
       for(const id of ['home2-guide-action','home2-chat-action']){
         const action=root.getByTestId(id);
         expect(await action.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
@@ -364,4 +367,22 @@ test('Home 2 uses the uploaded project surface palette without replacing the des
     await expect(tile).toBeVisible();await expect(tile).toHaveCSS('background-color',color);
   }
   await expect(root.getByRole('button').filter({has:page.getByRole('heading',{name:'All Tax Payments',exact:true})})).toHaveCSS('color','rgb(21, 32, 51)');
+});
+
+
+test('Home 2 primary banner omits the eyebrow and trust labels in both languages',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const lang of ['en','bn']){
+    await page.goto('/?action=home-2&lang='+lang);
+    const root=page.getByTestId('home2-root');
+    const hero=root.getByTestId('home2-primary-slide');
+    await expect(hero.getByRole('heading',{level:1})).toBeVisible();
+    await expect(hero.locator('p')).toBeVisible();
+    await expect(hero.getByTestId('home2-pay')).toBeVisible();
+    await expect(hero.getByTestId('home2-other')).toBeVisible();
+    for(const label of ['Income tax, simplified','Secure payment','Instant challan','Receipts kept','আয়কর, সহজভাবে','নিরাপদ পেমেন্ট','তাৎক্ষণিক চালান','রসিদ সংরক্ষিত থাকে']){
+      await expect(hero.getByText(label,{exact:true})).toHaveCount(0);
+    }
+    await expect(hero.locator('img')).toHaveCount(1);
+  }
 });

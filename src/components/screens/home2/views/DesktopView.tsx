@@ -19,14 +19,12 @@ import {
   ShieldAlert,
   ShieldCheck,
   Wallet,
-  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import hero from '../assets/hero.webp'
 import { Logo, SearchPanel, Tile, promoSlides, slideCount, useCarousel, type ViewProps, type Home2Action } from '../shared'
 
 const lift = 'transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-22px_rgba(20,27,45,0.45)]'
-const trustIcons = [ShieldCheck, Zap, Receipt]
 
 export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: ViewProps) {
   const car = useCarousel(slideCount)
@@ -74,17 +72,14 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
           <Tile>
             <div data-testid="home2-desktop-hero" className="relative h-full min-h-[340px] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#e6ecfa] to-[#cad7f2] ring-1 ring-[#efe3c4]">
               <div ref={car.ref} onScroll={car.onScroll} className="home2-no-scrollbar flex h-full snap-x snap-mandatory overflow-x-auto">
-                <div className="relative min-h-[340px] w-full shrink-0 snap-center">
+                <div data-testid="home2-primary-slide" className="relative min-h-[340px] w-full shrink-0 snap-center">
                   {/* Illustration sits beside the copy, never under it */}
                   <div className="absolute inset-y-0 right-0 left-[min(460px,65%)]">
                     <img src={hero} alt="" className="size-full object-cover object-[70%_60%]" />
                     <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#e6ecfa] to-transparent" />
                   </div>
                   <div data-testid="home2-hero-copy" className="relative flex min-h-[340px] h-full max-w-[500px] flex-col justify-center py-7 pr-6 pl-9">
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#6b5a1e] uppercase ring-1 ring-[#6b5a1e]/10">
-                      <ShieldCheck className="size-3.5" /> {c.eyebrow}
-                    </span>
-                    <h1 className="mt-3.5 text-[36px] leading-[1.1] font-bold tracking-[-0.025em] text-[#45390e]">{c.heroTitle}</h1>
+                    <h1 className="text-[36px] leading-[1.1] font-bold tracking-[-0.025em] text-[#45390e]">{c.heroTitle}</h1>
                     <p className="mt-3 text-[14.5px] leading-relaxed text-[#6b5f3a]">{c.heroBody}</p>
                     <div className="mt-6 flex flex-wrap gap-2.5">
                       <button
@@ -100,16 +95,6 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
                         <FileText className="size-[18px]" /> {c.otherTax}
                       </button>
                     </div>
-                    <ul data-testid="home2-hero-trust" className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5">
-                      {c.trust.map((label, i) => {
-                        const Icon = trustIcons[i]
-                        return (
-                          <li key={label} className="flex items-center gap-1.5 text-[12px] font-medium text-[#7a6c45]">
-                            <Icon className="size-3.5 text-[#a08a4c]" /> {label}
-                          </li>
-                        )
-                      })}
-                    </ul>
                   </div>
                 </div>
                 {promoSlides.map((sl) => {
