@@ -1,3 +1,4 @@
+import {mockActivitySql} from './mock-activity-sql';
 import { expect, test } from '@playwright/test';
 import { mockPublishedBannerCms } from './mock-published-banners';
 test.beforeEach(async ({page}) => { await mockPublishedBannerCms(page); });
@@ -146,6 +147,7 @@ test('real taxpayer history preserves label/record weight contrast', async ({pag
 test('signed-in headings and navigation retain semantic hierarchy on every viewport in EN and BN', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280', 'One real session covers all widths and locales');
   test.setTimeout(360000);
+  await mockActivitySql(page);
   await page.goto('/?action=taxpayer_login');
   await page.locator('#taxpayer-login-user-id').fill('user1');
   await page.locator('#taxpayer-login-password').fill('user1');

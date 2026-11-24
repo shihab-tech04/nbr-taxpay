@@ -5,6 +5,7 @@ import type {DemoUserId} from '../data/demoUsers';
  * A server-issued random capability selects the same synthetic data on each browser.
  */
 export const PREVIEW_USER_KEY='taxpay-taxpayer-preview-user';
+export const GIFT_PENDING_SESSION_KEY='taxpay.gift-tax.pending.v1';
 const PREVIEW_SESSION_KEY='korbritto.demo-profile-session.v1';
 const capabilityPattern=/^[A-Za-z0-9_-]{43}$/;
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -53,6 +54,7 @@ export function clearPreviewSession():void {
   try{
     window.sessionStorage.removeItem(PREVIEW_USER_KEY);
     window.sessionStorage.removeItem(PREVIEW_SESSION_KEY);
+    window.sessionStorage.removeItem(GIFT_PENDING_SESSION_KEY);
   }catch{/* private browsing can prevent storage writes */}
 }
 async function send<T>(action:string,fields:Record<string,unknown>,capability?:string):Promise<T>{

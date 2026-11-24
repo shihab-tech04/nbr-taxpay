@@ -1,3 +1,4 @@
+import {mockActivitySql} from './mock-activity-sql';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
@@ -16,6 +17,7 @@ async function enterUser1(page:Page){
 
 test('mobile transaction details use a contained sheet with a visible close control',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile detail reflow');
+  await mockActivitySql(page);
   await enterUser1(page);
   await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   await page.locator('.taxpayer-transaction-row__action:visible').first().click();
@@ -62,8 +64,9 @@ test('mobile account-only overview remains contained without fictional source co
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
-test('mobile event ledger preserves readable entries and explicitly labels scenario balances',async({page},info)=>{
+test('mobile SQL event ledger preserves readable entries without inventing balances',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile ledger reflow');
+  await mockActivitySql(page);
   await enterUser1(page);
   await page.goto('/?action=ledger&qaScenario=1&scenarioYear=2025-2026');
   const ledger=page.getByTestId('event-tax-ledger');
@@ -74,6 +77,7 @@ test('mobile event ledger preserves readable entries and explicitly labels scena
   await expect(entry).toBeVisible();
   await expect(entry.getByRole('button')).toBeVisible();
   await expect(ledger.getByText('Calculated balance for selected year')).toBeVisible();
+  await expect(entry.getByText('Not verified',{exact:true})).toBeVisible();
   await entry.getByRole('button').click();
   const detail=page.getByTestId('tax-event-details');
   await expect(detail).toContainText('Ledger entry ID');
@@ -201,6 +205,7 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
 });
 
 test('signed-in Transactions provides payment reference search without a separate Track payment tab',async({page})=>{
+  const reference='DEMO-PAY-23-01';
   await enterUser1(page);
   await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
@@ -208,7 +213,7 @@ test('signed-in Transactions provides payment reference search without a separat
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
-  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-PAY-23-01');
+  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill(reference);
   await expect(page.locator('[data-testid="taxpayer-transaction-table"] tbody tr')).toHaveCount(1);
   await page.locator('.taxpayer-transaction-row__action:visible').first().click();
   await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
