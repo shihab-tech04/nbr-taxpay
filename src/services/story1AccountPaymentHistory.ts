@@ -1,10 +1,29 @@
 import { supabase } from './supabaseClient';
+import {retryStory1OwnershipClaim,type ClaimActor,type ClaimAttempt} from './story1OwnershipClaim';
 import { getStorySessionId, getStorySessionPayments, storyApiHeaders } from './simulatedPaymentStory';
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 import { makeConfirmedReceipt, validCertificateTransactionId } from './confirmedPaymentCertificate';
 import type { ChallanReceipt } from '../types/tax';
 
 const STORY_API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'') + '/functions/v1/demo-story1-taxpay';
+
+// Use the captured bearer, not a mutable client token, for the two existing
+// owner-scoped RPCs. SQL remains the final authorization boundary.
+async function invokeStory1OwnershipClaim(name:'taxpay_claim_story1_session'|'taxpay_claim_walkin_payer_payments',
+  args:Record<string,unknown>,actor:ClaimActor):Promise<ClaimAttempt>{
+  const response=await fetch(TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/rest/v1/rpc/'+name,{
+    method:'POST',cache:'no-store',headers:{
+      apikey:TAXPAY_PUBLIC_ENDPOINT.publishableKey,
+      Authorization:'Bearer '+actor.accessToken,
+      'Content-Type':'application/json'
+    },body:JSON.stringify(args)
+  });
+  if(!response.ok)return response.status===408||response.status===425||response.status===429||response.status>=500?'retryable':'denied';
+  const count:unknown=await response.json();
+  // Zero is a successful RPC, not proof that a new owner link was created.
+  // The subsequent authenticated list remains the only ownership readback.
+  return typeof count==='number'&&Number.isSafeInteger(count)&&count>=0?'acknowledged':'denied';
+}
 
 /**
  * Paid-record read model: one immutable transaction per selected payment head.
@@ -87,15 +106,30 @@ export async function getAccountStoryPayments(ownerUid: string, options: { claim
   if (identityError || before.user?.id !== ownerUid) throw new Error('Account identity changed');
   // Personalized shortcuts are a read-only affordance, not a claim action.
   if (options.claimPending !== false) {
-  const { error: claimError } = await supabase.rpc('taxpay_claim_story1_session', {
-    p_session_id: getStorySessionId()
-  });
-  if (claimError) throw new Error('Unable to synchronize saved payment history');
-  // Guest Other Tax records may declare a payer TIN, but only this authenticated
-  // RPC can link them through the existing approver-verified account binding.
-  // Never pass the entered payer TIN or a browser-selected account identity.
-  const { error: payerClaimError } = await supabase.rpc('taxpay_claim_walkin_payer_payments');
-  if (payerClaimError) throw new Error('Unable to verify walk-in payer history');
+    // A mounted Activity/Certificate read automatically retries a transient
+    // ownership failure after the source acknowledgement event. Only retry the
+    // idempotent link RPC; the payment submission itself is never repeated.
+    const client=supabase;
+    const currentActor=async():Promise<ClaimActor|null>=>{
+      const {data,error}=await client.auth.getSession();
+      const session=data.session;
+      if(error||!session?.access_token||session.user.id!==ownerUid)return null;
+      return {userId:session.user.id,accessToken:session.access_token};
+    };
+    const actor=await currentActor();
+    if(!actor)throw Error('Account identity changed');
+    const sessionId=getStorySessionId();
+    const signedClaim=(name:'taxpay_claim_story1_session'|'taxpay_claim_walkin_payer_payments',args:Record<string,unknown>)=>
+      (captured:ClaimActor):Promise<ClaimAttempt>=>invokeStory1OwnershipClaim(name,args,captured);
+    const claimResult=await retryStory1OwnershipClaim(actor,currentActor,
+      signedClaim('taxpay_claim_story1_session',{p_session_id:sessionId}));
+    if(claimResult!=='acknowledged')throw Error('Unable to synchronize saved payment history');
+    // Guest Other Tax records may declare a payer TIN, but only this authenticated
+    // RPC can link them through the existing approver-verified account binding.
+    // Never pass the entered payer TIN or a browser-selected account identity.
+    const payerClaimResult=await retryStory1OwnershipClaim(actor,currentActor,
+      signedClaim('taxpay_claim_walkin_payer_payments',{}));
+    if(payerClaimResult!=='acknowledged')throw Error('Unable to verify walk-in payer history');
   }
   const all: OwnedStoryPayment[] = [];
   const seen = new Set<string>();
