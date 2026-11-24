@@ -187,6 +187,29 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await first.goto('/?action=history');
     await expect(first.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);
 
+    // Exercise the actual correction button, API and SQL-backed register
+    // against the disposable saved payment, including no-op rejection.
+    const correctionReference=profileReads[3].body.data.data.details.receiptSnapshot.challanNo as string;
+    const correctionReason='Incorrect assessment year '+randomUUID().slice(0,8);
+    await first.goto('/?action=corrections');
+    const picker=first.locator('#correction-challan');
+    await expect(picker.locator('option').filter({hasText:correctionReference})).toHaveCount(1);
+    await picker.selectOption(correctionReference);
+    await first.locator('#correction-reason').fill(correctionReason);
+    const submitCorrection=first.getByRole('button',{name:'Submit correction request'});
+    await submitCorrection.click();
+    await expect(first.getByRole('alert').filter({hasText:'Choose at least one different year'})).toBeVisible();
+    await first.locator('#correction-proposed-year').selectOption('2025-2026');
+    const acknowledgement=first.waitForResponse(response=>response.url().endsWith('/demo-story1-taxpay/corrections')&&response.request().method()==='POST');
+    await submitCorrection.click();
+    const correctionResponse=await acknowledgement;
+    expect(correctionResponse.status()).toBe(200);
+    const correctionId=(await correctionResponse.json()).data.id as string;
+    await expect(first.getByText('Request recorded:',{exact:false})).toContainText(correctionId);
+    await expect(first.getByTestId('preview-correction-register')).toContainText(correctionId);
+    await first.reload();
+    await expect(first.getByTestId('preview-correction-register')).toContainText(correctionId);
+
     await setLanguage(first,'bn');
     expect(firstProfile?.selectedListId).toBeTruthy();
 
@@ -214,6 +237,14 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(second.getByTestId('signed-in-payment-activity')).toContainText('123.45');
     await second.reload();
     await expect(second.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);
+    await second.goto('/?action=corrections');
+    await expect(second.getByTestId('preview-correction-register')).toContainText(correctionId);
+    await expect(second.getByRole('button',{name:'সংশোধনের আবেদন জমা দিন'})).toBeVisible();
+    await second.goto('/?action=taxpayer_home');
+    const correctionMetric=second.locator('.taxpay-summary-metric--requests');
+    await expect(correctionMetric.locator('strong')).not.toHaveText('—');
+    await correctionMetric.click();
+    await expect(second.getByTestId('dashboard-recorded-corrections')).toContainText(correctionReason);
 
     const otherContext=await makeContext();
     const other=await otherContext.newPage();
@@ -247,6 +278,9 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(otherBeneficiaries).not.toContainText(listName);
     await other.goto('/?action=history');
     await expect(other.getByTestId('signed-in-payment-activity')).not.toContainText(paymentReference);
+    await other.goto('/?action=corrections');
+    await expect(other.getByTestId('preview-correction-register')).not.toContainText(correctionId);
+    await expect(other.getByText('No correction requests saved yet.')).toBeVisible();
 
     // The actual read-only SQL RPC also confirms the new owner-scoped rows and
     // rejects the other profile's capability; no HTTP route is intercepted.

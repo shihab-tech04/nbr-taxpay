@@ -14,6 +14,7 @@ import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {ReceiptView} from '../common/ReceiptView';
 import {CorrectionRequests} from './CorrectionRequests';
+import {usePreviewCorrectionRegister} from '../../services/previewCorrections';
 import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -116,6 +117,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   // A server-issued preview session selects fictional user1 Activity records only.
   // Real Supabase accounts are routed elsewhere and never inherit these figures.
   const authorizedPreviewScenario=previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1';
+  const recordedCorrections=usePreviewCorrectionRegister(authorizedPreviewScenario?'user1':null,
+    authorizedPreviewScenario&&!localQaScenario&&['taxpayer_home','dashboard'].includes(route));
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
@@ -594,7 +597,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const correctionRequests=overviewSource==='example'
     ?scoped.filter(x=>x.state==='REQUESTED'&&(x.kind==='refund'||x.kind==='adjustment')):[];
   // There is no owner-verified correction source in this preview SQL projection.
-  const correctionRequestCount:number|null=overviewSource==='example'?correctionRequests.length:null;
+  const correctionRequestCount:number|null=authorizedPreviewScenario&&!localQaScenario?recordedCorrections.count:overviewSource==='example'?correctionRequests.length:null;
   const openOverviewPayments=()=>navigate('history',{
     dashboardSource:overviewSource,dashboardOnlyCompleted:true
   });
@@ -759,6 +762,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </div>
     <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} hidden={followupTab!=='requests'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
+      {authorizedPreviewScenario&&!localQaScenario?<div className="mt-2 space-y-3">
+        {recordedCorrections.phase==='loading'?<p role="status" className="text-sm text-taxpay-muted">{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</p>
+          :recordedCorrections.phase==='error'?<div role="alert" className="text-sm"><p>{tr('Correction request history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><button type="button" className={action+' mt-2'} onClick={recordedCorrections.retry}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>
+          :recordedCorrections.rows.length?<ul data-testid="dashboard-recorded-corrections" className="space-y-2">{recordedCorrections.rows.slice(0,3).map(request=><li key={request.id} className="rounded-lg border border-taxpay-border p-3 min-w-0">
+            <p className="break-all text-sm font-semibold">{request.originalReference}</p><p className="text-sm text-taxpay-muted">{tr('Recorded','নথিভুক্ত')} · {request.currentAY} → {request.proposedAY}</p><p className="text-sm break-words">{request.reason}</p>
+          </li>)}</ul>:<p role="status" className="text-sm text-taxpay-muted">{tr('No correction requests yet.','এখনো কোনো সংশোধনের আবেদন নেই।')}</p>}
+        <button type="button" className={action} onClick={()=>navigate('corrections')}>{tr('View requests','আবেদন দেখুন')}<ArrowRight size={15} aria-hidden="true"/></button>
+      </div>:<>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
         ?tr('Example requests and their displayed status.','উদাহরণভিত্তিক আবেদন ও প্রদর্শিত অবস্থা।')
         :tr('Correction request status is not available for this session.','এই সেশনে সংশোধনের আবেদনের অবস্থা পাওয়া যাচ্ছে না।')}</p>
@@ -777,7 +788,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </li>)}
       </ul> : overviewSource==='example'
         ?<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>
-        :<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests are recorded for this session.','এই সেশনের জন্য কোনো সংশোধন আবেদন সংরক্ষিত নেই।')}</p>}
+        :<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests are recorded for this session.','এই সেশনের জন্য কোনো সংশোধন আবেদন সংরক্ষিত নেই।')}</p>}</>}
     </section>
     </div>
     </div>
@@ -1034,7 +1045,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </div>
   </section>;
   const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:
-    route==='corrections'&&(routeParams?.applyForCorrection===true&&authorizedPreviewScenario)
+    route==='corrections'&&authorizedPreviewScenario&&(!localQaScenario||routeParams?.applyForCorrection===true)
       ?<CorrectionRequests recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
         preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
       :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;

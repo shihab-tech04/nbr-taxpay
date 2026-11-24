@@ -1,3 +1,4 @@
+import {useEffect,useState} from 'react';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 import {activePreviewSession} from './previewAccountSession';
 
@@ -53,5 +54,35 @@ export async function submitPreviewCorrection(input:PreviewCorrectionInput):Prom
   if(row.paymentId!==input.paymentId||row.allocationId!==input.allocationId||
     (input.allocationIndex!==null&&row.allocationIndex!==input.allocationIndex)||row.reason!==input.reason.trim())
     throw Error('Correction acknowledgement mismatch');
+  window.dispatchEvent(new Event('taxpay:preview-corrections-changed'));
   return row;
+}
+
+/** Account-bound dashboard read model. An unavailable API is never counted as zero. */
+export function usePreviewCorrectionRegister(profileId:string|null,enabled=true){
+  const session=activePreviewSession();
+  const key=enabled&&session?.profileId===profileId?session.capability:null;
+  type State={key:string|null;phase:'loading'|'ready'|'error';rows:PreviewCorrectionRecord[]};
+  const [state,setState]=useState<State>({key:null,phase:'loading',rows:[]});
+  const [revision,setRevision]=useState(0);
+  useEffect(()=>{
+    let active=true;
+    let sequence=0;
+    if(!key){setState({key:null,phase:'error',rows:[]});return;}
+    const load=()=>{
+      const attempt=++sequence;
+      setState({key,phase:'loading',rows:[]});
+      void listPreviewCorrections().then(rows=>{
+        if(active&&attempt===sequence)setState({key,phase:'ready',rows});
+      }).catch(()=>{
+        if(active&&attempt===sequence)setState({key,phase:'error',rows:[]});
+      });
+    };
+    load();
+    window.addEventListener('taxpay:preview-corrections-changed',load);
+    return()=>{active=false;window.removeEventListener('taxpay:preview-corrections-changed',load);};
+  },[key,revision]);
+  const visible=state.key===key?state:{key,phase:'loading' as const,rows:[]};
+  return {phase:visible.phase,rows:visible.rows,count:key&&visible.phase==='ready'?visible.rows.length:null,
+    retry:()=>setRevision(n=>n+1)};
 }
