@@ -5,6 +5,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {WalkInDiscardConfirmation} from '../ui/WalkInDiscardConfirmation';
 import {GiftTaxPaymentResult} from './GiftTaxPaymentResult';
 import {simulateGiftTaxPayment, type GiftTaxPaymentInput, type GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
+import {persistGiftTaxSimulation} from '../../services/giftTaxSimulationPersistence';
 import {PaymentMethodSelector,type PaymentChannel,type PaymentMethodGroup,type PaymentMethod} from '../ui/PaymentMethodSelector';
 import {Pencil} from 'lucide-react';
 import {SearchableSelect} from '../ui/SearchableSelect';
@@ -19,6 +20,9 @@ import {amountInTakaWords} from '../../services/amountInWords';
 import {estimateGiftTax, parseGiftValue} from '../../services/giftTaxEstimate';
 import {validGiftDate} from '../../services/giftTaxDate';
 import '../../styles/taxpay-unified-v3.css';
+// Gift Tax can open directly from signed-in navigation, without the public chooser.
+// Load the service-owned grid/control styles on every entry path.
+import '../../styles/other-tax-modal.css';
 
 type Party = 'donor' | 'donee';
 type Person = {tin: string; name: string};
@@ -39,7 +43,7 @@ const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
  * No authorized Gift Tax head, government payment API, or official credit-posting
  * path currently exists. Never turn this public form into a financial write.
  */
-export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBack?: () => void}) {
+export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose: () => void; onBack?: () => void; signedIn?: boolean}) {
   const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
@@ -234,10 +238,17 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   };
   // Complete the EXISTING sample bank journey without suggesting Treasury settlement:
   // this only advances a browser-local simulation using its unchanged SIM reference.
-  const continueSimulatedBankPayment = () => {
-    if (!paymentInput || paymentOutcome?.kind!=='SIMULATED_PENDING') return;
-    setPaymentOutcome({kind:'SIMULATED_SUCCESS',reference:paymentOutcome.reference,
-      method:'BANK_BRANCH',createdAt:new Date().toISOString()});
+  const continueSimulatedBankPayment = async () => {
+    if (!paymentInput || paymentOutcome?.kind!=='SIMULATED_PENDING' || paymentBusy) return;
+    setPaymentBusy(true);
+    try{setPaymentOutcome(signedIn?await persistGiftTaxSimulation(paymentInput,'BANK_BRANCH'):{kind:'SIMULATED_SUCCESS',reference:paymentOutcome.reference,method:'BANK_BRANCH',createdAt:new Date().toISOString()});}
+    finally{setPaymentBusy(false);}
+  };
+  const retryGiftSync=async()=>{
+    if(!paymentInput||paymentOutcome?.kind!=='SIMULATED_SYNC_PENDING'||paymentBusy)return;
+    setPaymentBusy(true);
+    try{setPaymentOutcome(await persistGiftTaxSimulation(paymentInput,paymentOutcome.method));}
+    finally{setPaymentBusy(false);}
   };
   const proceedToApprovedChannel = () => {
     if (estimatedTax === 0) {void attemptSimulatedPayment();return;}
@@ -291,7 +302,8 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     setPaymentBusy(true);
     try {
       const nextOutcome=simulateGiftTaxPayment(nextInput,paymentMethod??'SIMULATED',simulateDecline);
-      setPaymentOutcome(nextOutcome);
+      setPaymentOutcome(signedIn&&nextOutcome.kind==='SIMULATED_SUCCESS'
+        ?await persistGiftTaxSimulation(nextInput,nextOutcome.method):nextOutcome);
     } catch {
       setPaymentOutcome({kind:'SIMULATED_FAILED',reason:t('Unable to prepare the simulation. Retry without losing your details.','সিমুলেশন প্রস্তুত হয়নি। তথ্য না হারিয়ে আবার চেষ্টা করুন।'),retryable:true});
     } finally {
@@ -443,12 +455,12 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     ariaLabel={t('Gift Tax', 'দানকর')} service="gift"
     className={'gift-tax-dialog taxpay-v5-locked' + (step >= 3 ? ' gift-tax-approved-stage' : '') + (step === 4 ? ' gift-tax-result-stage' : '')}
     progress={step === 4 || (step === 3 && checkoutOpen) ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
-      subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
+      subtitle: signedIn ? t('Gift Tax', 'দানকর') : t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
       accessibilityLabel: t('Payment progress', 'পেমেন্টের অগ্রগতি'),
       accessibilityValueText: t(`Step ${step} of 3`, `৩ ধাপের ${step === 1 ? '১' : step === 2 ? '২' : '৩'} নম্বর ধাপ`)}}
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={requestClose}
-    onBack={step === 1 ? onBack : () => {
+    onBack={paymentOutcome?.kind==='SIMULATED_SYNC_PENDING'||paymentBusy?undefined:step === 1 ? onBack : () => {
       if(step===4){setStep(3);setCheckoutOpen(false)}
       else if(step===3&&checkoutOpen)setCheckoutOpen(false);
       else setStep(step===3?2:1);
@@ -720,10 +732,11 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     {step === 4 && paymentInput && paymentOutcome && <div
       className="gift-tax-approved-flow gift-tax-result-workspace"
       data-testid="gift-tax-result-workspace">
-      <GiftTaxPaymentResult language={language} input={paymentInput} outcome={paymentOutcome}
+      <GiftTaxPaymentResult signedIn={signedIn} language={language} input={paymentInput} outcome={paymentOutcome}
         onBack={()=>{setCheckoutOpen(false);setStep(3);}}
         onRetry={()=>{setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}}
         onContinueBank={continueSimulatedBankPayment}
+        onRefresh={retryGiftSync} busy={paymentBusy}
         onLogin={()=>{onClose();navigate('taxpayer_login');}}/>
     </div>}
   </TaxPayModal>
