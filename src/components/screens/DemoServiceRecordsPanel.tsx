@@ -1,4 +1,4 @@
-import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React from 'react';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { useTaxState } from '../../services/taxState';
@@ -255,17 +255,10 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
               </p>
             </section>
           )}
-          {records.length === 0 ? (
-            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-taxpay-muted" role="status">
-              {tr('No stored service activity is available for this account.', 'এই অ্যাকাউন্টে কোনো সংরক্ষিত সেবার কার্যক্রম নেই।')}
-            </p>
-          ) : (
-            <>
-              <div className="mt-3" data-testid="taxpay-service-record-register">
+          <div className="mt-3" data-testid="taxpay-service-record-register">
                 <TaxPayDataGrid variant="tabular" rows={filteredRecords} getRowKey={record=>record.recordId}
                   ariaLabel={tr('Service records','সেবার রেকর্ড')}
                   onViewRow={record=>setSelectedRecordId(record.recordId)}
-                  emptyLabel={tr('No service records match your search and filters.', 'অনুসন্ধান ও ফিল্টারে কোনো সেবার রেকর্ড পাওয়া যায়নি।')}
                   toolbar={{
                     title:tr('Service record details','সেবার রেকর্ডের বিস্তারিত'),
                     count:filteredRecords.length,total:records.length,countLabel:tr('Records','রেকর্ড'),
@@ -325,9 +318,12 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                       <p><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time></p>
                     </div>
                   </>}/>
-              </div>
-            </>
-          )}
+            {filteredRecords.length === 0 && <TaxPayTableState role="status">
+              {records.length === 0
+                ? tr('No stored service activity is available for this account.', 'এই অ্যাকাউন্টে কোনো সংরক্ষিত সেবার কার্যক্রম নেই।')
+                : tr('No service records match your search and filters.', 'অনুসন্ধান ও ফিল্টারে কোনো সেবার রেকর্ড পাওয়া যায়নি।')}
+            </TaxPayTableState>}
+          </div>
         </>
       )}
     </section>
