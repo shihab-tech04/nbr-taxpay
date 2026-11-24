@@ -84,9 +84,20 @@ try {
         await expect(workspace).toBeVisible({timeout:30_000});
         await expect(workspace).toHaveAttribute('data-dashboard-view','true');
         await expect(page.getByRole('region',{name:/Payment and request summary|পেমেন্ট ও আবেদনের সারসংক্ষেপ/})).toBeVisible();
-        await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
-        await expect(page.getByTestId('dashboard-payment-analytics')).toBeVisible();
-        await expect(page.getByRole('heading',{name:/Payment relationships|পেমেন্টের সম্পর্ক/})).toBeVisible();
+        await expect(workspace).toHaveAttribute('data-payment-source-state','ready',{timeout:30000});
+        const analytics=page.getByTestId('dashboard-payment-analytics');
+        await expect(analytics).toBeVisible();
+        await expect(analytics).toHaveAttribute('data-chart-source','recorded');
+        await expect(analytics.getByTestId('dashboard-chart-source')).toHaveCount(0);
+        // Populated SQL retains its existing chart layout; empty SQL uses its
+        // approved empty state, never hardcoded example totals or identities.
+        if(await analytics.getAttribute('data-empty')==='true'){
+          await expect(analytics.getByText(/No itemized account payments|চার্টে দেখানোর মতো/)).toBeVisible();
+        }else{
+          await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
+          await expect(page.getByRole('heading',{name:/Payment relationships|পেমেন্টের সম্পর্ক/})).toBeVisible();
+        }
+        await expect(workspace.getByText(/DEMO-PAY-|DEMO-ETDS-|DEMO-REFUND-/)).toHaveCount(0);
         await expect(page.getByRole('heading',{name:/My Tax Journey|আমার কর যাত্রা/})).toBeVisible();
         const yearSelect=page.getByRole('combobox',{name:/Assessment year|করবর্ষ/});
         await yearSelect.selectOption('2025-2026');

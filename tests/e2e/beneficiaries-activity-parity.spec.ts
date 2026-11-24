@@ -318,9 +318,11 @@ test('signed-in Activity shows new payments across assessment years immediately 
   const recent=make('00000000-0000-4000-8000-000000000902','2026-11-24T05:40:00Z','2026-27',452000);
   const newest=make('00000000-0000-4000-8000-000000000903','2026-11-24T05:47:00Z','2026-27',6500);
   let payments=[recent,old];
+  let readFailure=false;
   await page.route(url=>url.pathname==='/functions/v1/demo-story1-taxpay/payments'||url.pathname.startsWith('/functions/v1/demo-story1-taxpay/payments/'),async route=>{
     if(route.request().method()!=='GET'||route.request().headers()['x-taxpay-guest-capability']!==capability)
       return route.fulfill({status:403,contentType:'application/json',body:'{}'});
+    if(readFailure)return route.fulfill({status:503,contentType:'application/json',body:'{}'});
     const url=new URL(route.request().url());
     const payment=payments.find(item=>url.pathname.endsWith('/'+item.id));
     const data=url.pathname.endsWith('/payments')
@@ -370,6 +372,16 @@ test('signed-in Activity shows new payments across assessment years immediately 
   await page.goto('/?action=journey');
   await expect(page.getByTestId('taxpay-payment-journey')).toContainText(newest.id);
   await expect(page.getByTestId('taxpay-payment-journey')).not.toContainText('DEMO-PAY-');
+  await page.goto('/?action=history');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toHaveAttribute('data-payment-source-state','ready');
+  readFailure=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered')));
+  await expect(page.getByText('Recorded payments could not be verified.',{exact:true})).toBeVisible();
+  await expect(page.getByText('No transactions yet.',{exact:true})).toHaveCount(0);
+  await expect(page.getByTestId('taxpayer-transaction-table')).toHaveCount(0);
+  readFailure=false;
+  await page.getByRole('button',{name:'Retry',exact:true}).click();
+  await expect(page.getByTestId('taxpayer-transaction-mobile-cards').locator(':scope > li').first()).toContainText(newest.id);
   payments=[];
   await page.goto('/?action=history');
   await expect(page.getByText('No transactions yet.',{exact:true})).toBeVisible();
