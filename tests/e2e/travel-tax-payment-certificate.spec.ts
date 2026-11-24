@@ -40,8 +40,7 @@ for (const language of ['en', 'bn'] as const) {
         await route.fulfill({status:200,contentType:'application/json',headers:corsHeaders,
           body:JSON.stringify(detail
             ?{success:true,simulationOnly:true,data:{id:paymentId,status:'SIMULATED_SUCCESS',
-                createdAt,data:{service:stored.service,amountMinor:stored.amountMinor,
-                  origin:'TAXPAY_UI',details:stored.details}}}
+                createdAt,data:{...stored}}}
             :{success:true,simulationOnly:true,data:{items:[source],total:1}})});
         return;
       }
@@ -192,7 +191,6 @@ for (const language of ['en', 'bn'] as const) {
     await outsider.getByRole('button',{name:/Search records|রেকর্ড খুঁজুন/}).click();
     await expect(outsider.getByRole('alert')).toBeVisible();
     await expect(outsider.locator('.receipt-view')).toHaveCount(0);
-    expect(submissionCount).toBe(1);
     expect(submissionCount).toBe(1);
   });
 }
