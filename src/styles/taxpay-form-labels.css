@@ -64,39 +64,26 @@
 .taxpay-citizen-shell .travel-flow__passport-action button:hover {
   background: var(--citizen-primary-light);
 }
-/* Passport suggestions are a true combobox popup: they do not increase
-   row/card/modal height. Lift the *whole row* above following form controls
-   so no label or medical checkbox can paint through the opaque popup. */
-.taxpay-citizen-shell .travel-flow__person-body:has(.travel-flow__passport-suggestions) {
-  position: relative;
-  z-index: 30;
-}
-.taxpay-citizen-shell .travel-flow__passport-row:has(.travel-flow__passport-suggestions) {
-  z-index: 30;
-}
+/* Native top-layer popup: no spacer, modal resize or parent scrolling. */
 .taxpay-citizen-shell .travel-flow__passport-suggestions {
-  position: absolute;
-  z-index: 31;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  width: 100%;
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   min-width: 0;
-  max-height: min(210px, 32vh);
+  max-width: none;
+  max-height: 210px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   background: var(--citizen-surface);
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
   box-shadow: 0 12px 26px rgb(18 42 77 / 20%);
+  color: var(--citizen-text);
+  font: inherit;
 }
-.taxpay-citizen-shell .travel-passenger-workspace__editor:has(.travel-flow__passport-suggestions)::after {
-  content: "";
-  display: block;
-  height: var(--travel-picker-clearance, 0px);
-  pointer-events: none;
-}
-.taxpay-citizen-shell .travel-flow__passport-suggestions { scrollbar-gutter: stable; }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
 .taxpay-citizen-shell .travel-flow__passport-no-results {
   margin: 0;

@@ -200,7 +200,8 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   // Passport suggestions must not shift or expand the empty lookup dialog.
   expect(Math.abs(withPopup!.height - baseline!.height)).toBeLessThanOrEqual(2);
   expect(Math.abs(withCard!.height - cardBaseline!.height)).toBeLessThanOrEqual(2);
-  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).toBe('absolute');
+  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).toBe('fixed');
+  expect(await suggestions.evaluate(el=>el.matches(':popover-open'))).toBe(true);
   expect(await suggestions.evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
   // Popup must receive hit testing ahead of the controls beneath it;
   // otherwise medical labels can appear through the floating list.
@@ -317,12 +318,11 @@ test('Travel Tax: ten fictional passports are scrollable, selectable and verifia
   await expect.poll(async()=>list.getAttribute('data-placement')).toMatch(/above|below/);
   const boundaries=await list.evaluate(el=>{
     const list=el.getBoundingClientRect();
-    const body=el.closest('.taxpay-modal__body')?.getBoundingClientRect();
-    const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
-    return {top:list.top,bottom:list.bottom,bodyTop:body?.top??0,footerTop:footer?.top??window.innerHeight};
+    return {top:list.top,bottom:list.bottom,viewTop:window.visualViewport?.offsetTop??0,
+      viewBottom:(window.visualViewport?.offsetTop??0)+(window.visualViewport?.height??window.innerHeight)};
   });
-  expect(boundaries.top).toBeGreaterThanOrEqual(boundaries.bodyTop - 2);
-  expect(boundaries.bottom).toBeLessThanOrEqual(boundaries.footerTop + 2);
+  expect(boundaries.top).toBeGreaterThanOrEqual(boundaries.viewTop - 2);
+  expect(boundaries.bottom).toBeLessThanOrEqual(boundaries.viewBottom + 2);
   await options.filter({hasText:'TEST230005'}).click();
   await modal.getByRole('button',{name:'Check Passport'}).click();
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
@@ -1279,16 +1279,30 @@ test('Walk-in Travel Tax: short desktop dropdown is hit-testable and has no draf
     await expect(modal.getByRole('button',{name:'Continue Draft',exact:true})).toHaveCount(0);
     const input=modal.locator('#travel-passport-first');
     const list=modal.locator('#travel-passport-suggestions-first');
+    const geometry = () => modal.evaluate(el => {
+      const nodes = [el, ...['.taxpay-modal__header','.taxpay-modal__body','.taxpay-modal__footer',
+        '.travel-flow__passport-row','.travel-passenger-workspace__rail'].map(selector=>el.querySelector(selector))];
+      return nodes.flatMap(node=>{
+        if(!node) throw new Error('Missing stable modal section');
+        const b=node.getBoundingClientRect();
+        return [b.x,b.y,b.width,b.height,node.scrollTop,node.scrollHeight];
+      });
+    });
+    await modal.evaluate(async el=>{await Promise.all(el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>a.finished.catch(()=>undefined)));});
+    const baseline = await geometry();
     await input.click();
     await expect(list.getByRole('option')).toHaveCount(10);
     await expect.poll(()=>list.evaluate(el=>{
       const b=el.getBoundingClientRect();
       const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
-      const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
-      if(!first||!footer||b.height<90||b.bottom>footer.top+2)return false;
+      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+2)return false;
       const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
       return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
     })).toBe(true);
+    // Inspect the entire modal after animations finish, not only its input.
+    await list.evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
+    const opened=await geometry();
+    expect(Math.max(...opened.map((v,i)=>Math.abs(v-baseline[i])))).toBeLessThanOrEqual(2);
     await list.getByRole('option',{name:/TEST230005/}).click();
     await modal.getByRole('button',{name:'Check Passport'}).click();
     await modal.getByRole('button',{name:'Add passenger',exact:true}).click();

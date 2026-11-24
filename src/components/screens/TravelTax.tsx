@@ -90,73 +90,63 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
-  const [passportSuggestionMaxHeight, setPassportSuggestionMaxHeight] = useState(210);
-  // Pointer focus precedes click. Do not move the target until that click has completed.
+  // The native manual popover is in the browser top layer, not the modal's
+  // scroll layout. It remains a DOM child of the combobox for keyboard and
+  // dialog focus semantics, but cannot contribute to content/scroll height.
   const passportPointerFocus = useRef(false);
-  // The shared modal can scroll either its body or the inner form. Resolve
-  // the actual clipping and scroll ancestors rather than assuming one owner.
   useLayoutEffect(() => {
     if (!passportSuggestionsFor) return;
-    const row = document.getElementById('travel-passport-' + passportSuggestionsFor)
-      ?.closest<HTMLElement>('.travel-flow__passport-row');
-    const dialog = row?.closest<HTMLElement>('.taxpay-modal');
-    const editor = row?.closest<HTMLElement>('.travel-passenger-workspace__editor');
-    if (!row || !dialog || !editor) return;
-    const ancestors: HTMLElement[] = [];
-    for (let el = row.parentElement; el && el !== dialog; el = el.parentElement) ancestors.push(el);
+    const field = document.getElementById('travel-passport-' + passportSuggestionsFor);
+    const row = field?.closest<HTMLElement>('.travel-flow__passport-row');
+    const popup = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
+    if (!field || !row || !popup) return;
     const viewport = window.visualViewport;
-    const clipping = () => {
-      const footer = dialog.querySelector<HTMLElement>('.taxpay-modal__footer')?.getBoundingClientRect();
-      const body = dialog.querySelector<HTMLElement>('.taxpay-modal__body')?.getBoundingClientRect();
-      let top = Math.max(body?.top ?? 0, viewport?.offsetTop ?? 0);
-      let bottom = Math.min(body?.bottom ?? window.innerHeight, footer?.top ?? window.innerHeight,
-        (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight));
-      for (const el of ancestors) {
-        if (/auto|scroll|hidden|clip/.test(getComputedStyle(el).overflowY)) {
-          const box = el.getBoundingClientRect();
-          top = Math.max(top, box.top + el.clientTop);
-          bottom = Math.min(bottom, box.top + el.clientTop + el.clientHeight);
-        }
-      }
-      return {top,bottom};
-    };
-    const measure = (reveal: boolean) => {
-      if (!row.isConnected) return;
-      let bounds = clipping();
+    const position = () => {
+      if (!row.isConnected || !popup.isConnected) return;
+      const anchor = field.getBoundingClientRect();
       const rowBox = row.getBoundingClientRect();
-      const limit = Math.max(0, Math.min(window.innerWidth <= 560 ? 190 : 210,
-        bounds.bottom - bounds.top - Math.min(rowBox.height, 76) - 12));
-      if (reveal) {
-        const clearance = Math.max(0, rowBox.bottom + limit + 8 - bounds.bottom);
-        const existing = parseFloat(editor.style.getPropertyValue('--travel-picker-clearance')) || 0;
-        editor.style.setProperty('--travel-picker-clearance', Math.ceil(Math.max(existing, clearance + (clearance ? 16 : 0))) + 'px');
-        bounds = clipping();
-        for (const el of ancestors) {
-          if (!/auto|scroll/.test(getComputedStyle(el).overflowY)) continue;
-          const needed = row.getBoundingClientRect().bottom + limit + 8 - bounds.bottom;
-          if (needed > 0) el.scrollTop += Math.ceil(needed);
-          bounds = clipping();
-        }
-      }
-      const available = Math.max(0, bounds.bottom - row.getBoundingClientRect().bottom - 6);
-      const height = Math.floor(Math.min(limit, available));
-      setPassportSuggestionMaxHeight(old => old === height ? old : height);
+      const leftEdge = (viewport?.offsetLeft ?? 0) + 8;
+      const topEdge = (viewport?.offsetTop ?? 0) + 8;
+      const rightEdge = (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth) - 8;
+      const bottomEdge = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 8;
+      const below = Math.max(0, bottomEdge - anchor.bottom - 4);
+      const above = Math.max(0, anchor.top - topEdge - 4);
+      const max = window.innerWidth <= 560 ? 190 : 210;
+      // Prefer downwards even if the list must scroll, avoiding overlap
+      // with the nationality controls. Flip only when space is too small.
+      const placement = below >= Math.min(max, 100) || below >= above ? 'below' : 'above';
+      const width = Math.min(rowBox.width, rightEdge - leftEdge);
+      Object.assign(popup.style, {
+        left: Math.max(leftEdge, Math.min(rowBox.left, rightEdge - width)) + 'px',
+        width: width + 'px',
+        maxHeight: Math.floor(Math.min(max, placement === 'below' ? below : above)) + 'px',
+        top: placement === 'below' ? anchor.bottom + 4 + 'px' : 'auto',
+        bottom: placement === 'above' ? window.innerHeight - anchor.top + 4 + 'px' : 'auto',
+      });
+      popup.dataset.placement = placement;
     };
-    measure(true);
-    let frame = requestAnimationFrame(() => measure(true));
-    const refresh = () => measure(false);
-    const resize = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => measure(true)); };
-    const observer = new ResizeObserver(refresh);
-    observer.observe(dialog); observer.observe(row);
-    for (const el of ancestors) el.addEventListener('scroll', refresh, {passive:true});
-    window.addEventListener('resize', resize);
-    viewport?.addEventListener('resize', resize);
+    position();
+    popup.setAttribute('popover', 'manual');
+    popup.showPopover();
+    const frame = requestAnimationFrame(position);
+    const observer = new ResizeObserver(position);
+    observer.observe(row);
+    observer.observe(field);
+    const dialog = row.closest<HTMLElement>('.taxpay-modal');
+    if (dialog) observer.observe(dialog);
+    // Track genuine user scroll/resize; never mutate a scroll offset or layout.
+    document.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+    viewport?.addEventListener('resize', position);
+    viewport?.addEventListener('scroll', position);
     return () => {
-      cancelAnimationFrame(frame); observer.disconnect();
-      editor.style.removeProperty('--travel-picker-clearance');
-      for (const el of ancestors) el.removeEventListener('scroll', refresh);
-      window.removeEventListener('resize', resize);
-      viewport?.removeEventListener('resize', resize);
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      document.removeEventListener('scroll', position, true);
+      window.removeEventListener('resize', position);
+      viewport?.removeEventListener('resize', position);
+      viewport?.removeEventListener('scroll', position);
+      if (popup.matches(':popover-open')) popup.hidePopover();
     };
   }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
@@ -768,7 +758,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     const pointerFocus = passportPointerFocus.current;
                     passportPointerFocus.current = false;
                     // Keyboard focus opens immediately. Pointer focus waits for
-                    // onClick so scrolling cannot relocate the pressed field.
+                    // onClick to keep pointer and keyboard interactions consistent.
                     if (!pointerFocus) setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
                   onClick={() => {
@@ -862,8 +852,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
               {passportSuggestionsFor === item.id && <div
                 className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
-                data-placement="below"
-                style={{maxHeight: passportSuggestionMaxHeight}}
+                popover="manual"
                 role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
                 onKeyDown={event => {
                   if (event.key === 'Escape') {
