@@ -148,8 +148,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
       expect(route.request().headers()['x-taxpay-guest-capability']).toBe(cap);
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
         success:true,simulationOnly:true,data:{id:newTravelPayment,status:'SIMULATED_SUCCESS',createdAt:date,
-          data:{service:'TRAVEL_TAX',amountMinor:100000,origin:'TAXPAY_UI',
-            details:latestTravelSubmission.details}}
+          data:{...latestTravelSubmission,origin:'TAXPAY_UI'}}
       })});return;
     }
     const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
