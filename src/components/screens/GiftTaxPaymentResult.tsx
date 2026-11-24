@@ -165,7 +165,7 @@ export function GiftTaxPaymentResult({
           <FileText size={18} aria-hidden="true"/>
           <p>{resultText}</p>
         </div>
-        {(failed||pending||noTax||outcome.kind==='UNAVAILABLE'||outcome.kind==='PENDING')&&
+        {(failed||pending||noTax||outcome.kind==='UNAVAILABLE')&&
           <div className="payment-lifecycle__actions no-print">
             {simulatedPending&&<button type="button" className="payment-lifecycle__primary"
               onClick={onContinueBank}>
