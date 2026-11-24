@@ -17,7 +17,9 @@ import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog'
 import { useAccountIdentity } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
-import type {PaymentReuse} from '../../services/paymentReuse';
+import {parseGiftTaxReuseDraft,type PaymentReuse} from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
+const GiftTaxReuseModal=React.lazy(()=>import('./GiftTaxEntryModal').then(module=>({default:module.GiftTaxEntryModal})));
 import { PaymentDraftEntryGate } from './PaymentDraftEntryGate';
 import { paymentDraftOwnerScope, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { taxpayerBrandName } from '../../config/brand';
@@ -217,6 +219,19 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // Hide the prior owner's restored form synchronously; the effect above
   // closes the dialog and clears its one-shot draft/resume request.
   if (paymentOwnerChanged) return null;
+  // Historical Gift Tax has its own editor; never dispatch to the generic
+  // income-tax form or create a second payment merely by selecting Pay Again.
+  if(initialReuse?.service==='GIFT_TAX'){
+    const copy=parseGiftTaxReuseDraft(initialReuse.formPayload);
+    if(!copy||!previewAccount||previewAccount.id!==initialReuse.ownerUid||
+       activePreviewSession()?.profileId!==initialReuse.ownerUid)
+      return <TaxPayModal title={tr('Pay Again','আবার পরিশোধ')} service="status" onClose={close} footer={<></>}>
+        <p role="alert">{tr('The original Gift Tax payment is unavailable for this account.','এই অ্যাকাউন্টের জন্য আগের দানকর পেমেন্টটি পাওয়া যাচ্ছে না।')}</p>
+      </TaxPayModal>;
+    return <React.Suspense fallback={<p role="status">{tr('Loading Gift Tax…','দানকর লোড হচ্ছে…')}</p>}>
+      <GiftTaxReuseModal signedIn initialReuse={copy} onClose={close}/>
+    </React.Suspense>;
+  }
 
   return (
     <TaxPayModal

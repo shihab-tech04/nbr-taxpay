@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reuseRecordedPayment,reuseLegacySingleHeadPayment,oneChoicePerRecordedParent} from '../src/services/paymentReuse.ts';
+import {reuseRecordedPayment,reuseLegacySingleHeadPayment,oneChoicePerRecordedParent,parseGiftTaxReuseDraft} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
 import {makeConfirmedReceipt} from '../src/services/confirmedPaymentCertificate.ts';
@@ -636,4 +636,20 @@ test('M09 reuses v2 SQL accounting lines when no receiptLines or display snapsho
     'the verified source head remains authoritative, not guessed from labels');
   assert.throws(()=>reuseRecordedPayment([{...confirmed,reusableAccountingLines:undefined}],
     'owner-1','1111111111111',id),/incomplete/);
+});
+
+test('Gift Tax Pay Again copies validated owned inputs only; historical receipt remains immutable',()=>{
+ const sourceId='11111111-2222-4333-8444-555555555555';
+ const giftDetails:NonNullable<ChallanReceipt['giftDetails']>={donor:{tin:'111111111111',name:'User 1'},donee:{tin:'222222222222',name:'User 2',tag:'friends_family',relationship:'father',otherLabel:null},giftAmountMinor:250000000,estimatedTaxMinor:27200000,giftDate:'2025-01-15',description:'Original description',remarks:'বাংলা exact comments'};
+ const gift:ChallanReceipt={...receipt,paymentTransactionId:sourceId,challanNo:'SIM-GIFT-original',paymentCategory:'GIFT_TAX',assessmentYear:'2025-26',taxpayerTin:giftDetails.donor.tin,taxpayerName:giftDetails.donor.name,giftDetails,paymentRemarks:giftDetails.remarks,totalAmount:272000,items:[{headId:0,economicCode:'SIM-GIFT',headNameEn:'Gift Tax',taxAmount:272000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:272000}],allocationItems:undefined,taxCreditStatus:'NOT_APPLICABLE',treasuryStatus:'INITIATED'};
+ const before=JSON.stringify(gift);const copy=reuseRecordedPayment([gift],'user1','1111111111111',sourceId);
+ assert.equal(copy.service,'GIFT_TAX');assert.equal(copy.sourcePaymentId,sourceId);
+ const draft=parseGiftTaxReuseDraft(copy.formPayload);assert.ok(draft);assert.deepEqual(draft.giftDetails,giftDetails);
+ assert.equal(copy.formPayload.idempotencyKey,undefined);assert.equal(copy.formPayload.paymentMethod,undefined);assert.equal(copy.formPayload.receiptSnapshot,undefined);
+ draft.giftDetails.remarks='changed';assert.equal(JSON.stringify(gift),before);
+ assert.throws(()=>reuseRecordedPayment([{...gift,totalAmount:272001}],'user1',null,sourceId));
+ assert.throws(()=>reuseRecordedPayment([{...gift,paymentRemarks:'mismatch'}],'user1',null,sourceId));
+ assert.throws(()=>reuseRecordedPayment([{...gift,taxCreditStatus:'CREDIT_POSTED' as ChallanReceipt['taxCreditStatus']}],'user1',null,sourceId));
+ assert.throws(()=>reuseRecordedPayment([{...gift,giftDetails:{...giftDetails,donee:{...giftDetails.donee,tin:giftDetails.donor.tin}}}],'user1',null,sourceId));
+ assert.throws(()=>reuseRecordedPayment([gift],'user1',null,'22222222-2222-4333-8444-555555555555'));
 });
