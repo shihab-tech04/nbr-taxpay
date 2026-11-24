@@ -1,9 +1,9 @@
 /* Reuse the original grouped Payment Head editor in the consolidated walk-in flow.
    The seven categories are compact accessible accordions, NOT a duplicate table.
    Keep the legacy/Travel Tax UI, controls, and accounting behavior untouched. */
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-heading,
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcut-section h3 {
-  margin: 14px 0 10px;
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 h3.other-tax-category-heading,
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcut-section h3 {
+  margin: 8px 0 8px;
   color: #203a5c;
   font-size: var(--taxpay-type-body, 16px);
   font-weight: 600;
@@ -92,8 +92,9 @@
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__count {
   color: #526781;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.45;
   white-space: nowrap;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__selected {
