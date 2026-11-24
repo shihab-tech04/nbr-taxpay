@@ -19,6 +19,26 @@ CREATE TABLE demo_payment.story1_legacy_history (
 );
 ALTER TABLE demo_payment.story1_legacy_history ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON demo_payment.story1_legacy_history FROM PUBLIC,anon,authenticated,service_role;
+-- Reject unverified imports before they can reserve a historical payment ID.
+-- The private archive is populated only by an authorized recovery transaction;
+-- a payer label alone is not sufficient proof of the current owner session.
+CREATE FUNCTION demo_payment.validate_story1_legacy_import()
+RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $import_guard$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM taxpay_guest_private.demo_profiles p
+  WHERE p.demo_id=NEW.owner_demo_id AND p.payment_session_id=NEW.session_id) THEN
+  RAISE EXCEPTION 'LEGACY_OWNER_SESSION_UNVERIFIED';
+ END IF;
+ IF EXISTS (SELECT 1 FROM demo_payment.story_payments p
+  WHERE p.id=NEW.id OR p.idempotency_key=NEW.idempotency_key) THEN
+  RAISE EXCEPTION 'LEGACY_IDENTITY_ALREADY_CURRENT';
+ END IF;
+ RETURN NEW;
+END $import_guard$;
+REVOKE ALL ON FUNCTION demo_payment.validate_story1_legacy_import() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER aa_taxpay_validate_legacy_import BEFORE INSERT ON demo_payment.story1_legacy_history
+ FOR EACH ROW EXECUTE FUNCTION demo_payment.validate_story1_legacy_import();
+
 CREATE VIEW demo_payment.story1_history_source WITH (security_invoker=true) AS
  SELECT id,idempotency_key,session_id,service_code,amount_minor,data,status,created_at FROM demo_payment.story_payments
  UNION ALL

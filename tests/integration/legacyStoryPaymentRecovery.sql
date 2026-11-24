@@ -320,6 +320,7 @@ declare
  a jsonb; b jsonb; h_a text; h_b text; sid uuid;
  pid uuid:=gen_random_uuid(); idem uuid:=gen_random_uuid(); payload jsonb;
  initial_count bigint; got jsonb;
+ bad_pid uuid:=gen_random_uuid(); bad_idem uuid:=gen_random_uuid(); bad_sid uuid:=gen_random_uuid(); bad_payload jsonb;
 begin
  a:=public.taxpay_demo_profile_login('user1','user1');
  b:=public.taxpay_demo_profile_login('user2','user2');
@@ -335,6 +336,18 @@ begin
  insert into demo_payment.story1_legacy_history(id,idempotency_key,session_id,service_code,amount_minor,data,status,created_at,owner_demo_id,source_project,source_payload_sha256)
  values(pid,idem,sid,'TAX_WITH_RETURN',100,payload,'SIMULATED_SUCCESS',now(),'user1','eyqhoavnitkrajvyqvxn',
  encode(extensions.digest(convert_to(payload::text,'UTF8'),'sha256'),'hex'));
+ -- A forged or unmapped session must fail at import, not merely disappear
+ -- from the history projection and reserve its ID.
+ bad_payload:=jsonb_set(jsonb_set(payload,'{sessionId}',to_jsonb(bad_sid::text)),'{idempotencyKey}',to_jsonb(bad_idem::text));
+ begin
+  insert into demo_payment.story1_legacy_history(id,idempotency_key,session_id,service_code,amount_minor,data,status,created_at,owner_demo_id,source_project,source_payload_sha256)
+  values(bad_pid,bad_idem,bad_sid,'TAX_WITH_RETURN',100,bad_payload,'SIMULATED_SUCCESS',now(),'user1','eyqhoavnitkrajvyqvxn',
+  encode(extensions.digest(convert_to(bad_payload::text,'UTF8'),'sha256'),'hex'));
+  raise exception 'Unmapped session was accepted into archive';
+ exception when others then if sqlerrm not like '%LEGACY_OWNER_SESSION_UNVERIFIED%' then raise; end if; end;
+ if exists(select 1 from demo_payment.story1_legacy_history where id=bad_pid or idempotency_key=bad_idem) then
+  raise exception 'Rejected import reserved a historical identity';
+ end if;
  if (public.taxpay_demo_story1_session_payments(h_a,1,100)->>'total')::bigint<>initial_count+1 then raise exception 'Archive not in payer list'; end if;
  got:=public.taxpay_demo_story1_session_payment(h_a,pid);
  if got->'data' is distinct from payload then raise exception 'Archive receipt was altered'; end if;
