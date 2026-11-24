@@ -130,7 +130,7 @@ const MainRouter: React.FC = () => {
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
   // The public guide retains the same public navigation for guests and signed-in visitors.
   const taxpayerSupportRoute = false; // Receipt status is now a public modal, not a taxpayer-page shell.
-  const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
+  const publicInformationRoute = receiptOverlayRoute || ['landing','home-2','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) ||
     loginOverlay || privateSampleGate;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
@@ -175,6 +175,8 @@ const MainRouter: React.FC = () => {
     }
     switch (currentRoute) {
       // Public Screens
+      case 'home-2':
+        return <PublicLanding key="home-2" home2 />;
       case 'landing':
       case 'taxpayer_login':
       case 'office_login':
@@ -301,7 +303,7 @@ const MainRouter: React.FC = () => {
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
       {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
       {receiptOverlayRoute && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'রসিদ লোড হচ্ছে…' : 'Loading receipt…'}</p>}>{currentRoute === 'verify'
-        ? <PublicServiceModal service="status" onClose={() => navigate('landing')} />
+        ? <PublicServiceModal service="status" onClose={() => navigate(routeParams.fromHome2 === true ? 'home-2' : 'landing')} />
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
             service="status" className="receipt-modal" footer={<></>}
             onClose={() => navigate(receiptReturnRoute(routeParams.returnTo))}>
