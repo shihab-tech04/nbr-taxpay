@@ -20,6 +20,9 @@ import {amountInTakaWords} from '../../services/amountInWords';
 import {estimateGiftTax, parseGiftValue} from '../../services/giftTaxEstimate';
 import {validGiftDate} from '../../services/giftTaxDate';
 import '../../styles/taxpay-unified-v3.css';
+// Gift Tax can open directly from signed-in navigation, without the public chooser.
+// Load the service-owned grid/control styles on every entry path.
+import '../../styles/other-tax-modal.css';
 
 type Party = 'donor' | 'donee';
 type Person = {tin: string; name: string};
