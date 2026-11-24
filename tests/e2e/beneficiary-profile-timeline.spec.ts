@@ -79,7 +79,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(listScreen.getByRole('link',{name:'Open profile for User Two'})).toBeVisible();
 
   // The same saved beneficiary must be reachable from the Activity register.
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   const register=page.locator('.taxpayer-transaction-panel');
   await register.getByRole('button',{name:'Filter',exact:true}).click();
   await register.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true}).selectOption('222222222222');

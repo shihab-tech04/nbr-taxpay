@@ -24,7 +24,7 @@ export type ServiceAccessDecision =
   | { kind: 'NOT_APPLICABLE'; requiresTin: boolean; requiresNBRReference: boolean };
 
 export function resolvePaymentServiceAccess(
-  service: PaymentServiceId,
+  service: PaymentServiceId | 'GIFT_TAX',
   operation: PaymentOperation
 ): ServiceAccessDecision {
   const requiresTin = service !== 'TRAVEL_TAX';
@@ -37,7 +37,7 @@ export function resolvePaymentServiceAccess(
   if (operation === 'ALLOCATE_ETDS_DEPOSIT' && service !== 'SOURCE_TAX_DEPOSIT') {
     return { kind: 'NOT_APPLICABLE', ...base };
   }
-  if (operation === 'SAVE_PRIVATE_DRAFT' && service === 'TRAVEL_TAX') {
+  if (operation === 'SAVE_PRIVATE_DRAFT' && (service === 'TRAVEL_TAX' || service === 'GIFT_TAX')) {
     return { kind: 'NOT_APPLICABLE', ...base };
   }
   return { kind: 'SIGN_IN_REQUIRED', ...base };

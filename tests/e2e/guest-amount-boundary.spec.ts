@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('payment amount matches the endpoint limit and preserves the last paisa', async ({ page }) => {
+  await mockSubmittedPaymentSqlReadback(page);
   let sentMinor: number | undefined;
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.abort();

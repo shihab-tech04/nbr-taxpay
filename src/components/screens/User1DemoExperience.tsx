@@ -272,10 +272,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       setSqlPayments([]);setSqlLoadError(false);return;
     }
     let active=true;
+    let revision=0;
+    const session=activePreviewSession();
     const load=()=>{
+      const current=++revision;
+      const isCurrent=()=>active&&current===revision&&
+        activePreviewSession()?.paymentSessionId===session?.paymentSessionId&&
+        activePreviewSession()?.capability===session?.capability;
       void getDetailedStorySessionPayments().then(payments=>{
-        if(active){setSqlPayments(payments);setSqlLoadError(false);}
-      }).catch(()=>{if(active){setSqlPayments([]);setSqlLoadError(true);}});
+        if(isCurrent()){setSqlPayments(payments);setSqlLoadError(false);}
+      }).catch(()=>{if(isCurrent()){setSqlPayments([]);setSqlLoadError(true);}});
     };
     load();
     window.addEventListener('taxpay:story-payments-recovered',load);

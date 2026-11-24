@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function openGuestOtherTax(page: Page) {
@@ -55,6 +56,7 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
 test('confirmed payer TIN stays distinct from allocations and receipt on one SQL payment', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280');
   const submissions: Record<string, unknown>[] = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submissions.push(route.request().postDataJSON());
     await route.fulfill({status:200,contentType:'application/json',

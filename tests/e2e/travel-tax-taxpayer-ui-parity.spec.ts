@@ -11,6 +11,20 @@ async function reachTravelPreview(page: import('@playwright/test').Page) {
   await modal.getByRole('button', { name: 'Add passenger', exact: true }).click();
   await modal.getByRole('button', { name: 'Continue to travel details' }).click();
   await fillTravelDetails(modal);
+  if ((page.viewportSize()?.width ?? 0) > 800) {
+    const rail = modal.locator('.travel-flow__summary');
+    const list = rail.locator('.travel-flow__age-breakdown');
+    await expect(list).toBeVisible();
+    const geometry = await rail.evaluate(el => ({
+      railWidth: el.clientWidth,
+      bodyWidth: el.closest('.taxpay-modal__body')!.clientWidth,
+      overflow: getComputedStyle(el).overflowY,
+      listOverflow: getComputedStyle(el.querySelector('.travel-flow__age-breakdown')!).overflowY,
+    }));
+    expect(geometry.railWidth).toBeGreaterThan(geometry.bodyWidth * 0.35);
+    expect(geometry.overflow).toBe('auto');
+    expect(geometry.listOverflow).toBe('visible');
+  }
   await modal.getByRole('button', { name: 'Continue to review' }).click();
   return modal;
 }

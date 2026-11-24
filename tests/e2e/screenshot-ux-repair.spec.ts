@@ -17,7 +17,7 @@ async function enterUser1(page:Page){
 test('mobile transaction details use a contained sheet with a visible close control',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile detail reflow');
   await enterUser1(page);
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   await page.locator('.taxpayer-transaction-row__action:visible').first().click();
   const dialog=page.locator('.taxpayer-transaction-detail');
   await expect(dialog).toHaveClass(/taxpay-modal/);
@@ -65,7 +65,7 @@ test('mobile account-only overview remains contained without fictional source co
 test('mobile event ledger preserves readable entries and explicitly labels scenario balances',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile ledger reflow');
   await enterUser1(page);
-  await page.goto('/?action=ledger');
+  await page.goto('/?action=ledger&qaScenario=1&scenarioYear=2025-2026');
   const ledger=page.getByTestId('event-tax-ledger');
   await expect(ledger).toBeVisible();
   await expect(page.getByText('No ledger records are available for this account yet.')).toHaveCount(0);
@@ -168,7 +168,7 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
   await dialog.getByRole('button',{name:'Continue to review'}).click();
   await expect(dialog.getByTestId('travel-unified-final-preview')).toBeVisible();
-  await expect(side).not.toBeNull();
+  await expect(dialog.locator('.travel-flow__summary')).toBeHidden();
 });
 
 test('mobile bento retains separate travel tax and opens its approved payment modal',async({page},info)=>{
@@ -202,7 +202,7 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
 
 test('signed-in Transactions provides payment reference search without a separate Track payment tab',async({page})=>{
   await enterUser1(page);
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveCount(0);
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');

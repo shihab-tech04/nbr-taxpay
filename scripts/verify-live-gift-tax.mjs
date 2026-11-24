@@ -93,6 +93,17 @@ try{
       await expect(gift.getByTestId('gift-rail-donee')).toContainText(bn?'বাবা':'Father');
       await expect(donor.getByTestId('gift-confirmed-donor')).toBeVisible();
       await expect(donee.getByTestId('gift-confirmed-donee')).toBeVisible();
+      // Guard against the previously observed gap between confirmed identities.
+      const editor=gift.getByTestId('gift-tax-entry-form').locator('.gift-tax-main');
+      await expect(editor).toHaveCSS('display','flex');
+      const [donorBounds,doneeBounds]=await Promise.all([
+        donor.boundingBox(),donee.boundingBox()
+      ]);
+      if(!donorBounds||!doneeBounds||
+         doneeBounds.y-donorBounds.y-donorBounds.height>28) {
+        throw new Error('Gift Tax donor/donee stretched apart in production: '+
+          JSON.stringify({donorBounds,doneeBounds}));
+      }
       const body=gift.locator('.taxpay-modal__body');
       const footer=gift.locator('.taxpay-modal__footer');
       const [bodyBox,footerBox]=await Promise.all([body.boundingBox(),footer.boundingBox()]);

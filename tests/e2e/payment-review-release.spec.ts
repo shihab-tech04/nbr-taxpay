@@ -140,6 +140,22 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   // This is a disconnected public-UI browser test. The hosted payment-sync
   // contract is verified separately; never depend on external latency here.
   let paymentPosts = 0;
+  let paymentReadbacks = 0;
+  let savedInput: Record<string, unknown> | null = null;
+  // Return the same synthetic SQL source record the client just submitted.
+  // Never create hosted payments during UI acceptance.
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    expect(new URL(route.request().url()).searchParams.get('sessionId')).toBe(savedInput?.sessionId);
+    expect(savedInput).not.toBeNull();
+    paymentReadbacks++;
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, simulationOnly: true, data: {
+        id: '10000000-0000-4000-8000-000000000002',
+        status: 'SIMULATED_SUCCESS', data: savedInput,
+      },
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const payload = route.request().postDataJSON() as {
@@ -149,6 +165,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     expect(payload.service).toBe('TAX_WITH_RETURN');
     expect(payload.amountMinor).toBe(1500000);
     expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    savedInput = route.request().postDataJSON() as Record<string, unknown>;
     paymentPosts += 1;
     await route.fulfill({
       status: 200, contentType: 'application/json',
@@ -214,6 +231,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড সংরক্ষিত' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
+  expect(paymentReadbacks).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.locator('.receipt-view__summary').getByRole('heading', { name: 'রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
@@ -258,6 +276,22 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   // Keep this UI regression independent of the hosted database and verify the
   // exact simulated request rather than creating a hosted QA payment.
   let paymentPosts = 0;
+  let paymentReadbacks = 0;
+  let savedInput: Record<string, unknown> | null = null;
+  // Return the same synthetic SQL source record the client just submitted.
+  // Never create hosted payments during UI acceptance.
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    expect(new URL(route.request().url()).searchParams.get('sessionId')).toBe(savedInput?.sessionId);
+    expect(savedInput).not.toBeNull();
+    paymentReadbacks++;
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, simulationOnly: true, data: {
+        id: '10000000-0000-4000-8000-000000000002',
+        status: 'SIMULATED_SUCCESS', data: savedInput,
+      },
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const payload = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number; sessionId?: string };
@@ -265,6 +299,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
     expect(payload.service).toBe('TAX_WITH_RETURN');
     expect(payload.amountMinor).toBe(2500000);
     expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    savedInput = route.request().postDataJSON() as Record<string, unknown>;
     paymentPosts += 1;
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
       success: true, status: 'SIMULATED_SUCCESS', id: '10000000-0000-4000-8000-000000000002',
@@ -350,6 +385,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: /Pay ৳ 25,000/ }).click();
   await expect(services.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
+  expect(paymentReadbacks).toBe(1);
   await services.getByRole('button', { name: 'Receipt details' }).click();
   await expect(services.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);

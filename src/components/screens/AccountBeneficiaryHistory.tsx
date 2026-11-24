@@ -83,6 +83,11 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
   const [error,setError]=useState('');
   const [exportError,setExportError]=useState('');
   const [revision,setRevision]=useState(0);
+  useEffect(()=>{
+    const refresh=()=>setRevision(value=>value+1);
+    window.addEventListener('taxpay:story-payments-recovered',refresh);
+    return()=>window.removeEventListener('taxpay:story-payments-recovered',refresh);
+  },[]);
   const [restoredFilters]=useState(()=>readHistoryFilters(ownerUid));
   const [search,setSearch]=useState(restoredFilters.search);
   const [filtersOpen,setFiltersOpen]=useState(false);

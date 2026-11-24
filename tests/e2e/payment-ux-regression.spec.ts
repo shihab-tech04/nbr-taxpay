@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function beginGuestPayment(page: Page, service: string) {
@@ -69,6 +70,7 @@ test('online method categories reveal only relevant providers and reset the prev
   // This is a payment-method UI regression: do not depend on a live backend
   // or create a hosted simulated payment during the disconnected CI run.
   // Preserve the full success gate by requiring a mirror acknowledgment.
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     const payload = route.request().postDataJSON() as { amountMinor?: number; service?: string };
     expect(payload.amountMinor).toBe(2_500_000);

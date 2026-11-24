@@ -148,9 +148,21 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
       expect(route.request().headers()['x-taxpay-guest-capability']).toBe(cap);
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
         success:true,simulationOnly:true,data:{id:newTravelPayment,status:'SIMULATED_SUCCESS',createdAt:date,
-          data:{service:'TRAVEL_TAX',amountMinor:100000,origin:'TAXPAY_UI',
-            details:latestTravelSubmission.details}}
+          data:{...latestTravelSubmission,origin:'TAXPAY_UI'}}
       })});return;
+    }
+    // A repeated SQL payment must read back the exact newly submitted source
+    // identity, not fall through to the older recovered-record list.
+    const lastSubmitted=paymentSubmissions[paymentSubmissions.length-1];
+    if(url.pathname.endsWith('/payments/00000000-0000-4000-8000-000000039999') && lastSubmitted){
+      expect(url.searchParams.get('sessionId')).toBe(lastSubmitted.sessionId);
+      expect(route.request().headers()['x-taxpay-guest-capability']).toBe(cap);
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        success:true,simulationOnly:true,
+        data:{id:'00000000-0000-4000-8000-000000039999',status:'SIMULATED_SUCCESS',
+          data:{...lastSubmitted,origin:'TAXPAY_UI'}}
+      })});
+      return;
     }
     const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
     if(chosen){
@@ -406,7 +418,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await certificateButton.click();
   const newCertificate=travelDialog.getByTestId('payment-certificate-document');
   await expect(newCertificate).toBeVisible();
-  await expect(newCertificate.getByRole('heading',{name:/Payment Certificate|পেমেন্ট সনদ/})).toBeHidden();
+  await expect(newCertificate).toHaveAttribute('aria-label', /Payment Certificate|পেমেন্ট সনদ/);
   await expect(newCertificate.getByTestId('payment-certificate-reference'))
     .toContainText('SK-PC-'+newTravelPayment);
   await expect(newCertificate).toContainText(newTravelPayment);

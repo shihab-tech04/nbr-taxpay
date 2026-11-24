@@ -13,7 +13,7 @@ test('desktop Pay Tax is an overlay that keeps navigation positions stable and c
  await trigger.click();
  const menu=rail.getByRole('menu',{name:'Payment options'});
  await expect(menu).toBeVisible();
- await expect(menu.getByRole('menuitem')).toHaveCount(2);
+ await expect(menu.getByRole('menuitem')).toHaveText(['Pay Tax','Travel Tax','Gift Tax']);
  await expect(menu).toHaveCSS('position','absolute');
  const after=await overview.boundingBox();
  expect(before).not.toBeNull();
@@ -47,7 +47,7 @@ test('desktop Travel Tax is a different payment selection and outside click dism
  await expect(travel.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
 });
 
-test('mobile split Pay popup keeps approved dock visible and exposes both journeys',async({page},info)=>{
+test('mobile split Pay popup keeps approved dock visible and exposes all three journeys',async({page},info)=>{
  test.skip(info.project.name==='desktop-1280','Mobile only');
  await page.goto(demo);
  const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
@@ -56,7 +56,7 @@ test('mobile split Pay popup keeps approved dock visible and exposes both journe
  const menu=page.getByRole('menu',{name:'Payment options'});
  await expect(menu).toBeVisible();
  await expect(menu.getByRole('menuitem',{name:'Pay Tax',exact:true})).toBeVisible();
- await expect(menu.getByRole('menuitem',{name:'Travel Tax',exact:true})).toBeVisible();
+ await expect(menu.getByRole('menuitem')).toHaveText(['Pay Tax','Travel Tax','Gift Tax']);
  await expect(dock).toBeVisible();
  const rect=await menu.boundingBox();
  expect(rect).not.toBeNull();

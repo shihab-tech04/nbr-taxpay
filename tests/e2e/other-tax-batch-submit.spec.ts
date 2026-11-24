@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
@@ -152,6 +153,7 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
 
 test('a bank-branch request remains pending across reload until continued', async ({ page }) => {
   const calls: Record<string, any>[] = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     calls.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
@@ -193,6 +195,7 @@ test('a bank-branch request remains pending across reload until continued', asyn
 test('source-tax and demand heads combine across beneficiaries into one exact receipt', async ({ page }) => {
   const submitted: Record<string, any>[]=[];
   const exactPostBodies: string[]=[];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     const rawBody=route.request().postData();
     if (typeof rawBody !== 'string') throw Error('Browser payment POST body unavailable');
