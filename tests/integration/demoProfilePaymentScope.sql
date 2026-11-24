@@ -214,6 +214,93 @@ begin
      or not has_function_privilege('service_role','public.taxpay_demo_correction_save(text,uuid,uuid,jsonb)','EXECUTE') then
     raise exception 'Simulated correction RPC privileges are incorrect';
   end if;
+  -- Dedicated V2 correction delivery, replay and acknowledged review readback.
+  declare
+    v_id uuid:=(saved_correction->>'id')::uuid;
+    v_claim jsonb; v_event jsonb; v_token uuid; v_cmd jsonb; v_result jsonb;
+    v_maker uuid:=gen_random_uuid(); v_reviewer uuid:=gen_random_uuid(); v_approver uuid:=gen_random_uuid();
+  begin
+    if saved_correction->>'officeSyncState' is distinct from 'PENDING'
+       or saved_correction->>'reviewState' is distinct from 'PENDING_OFFICER' then
+      raise exception 'Local save claimed an unconfirmed Office acknowledgement';
+    end if;
+    v_claim:=public.taxpay_demo_correction_claim(1,v_id);
+    if jsonb_array_length(v_claim)<>1 then raise exception 'Correction outbox did not claim the exact request'; end if;
+    v_token:=(v_claim->0->>'claimToken')::uuid;
+    v_event:=v_claim->0->'event';
+    if v_event->>'sourceProject' is distinct from 'v2'
+       or v_event->>'simulationOnly' is distinct from 'true'
+       or v_event->>'requestId' is distinct from v_id::text
+       or v_event#>>'{payload,originalPaymentId}' is distinct from v_payment_id::text
+       or v_event#>>'{payload,correctionChanges,proposedAY}' is distinct from '2025-2026'
+       or v_event#>>'{payload,mayChangeFinancialRecords}' is distinct from 'false'
+       or v_event->'payload' ? 'taxpayerTin' then
+      raise exception 'Correction outbox lost source identity or overscoped payload';
+    end if;
+    if jsonb_array_length(public.taxpay_demo_correction_claim(1,v_id))<>0
+       or public.taxpay_demo_correction_ack(v_id,gen_random_uuid(),true) then
+      raise exception 'Invalid or duplicate correction claim accepted';
+    end if;
+    if not public.taxpay_demo_correction_ack(v_id,v_token,false)
+       or public.taxpay_demo_correction_get(v_id)->>'officeSyncState' is distinct from 'PENDING' then
+      raise exception 'Failed delivery incorrectly became acknowledged';
+    end if;
+    -- Advance only this disposable fixture's retry time, not a hosted record.
+    update taxpay_guest_private.story_correction_requests set sync_next_at=now() where id=v_id;
+    v_claim:=public.taxpay_demo_correction_claim(1,v_id);
+    if v_claim->0->'event' is distinct from v_event then raise exception 'Correction retry altered immutable event'; end if;
+    if not public.taxpay_demo_correction_ack(v_id,(v_claim->0->>'claimToken')::uuid,true)
+       or public.taxpay_demo_correction_get(v_id)->>'officeSyncState' is distinct from 'ACKNOWLEDGED' then
+      raise exception 'Office acknowledgement did not persist';
+    end if;
+    v_cmd:=jsonb_build_object('schemaVersion','1.0.0','origin','OFFICE_SQL','sourceProject','v2',
+      'simulationOnly',true,'commandType','CORRECTION_REVIEW','requestId',v_id,'messageId',gen_random_uuid(),
+      'officerUid',v_maker,'officerRole','MAKER','action','MAKER_ACKNOWLEDGE',
+      'expectedReviewState','PENDING_OFFICER','reason','Received the correction','occurredAt',now());
+    v_result:=public.taxpay_demo_correction_office_decision(v_cmd);
+    if v_result->>'reviewState' is distinct from 'MAKER_ACKNOWLEDGED'
+       or public.taxpay_demo_correction_office_decision(v_cmd) is distinct from v_result then
+      raise exception 'Maker review acknowledgement or replay failed';
+    end if;
+    begin
+      perform public.taxpay_demo_correction_office_decision(v_cmd||jsonb_build_object('reason','Conflicting retry reason'));
+      raise exception 'CONFLICTING_REVIEW_ACCEPTED';
+    exception when others then if sqlerrm<>'DEMO_CORRECTION_DECISION_CONFLICT' then raise; end if; end;
+    v_cmd:=v_cmd||jsonb_build_object('messageId',gen_random_uuid(),'officerRole','REVIEWER',
+      'action','REVIEWER_VERIFY','expectedReviewState','MAKER_ACKNOWLEDGED','reason','Reviewed the allocation');
+    begin
+      perform public.taxpay_demo_correction_office_decision(v_cmd);
+      raise exception 'SAME_OFFICER_REVIEW_ACCEPTED';
+    exception when others then if sqlerrm<>'DEMO_CORRECTION_OFFICER_SEQUENCE_INVALID' then raise; end if; end;
+    v_cmd:=v_cmd||jsonb_build_object('officerUid',v_reviewer);
+    v_result:=public.taxpay_demo_correction_office_decision(v_cmd);
+    if v_result->>'reviewState' is distinct from 'REVIEWER_VERIFIED' then raise exception 'Reviewer readback failed'; end if;
+    v_cmd:=v_cmd||jsonb_build_object('messageId',gen_random_uuid(),'officerRole','APPROVER','officerUid',v_approver,
+      'action','APPROVER_CLOSE','expectedReviewState','REVIEWER_VERIFIED','reason','Completed simulated review');
+    v_result:=public.taxpay_demo_correction_office_decision(v_cmd);
+    if v_result->>'reviewState' is distinct from 'APPROVER_CLOSED'
+       or public.taxpay_demo_correction_list(first_hash,100,0)->0->>'reviewState' is distinct from 'APPROVER_CLOSED'
+       or public.taxpay_demo_correction_list(first_hash,100,0)->0->>'reviewReason' is distinct from 'Completed simulated review'
+       or jsonb_array_length(public.taxpay_demo_correction_list(other_hash,100,0))<>0 then
+      raise exception 'Closed correction did not read back to the exact owner';
+    end if;
+    if has_function_privilege('anon','public.taxpay_demo_correction_office_decision(jsonb)','EXECUTE')
+       or has_function_privilege('authenticated','public.taxpay_demo_correction_office_decision(jsonb)','EXECUTE')
+       or has_function_privilege('anon','public.payment_v1_demo_correction_key()','EXECUTE')
+       or has_function_privilege('authenticated','public.payment_v1_demo_correction_key()','EXECUTE')
+       or has_function_privilege('anon','public.taxpay_demo_correction_claim(integer,uuid)','EXECUTE')
+       or has_function_privilege('authenticated','public.taxpay_demo_correction_claim(integer,uuid)','EXECUTE') then
+      raise exception 'Private correction synchronization functions exposed';
+    end if;
+    if (select to_jsonb(x) from demo_payment.story_payments x where x.id=v_payment_id) is distinct from original_payment
+       or (select coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) from demo_payment.mirror_outbox x
+          where x.entity_type='PAYMENT' and x.entity_id=v_payment_id) is distinct from original_outbox
+       or (select coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) from demo_payment.story_notifications x
+          where x.payment_id=v_payment_id) is distinct from original_notice then
+      raise exception 'Office review modified the original payment, mirror, or notice';
+    end if;
+    raise notice 'PASS: V2 correction delivery retry, exact immutable event, officer sequence and owner readback';
+  end;
   raise notice 'PASS: correction persistence, retry, source immutability and cross-account denial';
   raise notice 'PASS: nonempty payment activity, capability-scoped reads/writes, cross-account isolation, rejected public session paths, idempotent retry and preserved Office/notice rows';
 end

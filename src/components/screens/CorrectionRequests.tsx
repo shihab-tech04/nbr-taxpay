@@ -371,6 +371,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
         data-testid="preview-correction-register" aria-label={tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}>
         <div className="taxpay-table-toolbar">
           <h3 className="text-base font-semibold text-taxpay-text">{serverMode?tr('Correction requests','সংশোধনের আবেদন'):tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}</h3>
+          {serverMode&&<UiButton variant="outline" type="button" disabled={historyLoading} onClick={()=>setHistoryRetry(n=>n+1)}>{tr('Refresh','রিফ্রেশ')}</UiButton>}
           {(!serverMode||(!historyLoading&&!historyError&&historyOwner===ownerKey))&&<TaxPayTableCounter label={tr('Requests','অনুরোধ')} shown={filteredCases.length} total={visibleCorrections.length}/>}
         </div>
         <TaxPayTableControls className="taxpay-record-page-filters">
