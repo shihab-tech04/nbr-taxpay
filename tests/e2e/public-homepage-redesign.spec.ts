@@ -282,6 +282,10 @@ test('Home 2 bilingual responsive layout keeps all actions available', async ({p
     await expect(root.getByTestId('home2-pay')).toBeVisible();
     await expect(root.getByTestId('home2-other')).toBeVisible();
     await expect(root.getByTestId('home2-reference')).toBeVisible();
+    const drafts=root.getByRole('button').filter({has:root.getByRole('heading',{name:lang==='en'?'Saved Drafts':'সংরক্ষিত খসড়া',exact:true})});
+    await expect(drafts).toHaveCSS('background-color','rgb(241, 236, 251)');
+    await expect(drafts.locator('h3')).toHaveCSS('color','rgb(20, 27, 45)');
+    await expect(drafts.locator('p')).toHaveCSS('color','rgb(95, 104, 128)');
     await expect(root.getByRole('banner')).toBeVisible();
     await expect(root.getByRole('contentinfo')).toBeVisible();
     await expect(page.locator('.public-home-header')).toHaveCount(0);
