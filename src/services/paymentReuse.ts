@@ -259,12 +259,14 @@ export function reuseRecordedPayment(
   const first = people.get(firstTin)!;
   first.id='primary';
   const others = [...people.values()].filter(p => p !== first);
+  const ownOnly=ownerIsPayee && others.length===0;
   const initial = sorted[0];
   const years = allocations.map(item => copiedYear(item.year));
   const payload: Record<string, unknown> = {
     schemaVersion: 1, category: isAllocationPayment ? 'OTHER_TAX_PAYMENT' : service,
-    step: 1, forSelf: ownerIsPayee,
-    tin: ownerIsPayee ? '' : first.tin,
+    step: 1, forSelf: ownOnly,
+    ...(isAllocationPayment ? {unifiedFlowVersion:5} : {}),
+    tin: ownOnly ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
     otherTaxLines: isAllocationPayment

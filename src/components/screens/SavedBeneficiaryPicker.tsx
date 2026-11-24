@@ -20,6 +20,7 @@ interface SavedBeneficiaryPickerProps {
   allowMultiple:boolean;
   selectedTins:string[];
   onChoose:(people:SelectedBeneficiary[])=>void;
+  onManage?:()=>void;
   onAvailableTins:(tins:string[] | null)=>void;
   allowOneTimeFallback?:boolean;
   fallbackSelection?:SelectedBeneficiary|null;
@@ -28,7 +29,7 @@ interface SavedBeneficiaryPickerProps {
 }
 
 /** Saved contacts remain first; an explicit one-time sample lookup is available only when enabled by the payment flow. */
-export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins,allowOneTimeFallback=false,fallbackSelection=null,onFallbackSelect,onFallbackClear}:SavedBeneficiaryPickerProps){
+export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins,onManage,allowOneTimeFallback=false,fallbackSelection=null,onFallbackSelect,onFallbackClear}:SavedBeneficiaryPickerProps){
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const {navigate,previewAccount,setPaymentServiceChoiceOpen}=useTaxState();
   const bn=language==='bn';
@@ -151,7 +152,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       .reduce((index,person)=>Math.min(index,paymentOrder(person.tin)),Number.MAX_SAFE_INTEGER);
     return first(left.id)-first(right.id);
   });
-  const manage=()=>{setPaymentServiceChoiceOpen(false);navigate('beneficiaries');};
+  const manage=()=>{if(onManage){onManage();return;}setPaymentServiceChoiceOpen(false);navigate('beneficiaries');};
   const change=(person:Beneficiary)=>{
     const next=allowMultiple
       ? selectedTins.includes(person.tin)?selectedTins.filter(tin=>tin!==person.tin):[...selectedTins,person.tin]

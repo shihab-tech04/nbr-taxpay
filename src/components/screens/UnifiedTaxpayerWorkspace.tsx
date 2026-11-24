@@ -24,12 +24,13 @@ interface Props {
   onAddAdditional: (person: OtherTaxTaxpayer) => void;
   onRemove: (id: string) => void;
   error?: string;
+  account?: { own:{tin:string;name:string}|null; selected:OtherTaxTaxpayer[]; onToggleOwn:()=>void; savedBeneficiaries:React.ReactNode; canAdd:(tin:string)=>boolean; onAdd:(tin:string,name:string)=>void; };
 }
 
 const mask = maskTinForDisplay;
 export function UnifiedTaxpayerWorkspace({
   language, primaryTin, primaryName, additional, confirmedTins,
-  allocations, onAddPrimary, onAddAdditional, onRemove, error
+  allocations, onAddPrimary, onAddAdditional, onRemove, error, account
 }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
@@ -38,28 +39,41 @@ export function UnifiedTaxpayerWorkspace({
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
   const searched = searchedTin === draftTin ? lookupSampleTaxpayer(draftTin) : null;
   const classification = searched ? demoIncomeTaxTypeForTin(searched.tin) : null;
-  const selected: OtherTaxTaxpayer[] = [
+  const selected: OtherTaxTaxpayer[] = account?.selected ?? [
     ...(primaryTin && confirmedTins.primary === primaryTin
       ? [{id:'primary', tin:primaryTin, name:primaryName}] : []),
     ...additional.filter(p => p.tin && confirmedTins[p.id] === p.tin),
   ];
-  const duplicate = selected.some(p => p.tin === draftTin);
+  const duplicate = selected.some(p => p.tin === draftTin) && !(account?.canAdd(draftTin));
   const validTin = /^\d{12}$/.test(draftTin);
   const supportedProfile = Boolean(searched && classification && /^\d{12}$/.test(draftTin));
-  const canAdd = supportedProfile && !duplicate;
+  const canAdd = supportedProfile && !duplicate && (!account || account.canAdd(draftTin));
   const identityType = (kind: string | null) =>
     kind === 'COMPANY' ? tx('Company', 'কোম্পানি') : tx('Individual', 'ব্যক্তি');
   const add = () => {
     if (!searched || !canAdd) return;
     const name = bn ? searched.nameBn : searched.nameEn;
-    if (!selected.some(p => p.id === 'primary')) onAddPrimary(searched.tin, name);
+    if (account) account.onAdd(searched.tin, searched.nameEn);
+    else if (!selected.some(p => p.id === 'primary')) onAddPrimary(searched.tin, name);
     else onAddAdditional({id:crypto.randomUUID(),tin:searched.tin,name});
     setDraftTin(''); setSearchedTin(null);
     setPendingRemoval(null);
   };
   return <div className="payment-form-layout payment-flow-embedded__identity unified-taxpayer-workspace" data-testid="unified-taxpayer-workspace">
     <section className="payment-form-layout__sections unified-taxpayer-workspace__editor">
-      <h2 className="unified-taxpayer-workspace__heading">{tx('Add taxpayer', 'করদাতা যোগ করুন')}</h2>
+      {account && <section className="unified-account-identity" data-testid="unified-account-own">
+        <h2 className="unified-taxpayer-workspace__heading">{tx('My taxpayer information', 'আমার করদাতার তথ্য')}</h2>
+        {account.own ? <label className="unified-account-identity__card">
+          <input type="checkbox" checked={selected.some(p=>p.tin===account.own?.tin)}
+            onChange={()=>{
+              const self=selected.find(p=>p.tin===account.own?.tin);
+              if(self && allocations.some(line=>line.taxpayerId===self.id)) setPendingRemoval(self.id);
+              else account.onToggleOwn();
+            }} />
+          <span><strong>{account.own.name}</strong><small>{mask(account.own.tin)}</small></span>
+        </label> : <p role="status">{tx('Linked taxpayer profile is unavailable.', 'সংযুক্ত করদাতার তথ্য পাওয়া যায়নি।')}</p>}
+      </section>}
+      <h2 className="unified-taxpayer-workspace__heading">{account ? tx('Add other taxpayers', 'অন্যান্য করদাতা যোগ করুন') : tx('Add taxpayer', 'করদাতা যোগ করুন')}</h2>
       <p className="unified-taxpayer-workspace__subheading">{tx('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}</p>
       <TaxpayerTinLookup
         language={language} tinId="guest-tin" nameId="unified-taxpayer-name"
@@ -89,6 +103,10 @@ export function UnifiedTaxpayerWorkspace({
           onAdd={add} canAdd={canAdd} testId="unified-taxpayer-search-result"
         />}
       </div>
+      {account && <section className="unified-account-beneficiaries">
+        <h2 className="unified-taxpayer-workspace__heading">{tx('Saved beneficiaries', 'সংরক্ষিত উপকারভোগী')}</h2>
+        {account.savedBeneficiaries}
+      </section>}
       {error && <p role="alert" className="unified-taxpayer-workspace__error">{error}</p>}
     </section>
     <SelectedIdentityRail prefix="unified-taxpayer-workspace"

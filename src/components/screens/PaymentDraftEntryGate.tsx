@@ -11,6 +11,7 @@ type Props = {
   actor: PaymentDraftActor | null;
   ownerKey: string;
   enabled: boolean;
+  alwaysShowStart?: boolean;
   mode: DraftEntryMode;
   onModeChange: (mode: DraftEntryMode) => void;
   language: 'en' | 'bn';
@@ -46,7 +47,7 @@ export function assertResumablePaymentDraft(draft: PaymentFormDraft, language: '
  * A fresh payment still uses the original, unchanged payer/service selector.
  */
 export function PaymentDraftEntryGate({
-  actor, ownerKey, enabled, mode, onModeChange, language, serviceLabel, onResume, onBlockingChange, children,
+  actor, ownerKey, enabled, alwaysShowStart=false, mode, onModeChange, language, serviceLabel, onResume, onBlockingChange, children,
 }: Props) {
   const bn = language === 'bn';
   const tr = (en: string, bengali: string) => bn ? bengali : en;
@@ -85,7 +86,7 @@ export function PaymentDraftEntryGate({
   const ready = catalogCurrent && catalog.status === 'ready';
   // During an owner transition never show an earlier account's payer choices
   // or cached draft rows, even while the parent still has mode='new'.
-  const blocking = enabled && (!catalogCurrent || (mode !== 'new' && (!ready || catalog.rows.length > 0)));
+  const blocking = enabled && (!catalogCurrent || (mode !== 'new' && (!ready || catalog.rows.length > 0 || alwaysShowStart)));
 
   useEffect(() => { onBlockingChange(blocking); }, [blocking, onBlockingChange]);
 
@@ -144,7 +145,7 @@ export function PaymentDraftEntryGate({
             </span>
             <ArrowRight className="tax-service-choice__access-arrow" size={18} strokeWidth={1.9} aria-hidden="true" />
           </button>
-          <button type="button" data-draft-entry-option="RESUME" className="tax-service-choice__card" onClick={() => onModeChange('list')}>
+          <button type="button" data-draft-entry-option="RESUME" disabled={catalog.rows.length===0} className="tax-service-choice__card" onClick={() => onModeChange('list')}>
             <span className="tax-service-choice__icon"><FolderOpen size={23} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className="tax-service-choice__copy">
               <strong>{tr('Continue from draft', 'সংরক্ষিত খসড়া থেকে চালিয়ে যান')}</strong>

@@ -148,7 +148,8 @@ test('Phase 3: mixed heads, years and self/other allocations become editable new
       id:string;taxpayerId:string;headId:number;assessmentYear:string;amount:string
     }>;
     assert.equal(draft.service,'OTHER_TAX_PAYMENT');
-    assert.equal(draft.formPayload.forSelf,true);
+    assert.equal(draft.formPayload.forSelf,false);
+    assert.equal(draft.formPayload.tin,payerTin);
     assert.deepEqual(draft.sourceAllocationIds,oldAllocationIds);
     assert.deepEqual(copiedLines.map(line=>line.headId),selected.map(head=>head.id));
     assert.deepEqual(copiedLines.map(line=>line.assessmentYear),years.slice(0,3));
