@@ -38,6 +38,28 @@ test('source SQL readback keeps exact challan remarks and receipt snapshot recon
   }}), paymentId, withRemarks), false);
 });
 
+test('Pay Again source SQL readback requires exact immutable source and allocation lineage', () => {
+  const sourcePaymentId='00000000-0000-4000-8000-000000001010';
+  const repeat: StoryPaymentInput={...payment,details:{...payment.details,sourcePaymentId,sourceAllocationIds:['allocation-1','allocation-2']}};
+  assert.equal(sourceReadbackMatches(sqlRecord(repeat),paymentId,repeat),true);
+  for(const change of [
+    {sourcePaymentId:undefined},
+    {sourcePaymentId:paymentId},
+    {sourcePaymentId:'00000000-0000-4000-8000-000000001011'},
+    {sourceAllocationIds:undefined},
+    {sourceAllocationIds:['allocation-2','allocation-1']},
+    {sourceAllocationIds:['allocation-1']},
+  ]){
+    assert.equal(sourceReadbackMatches(sqlRecord({...repeat,details:{...repeat.details,...change}}),paymentId,repeat),false);
+  }
+  const self={...repeat,details:{...repeat.details,sourcePaymentId:paymentId}};
+  assert.equal(sourceReadbackMatches(sqlRecord(self),paymentId,self),false);
+  const gift={...payment,service:'GIFT_TAX',details:{...payment.details,sourcePaymentId}};
+  assert.equal(sourceReadbackMatches(sqlRecord(gift),paymentId,gift),true);
+  assert.equal(sourceReadbackMatches(sqlRecord({...gift,details:payment.details}),paymentId,gift),false);
+  assert.equal(sourceReadbackMatches(sqlRecord(repeat),paymentId,payment),false);
+});
+
 async function withSimulatedApi(
   readback: (input: StoryPaymentInput) => Record<string, unknown>,
   check: (counts: {posts: number; reads: number}) => Promise<void>,
