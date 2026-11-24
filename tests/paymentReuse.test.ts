@@ -23,7 +23,7 @@ test('copies original mixed own/other/head/year allocations without altering pai
  assert.equal(draft.ownerUid,'ownerUid');assert.equal(draft.service,'OTHER_TAX_PAYMENT');
  assert.equal(draft.formPayload.forSelf,false);
  assert.equal(draft.formPayload.tin,'1234567890123');
- assert.deepEqual((draft.formPayload.otherTaxLines as Array<{assessmentYear:string}>).map(l=>l.assessmentYear),['2026-27','2025-26']);
+ assert.deepEqual((draft.formPayload.otherTaxLines as Array<{assessmentYear:string}>).map(l=>l.assessmentYear),['2026-27','']);
  assert.deepEqual((draft.formPayload.otherTaxLines as Array<{amount:string}>).map(l=>l.amount),['10.00','20.00']);
  assert.equal((draft.formPayload.additionalTaxpayers as unknown[]).length,1);
  assert.equal(draft.formPayload.noticeReference,'');
@@ -127,7 +127,7 @@ test('preserves complete multi-taxpayer mixed-head multi-year source without reu
  const lines=copy.formPayload.otherTaxLines as Array<{taxpayerId:string;headId:number;assessmentYear:string;amount:string}>;
  assert.equal(lines.length,4);
  assert.deepEqual(lines.map(line=>line.headId),[1,2,3,4]);
- assert.deepEqual(lines.map(line=>line.assessmentYear),['2026-27','2025-26','2027-28','2026-27']);
+ assert.deepEqual(lines.map(line=>line.assessmentYear),['2026-27','','','2026-27']);
  assert.deepEqual(lines.map(line=>line.amount),['10.00','20.00','5.00','5.00']);
  assert.equal(copy.formPayload.forSelf,false);
  assert.equal(copy.formPayload.tin,'1234567890123');
@@ -159,7 +159,7 @@ test('Pay Again keeps all non-Return SQL allocations even when the original pare
   }>;
   assert.equal(lines.length,2);
   assert.deepEqual(lines.map(line=>[line.headId,line.assessmentYear,line.amount]),[
-    [1,'2026-27','10.00'],[2,'2025-26','20.00']
+    [1,'2026-27','10.00'],[2,'','20.00']
   ]);
   assert.equal(new Set(lines.map(line=>line.taxpayerId)).size,2);
   assert.equal(lines.some(line=>historicalIds.includes(line.id)),false);
@@ -298,7 +298,7 @@ test('historical SQL single-head payment opens editable repeat without guessing 
   assert.equal(draft.service,'TAX_WITH_RETURN');
   assert.equal(draft.formPayload.forSelf,true);
   assert.equal(draft.formPayload.legacySourceAmount,'25000.00');
-  assert.equal(draft.formPayload.assessmentYear,'2025-26');
+  assert.equal(draft.formPayload.assessmentYear,'');
   assert.deepEqual(draft.formPayload.selectedHeadIds,[]);
   assert.deepEqual(draft.formPayload.amountInputs,{});
   assert.equal(draft.formPayload.incomeTaxType,null);
@@ -361,7 +361,7 @@ test('historical head IDs never auto-select a current payment head',()=>{
   assert.equal(result.formPayload.legacySourceAmount,'55.00');
   assert.deepEqual(result.formPayload.selectedHeadIds,[]);
   assert.deepEqual(result.formPayload.amountInputs,{});
-  assert.equal(result.formPayload.assessmentYear,'2025-26');
+  assert.equal(result.formPayload.assessmentYear,'');
   assert.throws(()=>reuseLegacySingleHeadPayment({
     ...source,details:{...source.details,lines:[{...source.details.lines[0],headId:-1}]}
   },'user1','1111111111111'));
@@ -407,7 +407,7 @@ test('Pay Again uses the single explicit Return allocation in the standard wizar
     items:[{...receipt.items[0],headId:125}],totalAmount:10,
     allocationItems:[{...receipt.allocationItems![0],assessmentYear:'2025-26'}]};
   const copy=reuseRecordedPayment([single],'owner','1234567890123','single-source');
-  assert.equal(copy.formPayload.assessmentYear,'2025-26');
+  assert.equal(copy.formPayload.assessmentYear,'');
   assert.deepEqual(copy.formPayload.otherTaxLines,[]);
   assert.deepEqual(copy.formPayload.selectedHeadIds,[125]);
   assert.deepEqual(copy.formPayload.amountInputs,{125:'10.00'});
@@ -465,7 +465,7 @@ test('Pay Again keeps a genuine complete two-row batch as one editable copy',()=
  const lines=copy.formPayload.otherTaxLines as Array<{headId:number;assessmentYear:string;amount:string}>;
  assert.equal(lines.length,4);
  assert.deepEqual(lines.map(l=>l.headId),[1,2,51,52]);
- assert.deepEqual(lines.map(l=>l.assessmentYear),['2026-27','2025-26','2027-28','2027-28']);
+ assert.deepEqual(lines.map(l=>l.assessmentYear),['2026-27','','','']);
  assert.equal(lines.reduce((total,line)=>total+Number(line.amount),0),60);
  assert.equal(copy.sourcePaymentId,'batch-checked');
 });
@@ -508,7 +508,7 @@ test('single-head Pay Again service matrix retains editable source inputs and ex
       assert.deepEqual(reused.formPayload.otherTaxLines,[]);
       assert.deepEqual(reused.formPayload.selectedHeadIds,[head.id]);
       assert.deepEqual(reused.formPayload.amountInputs,{[head.id]:'10.00'});
-      assert.equal(reused.formPayload.assessmentYear,assessmentYear);
+      assert.equal(reused.formPayload.assessmentYear,assessmentYear==='2026-27'?assessmentYear:'');
       assert.equal(JSON.stringify(original),immutable,'original payment must remain unchanged');
     }
   }
@@ -577,7 +577,7 @@ test('M09 Pay Again restores verified SQL accounting rows hidden from combined r
     id:string;headId:number;assessmentYear:string;amount:string
   }>;
   assert.deepEqual(allocations.map(a=>[a.headId,a.assessmentYear,a.amount]),[
-    [firstHead.id,'2025-26','12.50'],[secondHead.id,'2026-27','25.00'],
+    [firstHead.id,'','12.50'],[secondHead.id,'2026-27','25.00'],
   ]);
   assert.equal(new Set(allocations.map(a=>a.id)).size,2);
   allocations[0].amount='18.00';
@@ -629,7 +629,7 @@ test('M09 reuses v2 SQL accounting lines when no receiptLines or display snapsho
   assert.deepEqual((copy.formPayload.otherTaxLines as Array<{
     headId:number;assessmentYear:string;amount:string
   }>).map(item=>[item.headId,item.assessmentYear,item.amount]),[
-    [121,'2025-26','10.00'],[145,'2026-27','15.00'],
+    [121,'','10.00'],[145,'2026-27','15.00'],
   ]);
   assert.equal(JSON.stringify(original),before,'a new editable copy cannot rewrite original SQL');
   const malformed=makeConfirmedReceipt({...original,

@@ -1,6 +1,6 @@
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
-import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
+import { CURRENT_PAY_AGAIN_YEAR } from './payAgain';
 import { TRAVEL_TAX_ECONOMIC_CODE } from '../data/travelTax2026';
 import {estimateGiftTax} from './giftTaxEstimate';
 import {validGiftDate} from './giftTaxDate';
@@ -53,8 +53,8 @@ const reconciledHeadMinor = (head: PaymentLineItem) => {
 };
 const copiedYear = (year: string) => {
   if (!validYear(year)) throw Error('Historical assessment year is missing or invalid.');
-  // Retain the exact original valid AY as an editable input; unsupported years require re-selection.
-  return PAY_AGAIN_YEAR_OPTIONS.some(option => option === year) ? year : '';
+  // F-073: retain current AY only; historical AY stays on the immutable source.
+  return year === CURRENT_PAY_AGAIN_YEAR ? year : '';
 };
 
 type SourceAllocation = {

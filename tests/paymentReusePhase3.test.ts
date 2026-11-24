@@ -81,7 +81,7 @@ test('Phase 3: every supported active v11 head has 2 and 3 distinct individually
         const copy=reuseRecordedPayment([source],payerUid,payerTin,sourceId);
         assert.equal(copy.sourcePaymentId,sourceId);
         assert.deepEqual(copy.sourceAllocationIds,[source.allocationItems![0].allocationId]);
-        assert.equal(copy.formPayload.assessmentYear,source.assessmentYear);
+        assert.equal(copy.formPayload.assessmentYear,source.assessmentYear==='2026-27'?source.assessmentYear:'');
         assert.equal(copy.formPayload.forSelf,source.taxpayerTin===payerTin);
         assert.equal(copy.formPayload.paymentRemarks,source.paymentRemarks);
         if(head.category==='OTHER_TAX_PAYMENT'){
@@ -90,7 +90,7 @@ test('Phase 3: every supported active v11 head has 2 and 3 distinct individually
           }>;
           assert.equal(lines.length,1);
           assert.equal(lines[0].headId,head.id);
-          assert.equal(lines[0].assessmentYear,source.assessmentYear);
+          assert.equal(lines[0].assessmentYear,source.assessmentYear==='2026-27'?source.assessmentYear:'');
           assert.equal(lines[0].amount,amountText(source.allocationItems![0].amountMinor));
           assert.ok(!newLineIds.has(lines[0].id));
           newLineIds.add(lines[0].id);
@@ -152,11 +152,12 @@ test('Phase 3: mixed heads, years and self/other allocations become editable new
     assert.equal(draft.formPayload.tin,payerTin);
     assert.deepEqual(draft.sourceAllocationIds,oldAllocationIds);
     assert.deepEqual(copiedLines.map(line=>line.headId),selected.map(head=>head.id));
-    assert.deepEqual(copiedLines.map(line=>line.assessmentYear),years.slice(0,3));
+    assert.deepEqual(copiedLines.map(line=>line.assessmentYear),['','','2026-27']);
     assert.equal((draft.formPayload.additionalTaxpayers as unknown[]).length,2);
     // Edit one amount and year, without modifying any historical payment row.
     copiedLines[0].amount=repeat===0?'30.05':'31.05';
     copiedLines[0].assessmentYear=years[3];
+     copiedLines[1].assessmentYear=years[1]; // explicit re-selection required by F-073
     const attemptId=crypto.randomUUID();
     assert.ok(!newAttempts.has(attemptId)&&attemptId!==oldPaymentId);
     newAttempts.add(attemptId);
