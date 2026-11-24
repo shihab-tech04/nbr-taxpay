@@ -49,7 +49,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   useEffect(()=>{
     let active=true;
     setServerRecords([]);setHistoryError(false);setHistoryLoading(serverMode);
-    if(serverMode)void listPreviewCorrections().then(rows=>{if(active)setServerRecords(rows);})
+    if(serverMode)void listPreviewCorrections().then(rows=>{if(active)setServerRecords(current=>[...rows,...current.filter(row=>!rows.some(saved=>saved.id===row.id))]);})
       .catch(()=>{if(active)setHistoryError(true);}).finally(()=>{if(active)setHistoryLoading(false);});
     return()=>{active=false;};
   },[previewAccount?.id,serverMode,historyRetry]);
@@ -137,6 +137,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
         const saved=await submitPreviewCorrection({...payload,requestKey:pendingSubmission.current.key});
         pendingSubmission.current=null;
         setServerRecords(rows=>[saved,...rows.filter(row=>row.id!==saved.id)]);
+        setHistoryError(false);setHistoryLoading(false);
         setSubmittedTicket('SIM-CORR-'+saved.id);setReason('');
         setProposedAY('');setProposedCircle('');setProposedHeadCode('');
         return;
@@ -365,7 +366,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
           {caseSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
             onClick={()=>setCaseSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</button>}
         </TaxPayTableControls>
-        {historyLoading?<TaxPayTableState>{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</TaxPayTableState>:historyError?<div role="alert" className="space-y-2 text-sm"><p>{tr('Correction history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><UiButton type="button" variant="secondary" onClick={()=>setHistoryRetry(n=>n+1)}>{tr('Retry','আবার চেষ্টা করুন')}</UiButton></div>:filteredCases.length===0?<TaxPayTableState>{visibleCorrections.length
+        {historyLoading?<TaxPayTableState>{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</TaxPayTableState>:historyError?<div role="alert" className="space-y-2 text-sm"><p>{tr('Correction history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><UiButton type="button" variant="outline" onClick={()=>setHistoryRetry(n=>n+1)}>{tr('Retry','আবার চেষ্টা করুন')}</UiButton></div>:filteredCases.length===0?<TaxPayTableState>{visibleCorrections.length
           ?tr('No requests match your search.','অনুসন্ধানে কোনো অনুরোধ পাওয়া যায়নি।')
           :tr('No correction requests saved yet.','এখনো কোনো সংশোধনের অনুরোধ সংরক্ষিত হয়নি।')}</TaxPayTableState>:
           <TaxPayDataGrid variant="tabular" rows={filteredCases} getRowKey={c=>c.id}
