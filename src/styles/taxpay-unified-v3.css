@@ -1189,3 +1189,12 @@
     width:100%;
   }
 }
+
+/* Account-only additions to the approved taxpayer workspace. */
+.payment-flow-embedded--unified .unified-account-identity {padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid #e2e6eb;min-width:0;}
+.payment-flow-embedded--unified .unified-account-identity__card {display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #c8d9ec;border-radius:10px;cursor:pointer;min-width:0;}
+.payment-flow-embedded--unified .unified-account-identity__card input {width:18px;height:18px;flex:none;accent-color:var(--taxpay-primary,#2c5ead);}
+.payment-flow-embedded--unified .unified-account-identity__card span {min-width:0;overflow-wrap:anywhere;}
+.payment-flow-embedded--unified .unified-account-identity__card strong,.payment-flow-embedded--unified .unified-account-identity__card small {display:block;}
+.payment-flow-embedded--unified .unified-account-identity__card small {margin-top:4px;color:#68788e;}
+.payment-flow-embedded--unified .unified-account-beneficiaries {margin-top:16px;padding-top:16px;border-top:1px solid #e2e6eb;min-width:0;}

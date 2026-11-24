@@ -106,7 +106,7 @@ const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg 
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
 export { user1DemoRoutes } from '../../config/user1DemoRoutes';
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
-  const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
+  const {navigate,language,setLanguage,routeParams,openAllTaxPayments,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
   // The legacy localhost QA flag retains the test-only source comparison.
   // Production preview requires a current fictional profile session and never
@@ -647,7 +647,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <h2 id="taxpay-bento-hero-title">{tr('What needs your attention?','কোন বিষয়গুলোতে নজর দেবেন?')}</h2>
       <p className="text-sm">{tr('Review exceptions or start a payment.','ব্যতিক্রম দেখুন অথবা পেমেন্ট শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
+        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openAllTaxPayments()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
 
       </div>
       <div className="taxpay-bento-hero__status" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
@@ -752,7 +752,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
       {onResumePaymentDraft
         ? <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
-            onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
+            onCountChange={setSavedDraftCount} onStartPayment={()=>openAllTaxPayments()}/>
         : <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts"
             aria-labelledby="dashboard-payment-drafts-title" className={panel}>
             <h2 id="dashboard-payment-drafts-title" className="text-lg font-semibold text-taxpay-text">
