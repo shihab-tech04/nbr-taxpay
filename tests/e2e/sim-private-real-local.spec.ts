@@ -288,7 +288,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
  await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
  // F-073: prior AY must not silently become a new payment year.
- await expect(one.page.getByRole('button',{name:'Save payment record'})).toBeDisabled();
+ await one.page.getByRole('button',{name:'Save payment record'}).click();
+ await expect(one.page.getByRole('status').filter({hasText:'Select an assessment year for each allocation.'})).toBeVisible();
  // Reuse remains editable. Simply opening/changing a copy cannot mutate the
  // immutable SQL payment or produce a second receipt.
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');
