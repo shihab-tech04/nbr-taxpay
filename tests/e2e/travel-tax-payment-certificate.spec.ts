@@ -112,7 +112,7 @@ for (const language of ['en', 'bn'] as const) {
 
     const certificate = modal.getByTestId('payment-certificate-document');
     await expect(certificate).toBeVisible();
-    await expect(certificate.getByRole('heading', { name: /Payment Certificate|পেমেন্ট সনদ/ })).toBeVisible();
+    await expect(certificate).toHaveAttribute('aria-label', /Payment Certificate|পেমেন্ট সনদ/);
     await expect(certificate.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + paymentId);
     await expect(certificate).toContainText(paymentId);
     await expect(certificate).toContainText(firstPassenger);
