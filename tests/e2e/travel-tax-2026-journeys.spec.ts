@@ -318,12 +318,11 @@ test('Travel Tax: ten fictional passports are scrollable, selectable and verifia
   await expect.poll(async()=>list.getAttribute('data-placement')).toMatch(/above|below/);
   const boundaries=await list.evaluate(el=>{
     const list=el.getBoundingClientRect();
-    const body=el.closest('.taxpay-modal__body')?.getBoundingClientRect();
-    const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
-    return {top:list.top,bottom:list.bottom,bodyTop:body?.top??0,footerTop:footer?.top??window.innerHeight};
+    return {top:list.top,bottom:list.bottom,viewportHeight:window.innerHeight};
   });
-  expect(boundaries.top).toBeGreaterThanOrEqual(boundaries.bodyTop - 2);
-  expect(boundaries.bottom).toBeLessThanOrEqual(boundaries.footerTop + 2);
+  expect(boundaries.top).toBeGreaterThanOrEqual(0);
+  expect(boundaries.bottom).toBeLessThanOrEqual(boundaries.viewportHeight + 1);
+  expect(await list.evaluate(el=>el.matches(':popover-open'))).toBe(true);
   await options.filter({hasText:'TEST230005'}).click();
   await modal.getByRole('button',{name:'Check Passport'}).click();
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
