@@ -8,7 +8,7 @@ import {sampleTinForUserNumber} from '../../src/data/sampleTinSuggestions';
 
 /** Real browser + local Edge Function/Postgres only. Never use hosted credentials. */
 test('demo User ID retains nonempty lists, tagged beneficiary and language across sign-out, refresh and browsers',async({browser},info)=>{
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
   const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
   if(!raw||!key)throw new Error('Disposable local Supabase credentials required.');

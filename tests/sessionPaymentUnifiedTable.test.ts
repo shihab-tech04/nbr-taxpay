@@ -29,7 +29,7 @@ test('preview correction request history keeps existing form and records but use
  assert.match(src,/renderMobileCard=/);
  assert.match(src,/localCorrections = corrections\.filter\(c=>visibleReceipts\.some/);
  assert.match(src,/visibleCorrections:[^\n]+=serverMode/);
- assert.match(src,/\?serverRecords\.map/);
+ assert.match(src,/\?\(historyOwner===ownerKey\?serverRecords:\[\]\)\.map/);
  assert.match(src,/:localCorrections;/);
  assert.match(src,/listPreviewCorrections\(\)/);
  assert.match(src,/await submitPreviewCorrection\(/);

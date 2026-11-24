@@ -61,7 +61,7 @@ export async function submitPreviewCorrection(input:PreviewCorrectionInput):Prom
 /** Account-bound dashboard read model. An unavailable API is never counted as zero. */
 export function usePreviewCorrectionRegister(profileId:string|null,enabled=true){
   const session=activePreviewSession();
-  const key=enabled&&session?.profileId===profileId?session.capability:null;
+  const key=enabled&&session&&session.profileId===profileId?session.capability:null;
   type State={key:string|null;phase:'loading'|'ready'|'error';rows:PreviewCorrectionRecord[]};
   const [state,setState]=useState<State>({key:null,phase:'loading',rows:[]});
   const [revision,setRevision]=useState(0);
