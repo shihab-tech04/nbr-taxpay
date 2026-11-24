@@ -20,39 +20,33 @@
     max-height: min(90dvh, 800px);
   }
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .taxpay-modal__body {
-  padding: 0;
-}
-.taxpay-citizen-shell .payment-flow-embedded--unified.gift-tax-workspace > .payment-flow-embedded__content {
-  display: block;
-  width: 100%;
-  min-width: 0;
-}
-.taxpay-citizen-shell .gift-tax-workspace .payment-flow-embedded__content > .payment-form-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
-  align-items: stretch;
-  gap: 0;
-  width: 100%;
-  min-width: 0;
-}
-.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt)
-  .payment-flow-embedded__content > .payment-form-layout {
-  grid-template-columns: minmax(0, 1fr);
-}
-.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt)
-  .gift-tax-aside {
-  display: none;
-}
-@media (max-width: 900px) {
+/* Desktop-only Gift Tax geometry: leave the approved mobile/small-tablet
+ * workspace stack intact to prevent the summary rail intercepting controls. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .taxpay-modal__body {
+    padding: 0;
+  }
+  .taxpay-citizen-shell .payment-flow-embedded--unified.gift-tax-workspace > .payment-flow-embedded__content {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
   .taxpay-citizen-shell .gift-tax-workspace .payment-flow-embedded__content > .payment-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt)
+    .payment-flow-embedded__content > .payment-form-layout {
     grid-template-columns: minmax(0, 1fr);
   }
-  .taxpay-citizen-shell .gift-tax-workspace .unified-taxpayer-workspace__rail {
-    min-height: 0;
-    border-left: 0;
-    border-top: 1px solid #dfe7f1;
-  }
+}
+/* The sample receipt is the document, not another two-column payment form. */
+.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt) .gift-tax-aside {
+  display: none;
 }
 
 /* Two distinct TIN identities stay in Screen 1; their field/empty-state
