@@ -1268,6 +1268,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
                     onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
                     simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
+                  <div className="unified-v5-review-total" data-testid="travel-checkout-total"
+                    aria-label={tr('Combined travel tax','সম্মিলিত ভ্রমণ কর')}>
+                    <div className="unified-v5-review-total__row">
+                      <span>{tr('Calculated total','হিসাবকৃত মোট')} · {passengers.length} {tr('passenger(s)','যাত্রী')}</span>
+                      <output aria-label={tr('Combined payable','মোট প্রদেয়')}><TravelCurrency amount={totalAmount} language={language}/></output>
+                    </div>
+                    <p>{tr('Preview calculation — payment and settlement are not yet confirmed.',
+                      'প্রিভিউ হিসাব — পরিশোধ ও নিষ্পত্তি এখনো নিশ্চিত নয়।')}</p>
+                  </div>
                   {paymentChannel && paymentMethod && <label className="payment-review__ack">
                     <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
                     <span>{tr('I confirm the travel information, all passengers and the combined amount.',
@@ -1351,7 +1360,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
 
       {embedded && modalFooterTarget && createPortal(
         <div className="travel-flow__footer-content">
-          {step > 0 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+          {step === 1 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
               <strong>{allCalculated ? <TravelCurrency amount={totalAmount} language={language}/> : validAssessments.length > 0 && travelDate ? <TravelCurrency amount={provisionalAmount} language={language}/> : '—'}</strong></summary>
             <dl>
