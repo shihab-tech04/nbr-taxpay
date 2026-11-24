@@ -116,6 +116,7 @@ export function GiftTaxPaymentResult({
     t('Treasury settlement not verified','ট্রেজারি নিষ্পত্তি যাচাই হয়নি'),
     t('Donor credit not posted','দাতার কর ক্রেডিট পোস্ট হয়নি'),
   ]:noTax?[t('Gift Tax reviewed — no payment due','দানকর পর্যালোচিত — পরিশোধ প্রযোজ্য নয়')]
+    :syncPending?[t('Simulation submission prepared','নমুনা পেমেন্ট প্রস্তুত'),t('Waiting for Taxpayer SQL and Office readback','করদাতা SQL এবং অফিস যাচাইয়ের অপেক্ষায়')]
     :pending?[t('Sample bank payment slip prepared','নমুনা ব্যাংক পরিশোধ স্লিপ প্রস্তুত'),
       t('Waiting for sample bank confirmation','নমুনা ব্যাংক নিশ্চিতকরণের অপেক্ষায়')]
     :failed?[t('Sample payment request started','নমুনা পেমেন্ট অনুরোধ শুরু হয়েছে'),
@@ -145,7 +146,7 @@ export function GiftTaxPaymentResult({
               <div><dt>{t('Tax event ID','কর ইভেন্ট আইডি')}</dt>
                 <dd>{t('Not issued — sample only','ইস্যু হয়নি — শুধু নমুনা')}</dd></div>
               <div><dt>{t('Payment transaction ID','পেমেন্ট ট্রানজেকশন আইডি')}</dt>
-                <dd>{t('Not issued — sample only','ইস্যু হয়নি — শুধু নমুনা')}</dd></div>
+                <dd>{receipt?.paymentTransactionId??t('Not issued — sample only','ইস্যু হয়নি — শুধু নমুনা')}</dd></div>
               <div><dt>{t('Payment reference','পেমেন্ট রেফারেন্স')}</dt><dd>{reference??'—'}</dd></div>
               <div><dt>{t('Amount','মোট অর্থ')}</dt><dd>{amount}</dd></div>
               <div><dt>{t('Donor (tax-liable)','দাতা (করদায়ী)')}</dt>

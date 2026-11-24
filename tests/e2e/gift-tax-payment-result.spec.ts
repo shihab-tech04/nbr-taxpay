@@ -1,4 +1,24 @@
-import {expect,test} from '@playwright/test';
+import {expect,test,type Page} from '@playwright/test';
+
+const GIFT_ID='10000000-0000-4000-8000-000000000901';
+async function mockGiftSql(page:Page){
+ const calls:Record<string,any>[]=[];
+ const headers={'access-control-allow-origin':'*','access-control-allow-methods':'GET,POST,OPTIONS','access-control-allow-headers':'*'};
+ await page.route('**/*.supabase.co/**',route=>route.abort());
+ await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
+  const req=route.request();
+  if(req.method()==='OPTIONS')return route.fulfill({status:204,headers});
+  if(req.method()==='POST'){
+   calls.push(req.postDataJSON());
+   return route.fulfill({status:200,headers,json:{success:true,id:GIFT_ID,status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true}});
+  }
+  const saved=calls.at(-1);
+  if(req.method()==='GET'&&saved&&new URL(req.url()).pathname.endsWith('/'+GIFT_ID))
+   return route.fulfill({status:200,headers,json:{success:true,simulationOnly:true,data:{id:GIFT_ID,status:'SIMULATED_SUCCESS',createdAt:'2026-11-24T06:00:00Z',data:{...saved,origin:'TAXPAY_UI'}}}});
+  return route.fulfill({status:200,headers,json:{success:true,simulationOnly:true,data:{items:[],total:0}}});
+ });
+ return calls;
+}
 
 /** Gift Tax uses the shared payment channel, lifecycle and receipt components;
  * all simulated records remain visibly nonfinancial and browser-local. */
@@ -14,6 +34,7 @@ for(const sample of [
   test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang+' '+sample.width+('signedIn' in sample?' signed in':' guest'),async({page})=>{
     await page.setViewportSize({width:sample.width,height:sample.height});
     const signedIn='signedIn' in sample && sample.signedIn;
+    const calls=signedIn?await mockGiftSql(page):[];
     await page.goto((signedIn?'/?action=taxpayer_home&demoUser=user1&lang=':'/?action=landing&lang=')+sample.lang);
     const bn=sample.lang==='bn';
     if(signedIn){
@@ -81,7 +102,13 @@ for(const sample of [
     const bodyOverflow=await gift.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(bodyOverflow).toBeLessThanOrEqual(2);
     await expect(gift.getByTestId('gift-tax-payment-result'))
-      .toContainText(signedIn?(bn?'নমুনা পেমেন্ট সম্পন্ন':'Sample payment completed'):(bn?'পেমেন্ট রেকর্ড সংরক্ষিত':'Payment record saved'));
+      .toContainText(bn?'পেমেন্ট রেকর্ড সংরক্ষিত':'Payment record saved');
+    if(signedIn){
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({service:'GIFT_TAX',amountMinor:27200000,details:{challanRemarks:'Test gift remarks',giftDetails:{donor:{tin:'111111111111'},donee:{tin:'222222222222',relationship:'father'},giftAmountMinor:250000000,estimatedTaxMinor:27200000}}});
+      expect(calls[0].details.receiptSnapshot.paymentCategory).toBe('GIFT_TAX');
+      await expect(gift.getByTestId('gift-tax-payment-result')).toContainText(calls[0].details.receiptReference);
+    }
     await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
     await expect(gift.getByRole('link',{name:/Download challan|চালান ডাউনলোড/})).toHaveCount(0);
     await gift.getByRole('button',{name:bn?'নমুনা চালানের বিবরণ':'Sample Challan Details'}).click();

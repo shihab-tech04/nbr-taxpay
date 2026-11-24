@@ -244,6 +244,24 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  const savedRemarks=typeof d.challanRemarks==='string'?d.challanRemarks:
   typeof d.paymentRemarks==='string'?d.paymentRemarks:undefined;
  const method=stringValue(d.paymentMethod);
+ if(tx.service==='GIFT_TAX'){
+  const snapshot=d.receiptSnapshot as ChallanReceipt|undefined;
+  const gift=d.giftDetails as ChallanReceipt['giftDetails'];
+  if(!gift||!snapshot||!snapshot.giftDetails||snapshot.paymentCategory!=='GIFT_TAX'||
+    !validTin(gift.donor?.tin)||!validTin(gift.donee?.tin)||gift.donor.tin===gift.donee.tin||
+    d.taxpayerTin!==gift.donor.tin||d.taxpayerName!==gift.donor.name||
+    gift.estimatedTaxMinor!==tx.amountMinor||Math.round(snapshot.totalAmount*100)!==tx.amountMinor||
+    snapshot.taxpayerTin!==gift.donor.tin||snapshot.taxpayerName!==gift.donor.name||
+    snapshot.assessmentYear!==d.assessmentYear||snapshot.paymentMethod!==method||
+    snapshot.paymentRemarks!==savedRemarks||gift.remarks!==savedRemarks||
+    snapshot.challanNo!==d.receiptReference||snapshot.isSimulatedDemo!==true||
+    snapshot.items?.length!==1||snapshot.items[0]?.economicCode!=='SIM-GIFT'||
+    Math.round(snapshot.items[0].totalAmount*100)!==tx.amountMinor)
+    throw Error('Gift Tax receipt does not reconcile to SQL');
+  return {...snapshot,giftDetails:gift,paymentTransactionId:tx.id,createdAt:tx.createdAt,completedAt:tx.createdAt,
+    treasuryStatus:'INITIATED',taxCreditStatus:'NOT_APPLICABLE',isSimulatedDemo:true,
+    allocationItems:[{taxpayerName:gift.donor.name,taxpayerTin:gift.donor.tin,paymentServiceEn:'Gift Tax',paymentServiceBn:'দানকর',assessmentYear:snapshot.assessmentYear,amountMinor:tx.amountMinor}]};
+ }
  const allocationItems=toAllocationItems(tx);
  const readbackLines=reusableAccountingLines(tx,allocationItems);
  // Do not allow a saved receipt snapshot to bypass beneficiary/amount reconciliation.
