@@ -3535,3 +3535,32 @@
     display: none !important;
   }
 }
+
+/* Travel Tax standalone route uses the SAME approved full-width Step 3 layout
+   as the walk-in modal. The old side rail overlaid the payable action at 320px. */
+.travel-flow[data-step="2"] {
+  display: block;
+  min-width: 0;
+}
+.travel-flow[data-step="2"] > .travel-flow__summary {
+  display: none !important;
+}
+.travel-flow[data-step="2"] > .travel-flow__main {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.travel-flow[data-step="2"] .travel-flow__standalone-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0 4px;
+}
+.travel-flow[data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {
+  width: min(100%, 360px);
+  min-height: 48px;
+}
+@media (max-width: 650px) {
+  .travel-flow[data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {
+    width: 100%;
+  }
+}
