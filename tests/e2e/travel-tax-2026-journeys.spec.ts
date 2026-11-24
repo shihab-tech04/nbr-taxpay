@@ -1266,3 +1266,35 @@ test('signed-out Travel Tax X uses the same reusable Walk-in discard confirmatio
   await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(modal).toHaveCount(0);
 });
+
+test('Walk-in Travel Tax: short desktop dropdown is hit-testable and has no draft controls', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Explicit landscape viewport coverage');
+  test.setTimeout(90000);
+  for (const [width,height] of [[1280,520],[1366,568],[1920,800]]) {
+    await page.setViewportSize({width,height});
+    await page.goto('/?action=landing&lang=en');
+    await openTravelTaxFromBanner(page);
+    const modal=page.getByRole('dialog',{name:'Travel tax'});
+    await expect(modal.getByRole('button',{name:'Save Draft',exact:true})).toHaveCount(0);
+    await expect(modal.getByRole('button',{name:'Continue Draft',exact:true})).toHaveCount(0);
+    const input=modal.locator('#travel-passport-first');
+    const list=modal.locator('#travel-passport-suggestions-first');
+    await input.click();
+    await expect(list.getByRole('option')).toHaveCount(10);
+    await expect.poll(()=>list.evaluate(el=>{
+      const b=el.getBoundingClientRect();
+      const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
+      const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
+      if(!first||!footer||b.height<90||b.bottom>footer.top+2)return false;
+      const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
+      return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
+    })).toBe(true);
+    await list.getByRole('option',{name:/TEST230005/}).click();
+    await modal.getByRole('button',{name:'Check Passport'}).click();
+    await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+    await modal.getByRole('button',{name:'Continue to travel details'}).click();
+    await expect(modal.getByRole('button',{name:'Save Draft',exact:true})).toHaveCount(0);
+    await expect(modal.getByRole('button',{name:'Undo removal',exact:true})).toHaveCount(0);
+    await expect(modal.getByRole('button',{name:'Remove passenger',exact:true})).toHaveCount(0);
+  }
+});
