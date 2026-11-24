@@ -63,6 +63,7 @@ function paymentReference(receipt: ChallanReceipt, parentId: string): string {
 
 /** Build a certificate only from a completed parent and reconciled saved lines. */
 export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCertificateModel | null {
+  if(receipt.paymentCategory==='GIFT_TAX')return null;
   const parentId = receipt.paymentTransactionId?.trim() ?? '';
   if (!validCertificateTransactionId(parentId) || !receipt.completedAt) return null;
 

@@ -14,7 +14,7 @@ import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 const TAXPAY_API=TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const serviceCodes=new Set<PaymentCategory>([
  'TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
- 'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX'
+ 'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX','GIFT_TAX'
 ]);
 const methods=new Set<ChallanReceipt['paymentMethod']>([
  'BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD',
@@ -288,7 +288,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),...batchInfo,
       // Original challan-level remarks come from the saved parent, not a stale display snapshot.
       ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
-      taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
+      taxCreditStatus:(tx.service==='SOURCE_TAX_DEPOSIT'||tx.service==='GIFT_TAX')?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
  }
@@ -314,7 +314,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   paymentMethod:methods.has(method as ChallanReceipt['paymentMethod'])?
    method as ChallanReceipt['paymentMethod']:'SIMULATED',
   gatewayTransactionId:tx.id,treasuryStatus:'GATEWAY_SUCCESS',
-  taxCreditStatus:category==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
+  taxCreditStatus:(category==='SOURCE_TAX_DEPOSIT'||category==='GIFT_TAX')?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
   createdAt:tx.createdAt,completedAt:tx.createdAt,isSimulatedDemo:true,...batchInfo,
  };
  return fallback;

@@ -8,6 +8,8 @@
  * requests or SQL writes. The union describes a future audited adapter
  * contract; only UNAVAILABLE can currently be returned.
  */
+import type {ChallanReceipt} from '../types/tax';
+
 export interface GiftTaxPaymentInput {
   donor: {tin: string; name: string};
   donee: {
@@ -33,7 +35,8 @@ export type GiftTaxPaymentOutcome =
   | {kind: 'PENDING'; requestId: string; reference: string; receivedAt: string}
   | {kind: 'FAILED'; requestId: string; reason: string; retryable: boolean}
   | {kind: 'SETTLED'; requestId: string; verified: GiftTaxVerifiedSettlement}
-  | {kind: 'SIMULATED_SUCCESS'; reference: string; method: GiftTaxSimulationMethod; createdAt: string}
+  | {kind: 'SIMULATED_SUCCESS'; reference: string; method: GiftTaxSimulationMethod; createdAt: string; receipt?:ChallanReceipt}
+  | {kind:'SIMULATED_SYNC_PENDING';reference:string;method:GiftTaxSimulationMethod}
   | {kind: 'SIMULATED_PENDING'; reference: string}
   | {kind: 'SIMULATED_FAILED'; reason: string; retryable: true}
   | {kind: 'SIMULATED_NO_TAX'};
@@ -100,7 +103,7 @@ export function simulateGiftTaxPayment(input:GiftTaxPaymentInput,method:GiftTaxS
     !Number.isSafeInteger(input.giftAmountMinor) || input.giftAmountMinor<=0)
     return {kind:'SIMULATED_FAILED',reason:'Invalid Gift Tax review details.',retryable:true};
   if (input.estimatedTaxMinor===0) return {kind:'SIMULATED_NO_TAX'};
-  const reference='SIM-GIFT-'+input.idempotencyKey.slice(0,8).toUpperCase();
+  const reference='SIM-GIFT-'+input.idempotencyKey;
   if (method==='BANK_BRANCH') return {kind:'SIMULATED_PENDING',reference};
   if (simulateDecline) return {kind:'SIMULATED_FAILED',reason:'The simulated payment was declined. Select another method and retry.',retryable:true};
   return {kind:'SIMULATED_SUCCESS',reference,method,createdAt:new Date().toISOString()};
