@@ -28,8 +28,19 @@ BEGIN
  OR jsonb_typeof(g->'remarks') IS DISTINCT FROM 'string'
  OR coalesce(d->>'payerMode','') NOT IN ('SELF','OTHER')
  THEN RAISE EXCEPTION 'INVALID_GIFT_DETAILS'; END IF;
- SELECT * INTO v_donor FROM taxpay_guest_private.walkin_confirmed_payer(g#>>'{donor,tin}');
- SELECT * INTO v_donee FROM taxpay_guest_private.walkin_confirmed_payer(g#>>'{donee,tin}');
+ -- Use the existing 12-digit lookup aliases common to both hosted databases.
+ -- The later 13-digit confirmed-payer helper is not installed on original Taxpayer.
+ -- These are display-only synthetic identities; existing capability guards still authorize the payment.
+ SELECT 'user'||n.i::text AS profile_id,
+   (CASE WHEN n.i<=10 THEN 'User ' ELSE 'Taxpayer Account ' END)||n.i::text AS name_en,
+   (CASE WHEN n.i<=10 THEN 'ইউজার ' ELSE 'করদাতা অ্যাকাউন্ট ' END)||n.i::text AS name_bn
+ INTO v_donor FROM pg_catalog.generate_series(1,30) AS n(i)
+ WHERE taxpay_guest_private.walkin_sample_tin('user'||n.i::text)=g#>>'{donor,tin}';
+ SELECT 'user'||n.i::text AS profile_id,
+   (CASE WHEN n.i<=10 THEN 'User ' ELSE 'Taxpayer Account ' END)||n.i::text AS name_en,
+   (CASE WHEN n.i<=10 THEN 'ইউজার ' ELSE 'করদাতা অ্যাকাউন্ট ' END)||n.i::text AS name_bn
+ INTO v_donee FROM pg_catalog.generate_series(1,30) AS n(i)
+ WHERE taxpay_guest_private.walkin_sample_tin('user'||n.i::text)=g#>>'{donee,tin}';
  IF v_donor.profile_id IS NULL OR v_donee.profile_id IS NULL
  OR coalesce(g#>>'{donor,name}','') NOT IN (v_donor.name_en,v_donor.name_bn)
  OR coalesce(g#>>'{donee,name}','') NOT IN (v_donee.name_en,v_donee.name_bn)
