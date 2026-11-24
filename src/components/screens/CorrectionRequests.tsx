@@ -12,7 +12,7 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import type {ChallanReceipt,CorrectionRequest} from '../../types/tax';
-import {listPreviewCorrections,submitPreviewCorrection,type PreviewCorrectionRecord} from '../../services/previewCorrections';
+import {listPreviewCorrections,submitPreviewCorrection,previewCorrectionStatus,type PreviewCorrectionRecord} from '../../services/previewCorrections';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
@@ -65,14 +65,15 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     return()=>{active=false;};
   },[ownerKey,serverMode,historyRetry]);
   const localCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
-  const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean})[]=serverMode
+  const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean;officeSyncState?:PreviewCorrectionRecord['officeSyncState'];reviewState?:PreviewCorrectionRecord['reviewState']})[]=serverMode
     ?(historyOwner===ownerKey?serverRecords:[]).map(row=>({
       id:row.id,ticketNo:'SIM-CORR-'+row.id,challanNo:row.originalReference,taxpayerTin:taxpayerProfile.tin,
       taxpayerName:taxpayerProfile.nameEn,requestedBy:taxpayerProfile.nameEn,
       requestDate:row.createdAt,lastUpdated:row.createdAt,currentAssessmentYear:row.currentAY,
       proposedAssessmentYear:row.proposedAY,currentCircle:row.currentCircle,proposedCircle:row.proposedCircle,
       currentHeadCode:row.currentHeadCode,proposedHeadCode:row.proposedHeadCode,reason:row.reason,
-      workflowStage:'MAKER_SUBMITTED',simulationRecorded:true,
+      workflowStage:'MAKER_SUBMITTED',simulationRecorded:true,officeSyncState:row.officeSyncState,reviewState:row.reviewState,
+      approverRemarks:row.reviewReason??undefined,
       ...(row.allocationIndex!==null?{targetAllocationIndex:row.allocationIndex}:{}),
       ...(row.allocationId?{targetAllocationId:row.allocationId}:{})
     }))
@@ -194,7 +195,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
               <span className="break-all">{serverMode?tr('Request recorded:','আবেদন নথিভুক্ত:'):tr('Request saved locally:','স্থানীয় খসড়া সংরক্ষিত:')} {submittedTicket}</span>
             </div>
             <p className="text-xs text-emerald-700">
-              {serverMode?tr('Recorded in the simulated payment system. No financial record changed.','সিমুলেটেড পেমেন্ট সিস্টেমে নথিভুক্ত। আর্থিক রেকর্ড পরিবর্তিত হয়নি।'):tr('Not submitted to NBR or an official review queue.','এনবিআর বা অফিসের পর্যালোচনায় জমা হয়নি।')}
+              {serverMode?tr('Request recorded. Check the register for Office delivery and review status. No payment amount or ledger changed.','আবেদন নথিভুক্ত। অফিসে প্রেরণ ও পর্যালোচনার অবস্থা তালিকায় দেখুন। পরিশোধের পরিমাণ বা লেজার পরিবর্তিত হয়নি।'):tr('Not submitted to NBR or an official review queue.','এনবিআর বা অফিসের পর্যালোচনায় জমা হয়নি।')}
             </p>
           </div>
         )}
@@ -398,7 +399,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 <p className="text-taxpay-text">{tr('Assessment year','করবর্ষ')}: {c.currentAssessmentYear} → {c.proposedAssessmentYear}</p>
                 <p className="text-sm text-taxpay-muted">{tr('Circle','সার্কেল')}: {c.currentCircle} → {c.proposedCircle}</p>
               </div>},
-              {key:'status',header:tr('Recorded status','নথিভুক্ত অবস্থা'),renderCell:c=><p className="font-semibold text-taxpay-text">{c.simulationRecorded?tr('Recorded','নথিভুক্ত'):c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>},
+              {key:'status',header:tr('Recorded status','নথিভুক্ত অবস্থা'),renderCell:c=><p className="font-semibold text-taxpay-text">{c.simulationRecorded?previewCorrectionStatus(c,language):c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>},
               {key:'detail',header:tr('Details','বিস্তারিত'),renderCell:c=><details className="max-w-[22rem] rounded-lg border border-taxpay-border p-2">
                 <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{tr('View request','অনুরোধ দেখুন')}</summary>
                 <div className="mt-2 space-y-2 text-sm text-taxpay-text">
@@ -411,7 +412,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             renderMobileCard={c=><div className="space-y-2">
               <div className="taxpay-mobile-table-card__header">
                 <p className="taxpay-mobile-table-card__title">{c.ticketNo}</p>
-                <p className="text-sm font-semibold text-taxpay-primary">{c.simulationRecorded?tr('Recorded','নথিভুক্ত'):c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>
+                <p className="text-sm font-semibold text-taxpay-primary">{c.simulationRecorded?previewCorrectionStatus(c,language):c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>
               </div>
               <p className="taxpay-mobile-table-card__meta break-all">{tr('Challan','চালান')}: {c.challanNo}</p>
               <p className="taxpay-mobile-table-card__meta">{tr('Year','করবর্ষ')}: {c.currentAssessmentYear} → {c.proposedAssessmentYear}</p>

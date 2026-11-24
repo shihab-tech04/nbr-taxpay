@@ -10,7 +10,21 @@ export type PreviewCorrectionRecord = {
   id:string; paymentId:string; originalReference:string; allocationIndex:number|null; allocationId:string|null;
   currentAY:string; proposedAY:string; currentCircle:string; proposedCircle:string;
   currentHeadCode:string; proposedHeadCode:string; reason:string; createdAt:string; status:'RECORDED';
+  officeSyncState?:'PENDING'|'ACKNOWLEDGED';
+  reviewState?:'PENDING_OFFICER'|'MAKER_ACKNOWLEDGED'|'REVIEWER_VERIFIED'|'APPROVER_CLOSED'|'REJECTED';
+  reviewUpdatedAt?:string|null;reviewReason?:string|null;
 };
+export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'>,language:'en'|'bn'){
+  const bn=language==='bn';
+  if(record.officeSyncState!=='ACKNOWLEDGED')return bn?'অফিসে পাঠানো হচ্ছে':'Awaiting Office';
+  switch(record.reviewState){
+    case 'MAKER_ACKNOWLEDGED':return bn?'অফিস গ্রহণ করেছে':'Acknowledged';
+    case 'REVIEWER_VERIFIED':return bn?'পর্যালোচনা সম্পন্ন':'Reviewed';
+    case 'APPROVER_CLOSED':return bn?'নিষ্পত্তি হয়েছে':'Closed';
+    case 'REJECTED':return bn?'প্রত্যাখ্যাত':'Rejected';
+    default:return bn?'অফিসে জমা হয়েছে':'Submitted to Office';
+  }
+}
 function checked(raw:unknown):PreviewCorrectionRecord{
   if(!raw||typeof raw!=='object')throw Error('Invalid correction response');
   const row=raw as Record<string,unknown>;
@@ -19,6 +33,9 @@ function checked(raw:unknown):PreviewCorrectionRecord{
     !/^[0-9a-f-]{36}$/i.test(String(row.id))||!Number.isFinite(Date.parse(String(row.createdAt)))||
     (row.allocationIndex!==null&&(!Number.isSafeInteger(row.allocationIndex)||Number(row.allocationIndex)<0))||
     (row.allocationId!==null&&typeof row.allocationId!=='string'))throw Error('Invalid correction response');
+  if(row.officeSyncState!==undefined&&!['PENDING','ACKNOWLEDGED'].includes(String(row.officeSyncState)))throw Error('Invalid Office delivery state');
+  if(row.reviewState!==undefined&&!['PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','REJECTED'].includes(String(row.reviewState)))throw Error('Invalid Office review state');
+  if(row.reviewReason!==undefined&&row.reviewReason!==null&&typeof row.reviewReason!=='string')throw Error('Invalid Office review reason');
   return row as unknown as PreviewCorrectionRecord;
 }
 async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput):Promise<unknown>{

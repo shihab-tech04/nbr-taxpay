@@ -40,6 +40,39 @@ function officeMirrorSource(url:string):'original'|'v2'{
 }
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
+const v2Origin='https://gmuhitmaynfhipcvbvkh.supabase.co';
+const correctionOfficeEndpoint='https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/payment-sync-bridge';
+async function correctionKey(admin:ReturnType<typeof serviceClient>){
+ const {data,error}=await admin.rpc('payment_v1_demo_correction_key');
+ if(error||typeof data!=='string'||!/^[0-9a-f]{64}$/.test(data))return null;
+ return crypto.subtle.importKey('raw',Uint8Array.from(data.match(/../g)!,s=>parseInt(s,16)),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
+}
+async function deliverCorrections(url:string,admin:ReturnType<typeof serviceClient>,id:string|null=null){
+ // Disposable and original databases must never dispatch V2 correction traffic.
+ if(new URL(url).origin!==v2Origin)return {claimed:0,acknowledged:0,failed:0};
+ const key=await correctionKey(admin);
+ if(!key)return {claimed:0,acknowledged:0,failed:0};
+ const {data,error}=await admin.rpc('taxpay_demo_correction_claim',{p_limit:id?1:20,p_id:id});
+ if(error||!Array.isArray(data))throw Error('CORRECTION_CLAIM_FAILED');
+ let acknowledged=0,failed=0;
+ for(let offset=0;offset<data.length;offset+=5){
+  await Promise.all(data.slice(offset,offset+5).map(async item=>{
+   let okay=false;
+   try{
+    const eventText=JSON.stringify(item.event);
+    const signature=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,encoder.encode(eventText))),x=>x.toString(16).padStart(2,'0')).join('');
+    const response=await fetch(correctionOfficeEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({mode:'ingestDemoCorrection',eventText,signature}),signal:AbortSignal.timeout(10000)});
+    const result=await response.json();
+    okay=response.ok&&result?.stored===true&&result.eventId===item.event.eventId&&result.requestId===item.event.requestId;
+   }catch{/* A durable pending request is retried by reconciliation. */}
+   const ack=await admin.rpc('taxpay_demo_correction_ack',{p_id:item.event.requestId,p_claim_token:item.claimToken,p_success:okay});
+   if(ack.error||ack.data!==true)throw Error('CORRECTION_ACK_FAILED');
+   if(okay)acknowledged++;else failed++;
+  }));
+ }
+ return {claimed:data.length,acknowledged,failed};
+}
 async function mirrorAuthorization(id:string,sourceUrl:string){
  const proof=await createOfficeAuthorizationProof(serviceCredential(),id);
  const res=await fetch(officeAuthorization,{method:"POST",headers:{"Content-Type":"application/json",
@@ -90,6 +123,22 @@ Deno.serve(async(req)=>{
  if(!key||!url)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
+  if(path==='/corrections/office-decision'&&req.method==='POST'){
+   if(new URL(url).origin!==v2Origin)return respond({error:'INVALID_CORRECTION_ROUTE'},403);
+   const raw=await req.text();
+   if(raw.length>24000)return respond({error:'INVALID_CORRECTION_COMMAND'},400);
+   let input:Record<string,unknown>;
+   try{input=JSON.parse(raw);}catch{return respond({error:'INVALID_CORRECTION_COMMAND'},400);}
+   if(input?.mode!=='ingest'||typeof input.commandText!=='string'||typeof input.signature!=='string'||
+      !/^[0-9a-f]{64}$/.test(input.signature))return respond({error:'INVALID_CORRECTION_COMMAND'},400);
+   const admin=serviceClient(url),secret=await correctionKey(admin);
+   if(!secret||!await crypto.subtle.verify('HMAC',secret,Uint8Array.from(input.signature.match(/../g)!,s=>parseInt(s,16)),encoder.encode(input.commandText)))
+     return respond({error:'UNAUTHORIZED_CORRECTION_COMMAND'},401);
+   const command=JSON.parse(input.commandText);
+   const {data,error}=await admin.rpc('taxpay_demo_correction_office_decision',{p_command:command});
+   if(error)return respond({error:'CORRECTION_DECISION_NOT_ACCEPTED'},409);
+   return respond(data);
+  }
   if(path==="/corrections"&&(req.method==="GET"||req.method==="POST")){
    const p_capability_hash=await capabilityHash(req);
    if(!p_capability_hash)return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
@@ -121,6 +170,13 @@ Deno.serve(async(req)=>{
      return respond({success:false,error:"CORRECTION_PAYMENT_UNAVAILABLE"},403);
     return respond({success:false,error:"CORRECTION_SAVE_UNAVAILABLE"},503);
    }
+   // The local request is already durable. Attempt only its exact Office
+   // delivery, and report pending rather than pretending an ACK on failure.
+   try{
+    await deliverCorrections(url,admin,data.id);
+    const refreshed=await admin.rpc('taxpay_demo_correction_get',{p_id:data.id});
+    if(!refreshed.error&&refreshed.data?.id===data.id)return respond({success:true,data:refreshed.data,simulationOnly:true});
+   }catch{/* the scheduled reconciler retries the immutable event */}
    return respond({success:true,data,simulationOnly:true});
   }
   if(req.method==="GET"&&path==="/profile-history"){
@@ -167,7 +223,11 @@ Deno.serve(async(req)=>{
     }
    }
    if(!authorized)return respond({success:false,error:"SERVICE_ROLE_REQUIRED"},401);
-   try{return respond({success:true,data:await reconcileMirrors(url,serviceKey)});}
+   try{
+    const mirrors=await reconcileMirrors(url,serviceKey);
+    const corrections=await deliverCorrections(url,serviceClient(url)).catch(()=>({claimed:0,acknowledged:0,failed:1}));
+    return respond({success:true,data:{...mirrors,corrections}});
+   }
    catch(e){console.error("Story1 reconciliation",e);return respond({success:false,error:"MIRROR_RECONCILIATION_FAILED"},503);}
   }
   if(req.method==="GET"&&path==="/authorizations"){

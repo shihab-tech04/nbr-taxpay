@@ -14,7 +14,7 @@ import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {ReceiptView} from '../common/ReceiptView';
 import {CorrectionRequests} from './CorrectionRequests';
-import {usePreviewCorrectionRegister} from '../../services/previewCorrections';
+import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
 import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -766,7 +766,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {recordedCorrections.phase==='loading'?<p role="status" className="text-sm text-taxpay-muted">{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</p>
           :recordedCorrections.phase==='error'?<div role="alert" className="text-sm"><p>{tr('Correction request history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><button type="button" className={action+' mt-2'} onClick={recordedCorrections.retry}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>
           :recordedCorrections.rows.length?<ul data-testid="dashboard-recorded-corrections" className="space-y-2">{recordedCorrections.rows.slice(0,3).map(request=><li key={request.id} className="rounded-lg border border-taxpay-border p-3 min-w-0">
-            <p className="break-all text-sm font-semibold">{request.originalReference}</p><p className="text-sm text-taxpay-muted">{tr('Recorded','নথিভুক্ত')} · {request.currentAY} → {request.proposedAY}</p><p className="text-sm break-words">{request.reason}</p>
+            <p className="break-all text-sm font-semibold">{request.originalReference}</p><p className="text-sm text-taxpay-muted">{previewCorrectionStatus(request,language)} · {request.currentAY} → {request.proposedAY}</p><p className="text-sm break-words">{request.reason}</p>
           </li>)}</ul>:<p role="status" className="text-sm text-taxpay-muted">{tr('No correction requests yet.','এখনো কোনো সংশোধনের আবেদন নেই।')}</p>}
         <button type="button" className={action} onClick={()=>navigate('corrections')}>{tr('View requests','আবেদন দেখুন')}<ArrowRight size={15} aria-hidden="true"/></button>
       </div>:<>
