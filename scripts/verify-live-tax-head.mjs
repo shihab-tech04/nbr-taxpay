@@ -69,7 +69,8 @@ try {
         name: bn ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head',
       }).click();
 
-      const editor = modal.getByTestId('other-tax-batch');
+      // The TIN input unmounts on stage transition; anchor to the stable Payment Head editor.
+      const editor = page.getByTestId('other-tax-batch');
       const catalogue = editor.getByTestId('other-tax-head-catalogue');
       const groups = catalogue.locator('[data-head-group]');
       await expect(groups).toHaveCount(7);
