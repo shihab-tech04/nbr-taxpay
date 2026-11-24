@@ -59,16 +59,26 @@ test('durable SQL simulation reconciles a delayed Office mirror without a new pa
 });
 
 test('temporarily unreadable Office-pending SQL is never presented as a gateway decline',async({page})=>{
-  const requests: Array<{idempotencyKey:string;sessionId:string}>=[];
+  const requests: Array<{idempotencyKey:string;sessionId:string;service:string;amountMinor:number;details:Record<string,unknown>}>= [];
   const paymentId='33333333-2222-4333-8444-555555555555';
   await page.route('**/*.supabase.co/**',route=>route.abort());
-  await page.route('**/functions/v1/demo-story1-taxpay/payments/*',route=>
-    route.fulfill({status:503,contentType:'application/json',
-      body:JSON.stringify({success:false,error:'RECORD_UNAVAILABLE'})}));
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*',async route=>{
+    const sessionId=new URL(route.request().url()).searchParams.get('sessionId');
+    if (requests.length<2 || sessionId!==requests[0]?.sessionId) {
+      await route.fulfill({status:503,contentType:'application/json',
+        body:JSON.stringify({success:false,error:'RECORD_UNAVAILABLE'})});
+      return;
+    }
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,simulationOnly:true,
+      data:{id:paymentId,status:'SIMULATED_SUCCESS',data:requests[0]}
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
     if(route.request().method()!=='POST')return route.abort();
-    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string};
-    requests.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId});
+    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string;service:string;amountMinor:number;details:Record<string,unknown>};
+    requests.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId,
+      service:input.service,amountMinor:input.amountMinor,details:input.details});
     await route.fulfill({status:requests.length===1?503:200,contentType:'application/json',
       body:JSON.stringify(requests.length===1
         ?{success:false,error:'OFFICE_SYNC_PENDING',requestId:paymentId,retryable:true}
