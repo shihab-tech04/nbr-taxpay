@@ -532,7 +532,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       </aside>
     )}
 
-    {step === 3 && checkoutOpen && <div className="gift-tax-approved-flow gift-tax-checkout"
+    {step === 3 && checkoutOpen && <div className="payment-flow-embedded--unified gift-tax-approved-flow gift-tax-checkout"
       data-testid="gift-tax-checkout">
       <section className="payment-review payment-review--unified-v5 unified-v5-payment-channel"
         aria-labelledby="gift-approved-channel-heading">
@@ -563,7 +563,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         </div>
       </section>
     </div>}
-    {step === 3 && !checkoutOpen && <div className="gift-tax-approved-flow gift-tax-preview"
+    {step === 3 && !checkoutOpen && <div className="payment-flow-embedded--unified gift-tax-approved-flow gift-tax-preview"
       data-testid="gift-tax-review">
       <section className="payment-review payment-review--unified-v5"
         aria-labelledby="gift-tax-review-heading">
@@ -576,7 +576,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
                 <button type="button" onClick={()=>setStep(1)}>
                   <Pencil size={14} aria-hidden="true"/>{t('Donor / Donee','দাতা / গ্রহীতা')}
                 </button>
-                <button type="button" onClick={()=>setStep(2)}>
+                <button type="button" aria-label={t('Edit gift information','দানের তথ্য সম্পাদনা')} onClick={()=>setStep(2)}>
                   <Pencil size={14} aria-hidden="true"/>{t('Gift & amount','দান ও পরিমাণ')}
                 </button>
               </div>
