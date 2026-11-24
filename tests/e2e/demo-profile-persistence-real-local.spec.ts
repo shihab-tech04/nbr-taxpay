@@ -490,3 +490,62 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     await Promise.all(contexts.map(context=>context.close()));
   }
 });
+
+
+// Regression for the actual User1 2023–2024 Activity screen. Historical
+// references must open the correction form without pretending to be receipts.
+test('User1 historical Activity exposes all three correction entries and persists reference-only request',async({browser},info)=>{
+  test.setTimeout(90000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  if(!raw||!['localhost','127.0.0.1','[::1]'].includes(new URL(raw).hostname))throw Error('Disposable local Supabase required');
+  const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
+  const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport,storageState:demoLoginOtpCompletedState});
+  try{
+    const page=await context.newPage();
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+    await page.getByLabel('Password',{exact:true}).fill('user1');
+    await page.getByRole('button',{name:'Sign In',exact:true}).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    await page.goto('/?action=history&scenarioYear=2023-2024');
+    const workspace=page.getByTestId('user1-synthetic-workspace');
+    await expect(workspace).toBeVisible();
+    await expect(workspace.getByRole('combobox',{name:/Assessment year|করবর্ষ/})).toHaveValue('2023-2024');
+    const row=(reference:string)=>page.locator('.taxpayer-transaction-table tbody tr:visible,.taxpayer-transaction-mobile-record:visible').filter({hasText:reference});
+    const form=()=>page.getByRole('dialog',{name:/^(Apply for Correction|সংশোধনের আবেদন)$/});
+    for(const reference of ['DEMO-PAY-23-01','DEMO-AIT-23-01','DEMO-ETDS-23-01']){
+      const action=row(reference).getByTestId('activity-apply-correction');
+      await expect(action).toBeVisible();
+      await action.click();
+      const dialog=form();
+      await expect(dialog).toBeVisible();
+      await expect(dialog.locator('#correction-challan')).toHaveValue(reference);
+      await expect(dialog.locator('#correction-current-year')).toHaveValue('2023-2024');
+      await expect(dialog.locator('#correction-current-circle')).toHaveValue('');
+      await expect(dialog.locator('#correction-current-head')).toHaveValue('');
+      await dialog.getByRole('button',{name:/Close correction form|সংশোধনের ফরম বন্ধ করুন/}).click();
+      await expect(dialog).toHaveCount(0);
+    }
+    await row('DEMO-PAY-23-01').getByRole('button',{name:/Details for |বিস্তারিত: /}).click();
+    await page.getByTestId('historical-detail-apply-correction').click();
+    const dialog=form();
+    await expect(dialog).toBeVisible();
+    const reason='Historical year review '+randomUUID();
+    await dialog.locator('#correction-proposed-year').selectOption('2024-2025');
+    await dialog.locator('#correction-reason').fill(reason);
+    const responsePromise=page.waitForResponse(r=>r.url().endsWith('/demo-story1-taxpay/corrections')&&r.request().method()==='POST');
+    await dialog.getByRole('button',{name:/Submit correction request|সংশোধনের আবেদন জমা দিন/}).click();
+    const response=await responsePromise;
+    expect(response.status()).toBe(200);
+    const envelope=await response.json();
+    expect(envelope.data).toMatchObject({paymentId:null,originalReference:'DEMO-PAY-23-01',currentAY:'2023-2024',proposedAY:'2024-2025',officeSyncState:'PENDING'});
+    await expect(dialog.getByRole('status').filter({hasText:/Request recorded|আবেদন নথিভুক্ত/})).toBeVisible();
+    await dialog.getByRole('button',{name:/Close correction form|সংশোধনের ফরম বন্ধ করুন/}).click();
+    await page.goto('/?action=corrections&scenarioYear=2023-2024');
+    const register=page.getByTestId('preview-correction-register');
+    await expect(register).toContainText(reason);
+    await page.reload();
+    await expect(register).toContainText(reason);
+    await expect(register).toContainText('DEMO-PAY-23-01');
+  }finally{await context.close();}
+});
