@@ -24,12 +24,12 @@ create or replace function taxpay_guest_private.story_correction_json(
   p_row taxpay_guest_private.story_correction_requests
 ) returns jsonb language sql stable set search_path = '' as $$
   select jsonb_build_object(
-    'id',p_row.id,'paymentId',p_row.payment_id,'originalReference',p_row.original_reference,
-    'allocationIndex',p_row.allocation_index,'allocationId',p_row.allocation_id,
-    'currentAY',p_row.current_year,'proposedAY',p_row.proposed_year,
-    'currentCircle',p_row.current_circle,'proposedCircle',p_row.proposed_circle,
-    'currentHeadCode',p_row.current_head,'proposedHeadCode',p_row.proposed_head,
-    'reason',p_row.reason,'createdAt',p_row.created_at,'status','RECORDED'
+    'id',(p_row).id,'paymentId',(p_row).payment_id,'originalReference',(p_row).original_reference,
+    'allocationIndex',(p_row).allocation_index,'allocationId',(p_row).allocation_id,
+    'currentAY',(p_row).current_year,'proposedAY',(p_row).proposed_year,
+    'currentCircle',(p_row).current_circle,'proposedCircle',(p_row).proposed_circle,
+    'currentHeadCode',(p_row).current_head,'proposedHeadCode',(p_row).proposed_head,
+    'reason',(p_row).reason,'createdAt',(p_row).created_at,'status','RECORDED'
   );
 $$;
 revoke all on function taxpay_guest_private.story_correction_json(taxpay_guest_private.story_correction_requests) from public, anon, authenticated;
@@ -47,10 +47,10 @@ begin
   select demo_id into v_demo from taxpay_guest_private.demo_profiles
     where encode(extensions.digest(convert_to(capability_token,'UTF8'),'sha256'),'hex')=p_capability_hash;
   if v_demo is null then raise exception 'INVALID_DEMO_PROFILE'; end if;
-  select coalesce(jsonb_agg(taxpay_guest_private.story_correction_json(r) order by r.created_at desc,r.id desc),'[]'::jsonb)
+  select coalesce(jsonb_agg(taxpay_guest_private.story_correction_json(r.record) order by r.created_at desc,r.id desc),'[]'::jsonb)
     into v_rows from (
-      select * from taxpay_guest_private.story_correction_requests
-      where demo_id=v_demo order by created_at desc,id desc limit p_limit offset p_offset
+      select x as record,x.created_at,x.id from taxpay_guest_private.story_correction_requests x
+      where x.demo_id=v_demo order by x.created_at desc,x.id desc limit p_limit offset p_offset
     ) r;
   return v_rows;
 end;
