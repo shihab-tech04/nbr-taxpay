@@ -173,6 +173,7 @@ export async function createBeneficiaryList(ownerUid:string | null,name:string):
   if(!trimmed || trimmed.length>80)throw new Error('Enter a list name of up to 80 characters.');
   if (!ownerUid) return createGuestBeneficiaryList(trimmed);
   const {data,error}=await client().from('taxpay_beneficiary_lists').insert({owner_uid:ownerUid,name:trimmed}).select('id,owner_uid,name,created_at').single();
+  if(error?.message.includes('BENEFICIARY_GROUP_LIMIT'))throw new Error('BENEFICIARY_GROUP_LIMIT');
   if(error)throw error;
   return data as BeneficiaryList;
 }
