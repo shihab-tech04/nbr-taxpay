@@ -58,11 +58,11 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
   const bn=language==='bn';
   const tr=(en:string,local:string)=>bn?local:en;
   const [year,setYear]=useState('2026-2027');
-  const scopedCorrectionRows=correctionsForAssessmentYear(correctionRegister.rows,year);
-  const correctionCount=correctionRegister.count===null?null:scopedCorrectionRows.length;
   const [tab,setTab]=useState<'drafts'|'requests'>('drafts');
   const [draftCount,setDraftCount]=useState<number|null>(null);
   const correctionRegister=usePreviewCorrectionRegister(profileId);
+  const scopedCorrectionRows=correctionsForAssessmentYear(correctionRegister.rows,year);
+  const correctionCount=correctionRegister.count===null?null:scopedCorrectionRows.length;
   const [snapshot,setSnapshot]=useState<LoadState>({owner:null,phase:'loading',transactions:[],people:[]});
   // Preserve the existing cross-browser Continue Draft journey: once saved drafts
   // load, show their cards without requiring a hidden tab to be opened first.
