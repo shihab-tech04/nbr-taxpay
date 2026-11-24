@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice, openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 
 async function startOwnPayment(page: Page, user: 'user1' | 'user2', service: 'TAX_WITH_RETURN' | 'OTHER_TAX_PAYMENT') {
   await page.goto('/?action=taxpayer_login');
@@ -7,12 +7,15 @@ async function startOwnPayment(page: Page, user: 'user1' | 'user2', service: 'TA
   await login.getByRole('textbox', { name: 'User ID' }).fill(user);
   await login.getByLabel('Password', { exact: true }).fill(user);
   await login.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, service, 'SELF');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
+  const dialog=await openUnifiedSignedInPayment(page);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/3 Steps');
+  if(service==='TAX_WITH_RETURN'){
+    const group=dialog.getByTestId('unified-v5-return-group');
+    await group.locator('summary').click();
+    await group.getByTestId('unified-v5-return-checkbox').check();
+  }
   await expect(dialog.getByTestId('payment-suggestions')).toHaveCount(0);
   await expect(dialog.getByText('Payment suggestions from scenario history')).toHaveCount(0);
   return dialog;
@@ -20,7 +23,7 @@ async function startOwnPayment(page: Page, user: 'user1' | 'user2', service: 'TA
 
 test('User1 return amount starts filled, explains its origin and remains editable', async ({ page }) => {
   const dialog = await startOwnPayment(page, 'user1', 'TAX_WITH_RETURN');
-  const input = dialog.locator('#guest-tax-amount');
+  const input = dialog.getByTestId('unified-v5-return-amount');
   await expect(input).toHaveValue('12750');
   await expect(input).toBeEditable();
   const info = dialog.getByRole('button', { name: 'Why was this amount filled automatically?' });
@@ -31,9 +34,9 @@ test('User1 return amount starts filled, explains its origin and remains editabl
   await input.fill('4200');
   await expect(input).toHaveValue('4200');
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('4,200');
-  await dialog.locator('#guest-assessment-year').selectOption('2025-26');
+  await dialog.getByTestId('unified-v5-return-group').locator('select[id^="other-tax-year"]').selectOption('2025-26');
   await expect(input).toHaveValue('');
-  await dialog.locator('#guest-assessment-year').selectOption('2026-27');
+  await dialog.getByTestId('unified-v5-return-group').locator('select[id^="other-tax-year"]').selectOption('2026-27');
   await expect(input).toHaveValue('12750');
 });
 
@@ -67,7 +70,7 @@ test('User1 Other Tax fills only the chosen head/year, not every selected head',
 
 test('Other signed-in users never inherit User1 suggested amounts', async ({ page }) => {
   const dialog = await startOwnPayment(page, 'user2', 'TAX_WITH_RETURN');
-  await expect(dialog.locator('#guest-tax-amount')).toHaveValue('');
+  await expect(dialog.getByTestId('unified-v5-return-amount')).toHaveValue('');
   await expect(dialog.getByTestId('payment-amount-suggestion-info')).toHaveCount(0);
 });
 

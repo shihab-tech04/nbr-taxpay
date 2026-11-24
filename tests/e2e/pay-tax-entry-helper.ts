@@ -91,3 +91,25 @@ export async function openUnifiedSignedInPayment(page: Page, locale: 'en'|'bn' =
   await expect(dialog.locator('[data-payment-access], [data-payer-relationship]')).toHaveCount(0);
   return dialog;
 }
+
+/** Preserve the original guest-origin account journey as its own contract.
+ * Never use it as evidence of native authenticated navigation: that is covered
+ * by openUnifiedSignedInPayment and the connected F-039 workspace tests.
+ */
+export async function enterLegacyPaymentAsAccount(page:Page,user:string,service:string,payer:'SELF'|'OTHER'='SELF',locale:'en'|'bn'='en'):Promise<Locator>{
+  const bn=locale==='bn';
+  await page.goto('/?action=landing&lang='+locale);
+  const payment=await openLegacyTaxServiceChoice(page);
+  await payment.locator(`[data-payer-relationship="${payer}"]`).click();
+  await payment.locator(`[data-payment-entry="${service==='TAX_WITH_RETURN'?'TAX_WITH_RETURN':'OTHER_TAX'}"]`).click();
+  await payment.locator('[data-payment-access="ACCOUNT"]').click();
+  await payment.locator('.tax-service-choice__actions .tax-service-choice__continue').click();
+  const login=page.getByRole('dialog',{name:/Sign In To Your .* Account|আপনার .* অ্যাকাউন্টে সাইন ইন করুন/});
+  await login.locator('#taxpayer-login-user-id').fill(user);
+  await login.locator('#taxpayer-login-password').fill(user);
+  await login.getByRole('button',{name:bn?'সাইন ইন':'Sign In',exact:true}).click();
+  await expect(login).toHaveCount(0);
+  const resumed=page.getByRole('dialog',{name:bn?'কর পরিশোধ':'Pay Tax'});
+  await expect(resumed.locator('.taxpay-modal__step-count')).toContainText('1/4');
+  return resumed;
+}

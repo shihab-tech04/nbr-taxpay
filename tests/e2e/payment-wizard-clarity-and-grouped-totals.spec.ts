@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice, enterLegacyPaymentAsAccount } from './pay-tax-entry-helper';
 
 test('payment stepper has connected numbered states and shows completed progression', async ({ page }) => {
   await page.goto('/');
@@ -78,15 +78,8 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   expect(await dialog.locator('.taxpay-modal__body').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
 });
 
-test('account taxpayer data is flat and recommendations do not claim liabilities from a historical record', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await page.getByRole('textbox', { name: 'Password' }).fill('user1');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
+test('legacy guest-origin account taxpayer data is flat and recommendations do not claim liabilities from a historical record', async ({ page }) => {
+  const dialog=await enterLegacyPaymentAsAccount(page,'user1','TAX_WITH_RETURN','SELF');
   // Signed-in SELF uses the approved read-only account card rather than
   // duplicate TIN, taxpayer-name, receipt-mobile or lookup inputs.
   const accountCard = dialog.locator('#signed-in-account-taxpayer-card');

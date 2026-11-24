@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice, enterLegacyPaymentAsAccount, openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 
 // Preserve both existing entry routes: SELF always one taxpayer, OTHER may
 // include additional recipients after the required TIN lookup/confirmation.
@@ -38,15 +38,8 @@ test('walk-in self shows NBR disclaimer only after sample TIN search', async ({ 
   await expect(card.getByTestId('taxpayer-sample-source')).toHaveCount(0);
 });
 
-test('signed-in self has no saved beneficiary or additional taxpayer controls', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await login.getByLabel('Password', { exact: true }).fill('user1');
-  await login.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing&lang=en');
-  const payment = await openLegacyTaxServiceChoice(page);
-  await enterTaxPayService(payment, 'OTHER_TAX', 'SELF');
+test('legacy guest-origin account SELF keeps one taxpayer', async ({ page }) => {
+  const payment=await enterLegacyPaymentAsAccount(page,'user1','OTHER_TAX','SELF');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toBeVisible();
   await expect(payment.getByTestId('self-payment-add-beneficiaries')).toHaveCount(0);
   await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
@@ -149,4 +142,20 @@ test('walk-in facilitator receipt fields are full editor width and ordered', asy
       expect(m.fields[1].top).toBeGreaterThan(m.fields[0].top);
     }
   }
+});
+
+test('native signed-in own-tax selection remains a single account taxpayer in the unified flow',async({page})=>{
+  await page.goto('/?action=taxpayer_login');
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  await login.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await login.getByLabel('Password',{exact:true}).fill('user1');
+  await login.getByRole('button',{name:'Sign In'}).click();
+  await expect(login).toHaveCount(0);
+  const payment=await openUnifiedSignedInPayment(page);
+  await payment.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await expect(payment.getByTestId('unified-taxpayer-count')).toHaveText('1');
+  await payment.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const tabs=payment.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
+  await expect(tabs).toHaveCount(1);
+  await expect(tabs.first()).toContainText('Md. Arif Rahman');
 });
