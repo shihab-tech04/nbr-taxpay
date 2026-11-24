@@ -91,6 +91,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [passportSuggestionMaxHeight, setPassportSuggestionMaxHeight] = useState(210);
+  // Pointer focus precedes click. Do not move the target until that click has completed.
+  const passportPointerFocus = useRef(false);
   // The shared modal can scroll either its body or the inner form. Resolve
   // the actual clipping and scroll ancestors rather than assuming one owner.
   useLayoutEffect(() => {
@@ -749,11 +751,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     passengerFieldIssue?.field === 'passport' ? 'travel-passenger-issue-' + item.id : null,
                   ].filter(Boolean).join(' ') || undefined}
                   value={item.passport} maxLength={20} autoComplete="off"
+                  onPointerDown={event => {
+                    passportPointerFocus.current = document.activeElement !== event.currentTarget;
+                  }}
+                  onPointerUp={() => { passportPointerFocus.current = false; }}
+                  onPointerCancel={() => { passportPointerFocus.current = false; }}
                   onFocus={() => {
                     errorFocusRevision.current += 1;
-                    setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
+                    const pointerFocus = passportPointerFocus.current;
+                    passportPointerFocus.current = false;
+                    // Keyboard focus opens immediately. Pointer focus waits for
+                    // onClick so scrolling cannot relocate the pressed field.
+                    if (!pointerFocus) setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
                   onClick={() => {
+                    passportPointerFocus.current = false;
                     if (!passportAlreadyAdded) setPassportSuggestionsFor(item.id);
                   }}
                   onKeyDown={event => {
