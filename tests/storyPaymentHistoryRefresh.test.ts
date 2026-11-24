@@ -21,13 +21,25 @@ test('confirmed payment invalidates mounted SQL history; rejected payment does n
   let refreshes = 0;
   events.addEventListener('taxpay:story-payments-recovered', () => { refreshes++; });
   let accepted = false;
-  t.mock.method(globalThis, 'fetch', async () => accepted
-    ? new Response(JSON.stringify({ success: true, id, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true }), { status: 200 })
-    : new Response(JSON.stringify({ error: 'SUBMISSION_FAILED' }), { status: 400 }));
+  let readbacks = 0;
+  t.mock.method(globalThis, 'fetch', async (url: RequestInfo | URL, options?: RequestInit) => {
+    if (options?.method === 'POST') return accepted
+      ? Response.json({success: true, id, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true})
+      : Response.json({error: 'SUBMISSION_FAILED'}, {status: 400});
+    if (String(url).includes('/payments/' + id + '?sessionId=')) {
+      readbacks++;
+      return Response.json({success: true, simulationOnly: true, data: {
+        id, status: 'SIMULATED_SUCCESS', data: input,
+      }});
+    }
+    throw new Error('Unexpected payment test request: ' + String(url));
+  });
   await assert.rejects(persistSimulatedPayment(input), /SUBMISSION_FAILED/);
   assert.equal(refreshes, 0);
+  assert.equal(readbacks, 0);
   accepted = true;
   const result = await persistSimulatedPayment(input);
   assert.equal(result.id, id);
+  assert.equal(readbacks, 1, 'mirrored success must verify the exact source SQL readback');
   assert.equal(refreshes, 1);
 });

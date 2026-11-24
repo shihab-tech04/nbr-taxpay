@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 type Status='ACTIVE'|'PENDING'|'EXPIRED'|'REVOKED';
@@ -227,6 +228,7 @@ test('signed-in facilitated payments produce one combined receipt with linked al
   await mockSavedBeneficiaries(page);
   await mockAuthorizations(page, null);
   const submitted: Array<Record<string, any>> = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
