@@ -547,5 +547,19 @@ test('User1 historical Activity exposes all three correction entries and persist
     await page.reload();
     await expect(register).toContainText(reason);
     await expect(register).toContainText('DEMO-PAY-23-01');
+    await page.goto('/?action=account_notifications&scenarioYear=2023-2024');
+    const notificationRegister=page.getByTestId('correction-notifications');
+    const notice=notificationRegister.locator('li').filter({hasText:reason});
+    await expect(notice).toHaveCount(1);
+    const read=notice.getByRole('button',{name:/Mark as read|পঠিত হিসেবে চিহ্নিত করুন/});
+    await expect(read).toBeVisible();
+    await read.click();
+    await expect(read).toHaveCount(0);
+    await page.reload();
+    await expect(notice).toBeVisible();
+    await expect(read).toHaveCount(0);
+    await notice.getByRole('button',{name:/View correction|সংশোধন দেখুন/}).click();
+    await expect(page.getByTestId('preview-correction-register')).toContainText(envelope.data.id);
+    await expect(page.getByTestId('preview-correction-register').locator('input[type=search]')).toHaveValue(envelope.data.id);
   }finally{await context.close();}
 });
