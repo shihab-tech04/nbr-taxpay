@@ -1025,7 +1025,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   }
 
   return (
-    <div className={'travel-flow' + (step === 0 && !createdReceipt ? ' travel-flow--identity' : '') + (bn ? ' font-bengali' : '')} lang={language} data-step={step}
+    <div className={'travel-flow' + (step === 2 ? ' payment-flow-embedded--unified' : '') + (step === 0 && !createdReceipt ? ' travel-flow--identity' : '') + (bn ? ' font-bengali' : '')} lang={language} data-step={step}
       data-receipt-review={receiptReviewOpen && !!createdReceipt ? 'true' : undefined}>
       <div className="travel-flow__main">
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
