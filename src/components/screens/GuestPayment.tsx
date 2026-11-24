@@ -202,7 +202,7 @@ interface GuestPaymentProps {
   initialForSelf?: boolean;
   initialBeneficiary?: PaymentBeneficiaryPrefill;
   onBackToService?: () => void;
-  onManageBeneficiaries?: () => void;
+  onManageBeneficiaries?: (mode?:'manage'|'add') => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
   onResultViewChange?: (view: 'result' | 'receipt' | 'certificate') => void;
   onCheckoutChange?: (checkout: boolean) => void;
@@ -383,6 +383,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     savedBatchTaxpayers.every(person=>Boolean(person.tin) &&
       (availableSavedTins!.includes(person.tin) || (unifiedAccountSelection && (person.tin===signedInProfile?.tin || person.tin===currentOneTimeRecipient?.tin)) ||
         (person.id==='primary' && primaryOneTimeRecipient?.tin===person.tin)));
+  const unavailableUnifiedRecipient=unifiedAccountSelection&&availableSavedTins!==null&&savedBatchTaxpayers.some(person=>person.tin&&person.tin!==signedInProfile?.tin&&person.tin!==currentOneTimeRecipient?.tin&&!availableSavedTins.includes(person.tin));
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
@@ -2167,7 +2168,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {step === 1 && (unifiedAccountSelection ? (
           <UnifiedTaxpayerWorkspace language={language} primaryTin={taxpayerTin} primaryName={otherTaxpayerName}
             additional={additionalTaxpayers} confirmedTins={confirmedOtherTaxTins} allocations={otherTaxLines.length ? otherTaxLines : unifiedOtherTaxParkedLines}
-            error={errorField==='tin'||errorField==='incomeTaxType'?errorMessage:undefined}
+            error={errorField==='tin'||errorField==='incomeTaxType'?errorMessage:unavailableUnifiedRecipient?(language==='bn'?'নির্বাচিত উপকারভোগী আর সংরক্ষিত তালিকায় নেই। নির্বাচিত করদাতার তালিকা থেকে সরান অথবা টিআইএন খুঁজে আবার নিশ্চিত করুন।':'A selected beneficiary is no longer saved. Remove them from the selected taxpayers or search and confirm their TIN again.'):undefined}
             onAddPrimary={addAccountRecipient} onAddAdditional={p=>addAccountRecipient(p.tin,p.name)}
             onRemove={id=>replaceAccountRecipients(selectedAccountRecipients.filter(p=>p.id!==id))}
             account={{
@@ -2184,7 +2185,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               onClassification:(value,type)=>setTaxpayerEntityOverrides(previous=>({...previous,[value]:type})),
               savedBeneficiaries:<SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
                 selectedTins={selectedAccountRecipients.filter(p=>p.tin!==signedInProfile?.tin).map(p=>p.tin)}
-                onAvailableTins={setAvailableSavedTins} onManage={onManageBeneficiaries}
+                onAvailableTins={setAvailableSavedTins} onManage={onManageBeneficiaries} showAddAction={Boolean(onManageBeneficiaries)}
                 onChoose={people=>{
                   // A verified account may select its saved contacts before profile linking.
                   // Keep the linked taxpayer profile validation gate for continuation/payment.

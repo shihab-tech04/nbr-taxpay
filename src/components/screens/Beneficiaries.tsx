@@ -36,7 +36,7 @@ interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
   const {language,previewAccount,demoUser,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
-    pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
+    pendingBeneficiarySave,clearPendingBeneficiarySave,beneficiaryPaymentHandoff,consumeBeneficiaryAddIntent,resumeBeneficiaryPayment}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -69,6 +69,8 @@ export function Beneficiaries(){
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
   const [preferenceError,setPreferenceError]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
+  const [returningPayment,setReturningPayment]=useState(false);
+  const [returnPaymentError,setReturnPaymentError]=useState('');
   const [beneficiarySaveOwner,setBeneficiarySaveOwner]=useState<string|null>(null);
   const [entryChoiceOpen,setEntryChoiceOpen]=useState(false);
   const [createListOpen,setCreateListOpen]=useState(false);
@@ -726,6 +728,12 @@ export function Beneficiaries(){
     finally{setLoading(false);}
   };
 
+  useEffect(()=>{
+    if(beneficiaryPaymentHandoff?.addPending&&!checkingIdentity&&!loading&&!error&&activeList){
+      consumeBeneficiaryAddIntent();open('single');
+    }
+  },[beneficiaryPaymentHandoff?.addPending,checkingIdentity,loading,error,activeList]);
+
   if(profilePerson)return <BeneficiaryProfile key={profileAccount+':'+profilePerson.id}
     person={profilePerson} ownerUid={owner} previewId={owner?null:previewAccount?.id??null}
     language={language} backToActivity={routeParams.returnTo==='history'} onBack={()=>{
@@ -749,6 +757,11 @@ export function Beneficiaries(){
         </UiButton>
       </div>}/>
 
+    {beneficiaryPaymentHandoff?.draftId&&<div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-taxpay-border bg-taxpay-light p-3" data-testid="beneficiary-return-to-payment">
+      <p className="text-sm text-taxpay-text">{tr('Your payment draft is saved. Return after updating beneficiaries.','আপনার পেমেন্টের খসড়া সংরক্ষিত। উপকারভোগী হালনাগাদ করে ফিরে যান।')}</p>
+      <UiButton type="button" variant="outline" disabled={returningPayment||busy||checkingIdentity||Boolean(flow)||createListOpen||Boolean(editPerson)} onClick={()=>{setReturningPayment(true);setReturnPaymentError('');void resumeBeneficiaryPayment().catch(()=>setReturnPaymentError(tr('The saved payment could not be reopened. Retry or use Saved Drafts.','সংরক্ষিত পেমেন্ট খোলা যায়নি। আবার চেষ্টা করুন অথবা সংরক্ষিত খসড়া ব্যবহার করুন।'))).finally(()=>setReturningPayment(false));}}>{returningPayment?tr('Opening…','খোলা হচ্ছে…'):tr('Return to payment','পেমেন্টে ফিরুন')}</UiButton>
+      {returnPaymentError&&<p role="alert" className="w-full text-sm text-taxpay-error">{returnPaymentError}</p>}
+    </div>}
     {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr("Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.",'এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>

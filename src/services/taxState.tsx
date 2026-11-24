@@ -13,6 +13,7 @@ import {
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import type {PaymentReuse} from './paymentReuse';
+import {listPaymentFormDrafts,paymentDraftOwnerScope,type PaymentFormDraft,type PaymentDraftActor,type PaymentDraftService} from './accountPaymentFormDrafts';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
 import {recordAccountActivity} from './accountActivity';
@@ -40,7 +41,14 @@ export interface PaymentBeneficiaryPrefill {
 }
 export interface BeneficiarySavePrefill { ownerUid: string; tin: string; name: string; }
 
+type BeneficiaryPaymentHandoff = {ownerScope:string; originRoute:string; draftId:string|null; service:PaymentDraftService|null; addPending:boolean};
+
 export interface TaxStateContextType {
+  beneficiaryPaymentHandoff: BeneficiaryPaymentHandoff | null;
+  beneficiaryResumeDraft: PaymentFormDraft | null;
+  startBeneficiaryPaymentManagement: (mode:'manage'|'add', draft?:PaymentFormDraft) => void;
+  consumeBeneficiaryAddIntent: () => void;
+  resumeBeneficiaryPayment: () => Promise<void>;
   currentRoute: string;
   isPaymentServiceChoiceOpen: boolean;
   setPaymentServiceChoiceOpen: (open: boolean) => void;
@@ -115,6 +123,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
   const [pendingBeneficiarySave, setPendingBeneficiarySave] = useState<BeneficiarySavePrefill | null>(null);
   const [paymentReuse, setPaymentReuse] = useState<PaymentReuse | null>(null);
+  const [beneficiaryHandoff,setBeneficiaryHandoff] = useState<BeneficiaryPaymentHandoff|null>(null);
+  const [beneficiaryResume,setBeneficiaryResume] = useState<{scope:string;draft:PaymentFormDraft}|null>(null);
   const startPaymentReuse = (copy: PaymentReuse) => {
     const signedInOwner=accountUser?.id===copy.ownerUid;
     // Preview history is available only with a still-valid server-issued
@@ -130,6 +140,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
   const setPaymentServiceChoiceOpen = (open: boolean) => {
     if (!open) {
+      setBeneficiaryResume(null);
       setUnifiedPaymentEntryRequested(false);
       setPaymentServiceInitialSelection(null);
       setPaymentBeneficiaryPrefill(null);
@@ -171,6 +182,18 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [previewAccount, setPreviewAccount] = useState<DemoUser | null>(storedPreviewAccount);
   const [legacyDemoUser, setLegacyDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const demoUser = previewAccount ?? legacyDemoUser;
+  const handoffActor:PaymentDraftActor|null=checkingAccount?null:accountUser?{kind:'authenticated',userId:accountUser.id}:previewAccount?{kind:'preview',profileId:previewAccount.id}:null;
+  const handoffScope=paymentDraftOwnerScope(handoffActor);
+  const handoffIdentityRef=useRef({scope:handoffScope});
+  if(handoffIdentityRef.current.scope!==handoffScope)handoffIdentityRef.current={scope:handoffScope};
+  const handoffRouteRef=useRef(currentRoute);
+  handoffRouteRef.current=currentRoute;
+  const beneficiaryPaymentHandoff=beneficiaryHandoff?.ownerScope===handoffScope&&currentRoute==='beneficiaries'?beneficiaryHandoff:null;
+  const beneficiaryResumeDraft=beneficiaryResume?.scope===handoffScope?beneficiaryResume.draft:null;
+  useEffect(()=>{
+    if(beneficiaryHandoff&&beneficiaryHandoff.ownerScope!==handoffScope)setBeneficiaryHandoff(null);
+    if(beneficiaryResume&&beneficiaryResume.scope!==handoffScope)setBeneficiaryResume(null);
+  },[handoffScope,beneficiaryHandoff,beneficiaryResume]);
   const demoUserRef = useRef(legacyDemoUser);
   const [userRole, setUserRoleState] = useState<UserRole>(() => {
     const search = new URLSearchParams(window.location.search);
@@ -258,7 +281,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     setPaymentServiceChoiceOpen(false);
     const route = validRoute(requestedRoute);
-    if (route !== 'beneficiaries') setPendingBeneficiarySave(null);
+    if (route !== 'beneficiaries') {setPendingBeneficiarySave(null);setBeneficiaryHandoff(null);}
     if(accountUser?.id&&route!==currentRoute&&
        !['landing','office_login','taxpayer_login'].includes(route))
       void recordAccountActivity(accountUser.id,'PAGE_OPENED',route).catch(()=>undefined);
@@ -290,6 +313,29 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       window.history.replaceState(historyEntry, '', next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+  // Private handoff contains only an owner-bound draft reference in memory.
+  // Never put the draft, its IDs or private payment inputs in history or a URL.
+  const startBeneficiaryPaymentManagement=(mode:'manage'|'add',draft?:PaymentFormDraft)=>{
+    if(!handoffActor||!handoffScope)return;
+    const originRoute=currentRoute;
+    navigate('beneficiaries');
+    setBeneficiaryHandoff({ownerScope:handoffScope,originRoute,draftId:draft?.id??null,service:draft?.service??null,addPending:mode==='add'});
+  };
+  const consumeBeneficiaryAddIntent=()=>setBeneficiaryHandoff(previous=>previous?.ownerScope===handoffScope?{...previous,addPending:false}:previous);
+  const resumeBeneficiaryPayment=async()=>{
+    const handoff=beneficiaryPaymentHandoff;
+    if(!handoffActor||!handoff?.draftId||!handoff.service)throw new Error('No saved payment is available.');
+    const identity=handoffIdentityRef.current;
+    const drafts=await listPaymentFormDrafts(handoffActor,handoff.service);
+    if(handoffIdentityRef.current!==identity||handoffRouteRef.current!=='beneficiaries'||paymentDraftOwnerScope(handoffActor)!==handoff.ownerScope)
+      throw new Error('Your account or page changed. Reopen your saved drafts.');
+    const draft=drafts.find(row=>row.id===handoff.draftId);
+    if(!draft)throw new Error('This payment draft is no longer available.');
+    navigate(handoff.originRoute);
+    setBeneficiaryHandoff(null);
+    setBeneficiaryResume({scope:handoff.ownerScope,draft});
+    setPaymentServiceChoiceOpenState(true);
+  };
   const startBeneficiarySave = (request: BeneficiarySavePrefill) => {
     if (!accountUser?.id || accountUser.id !== request.ownerUid || !/^\d{12}$/.test(request.tin)) return;
     setPendingBeneficiarySave({
@@ -305,6 +351,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const onPopState = (event: PopStateEvent) => {
       const search = new URLSearchParams(window.location.search);
       const route = validRoute(search.get('action'));
+      setBeneficiaryHandoff(null);
+      setBeneficiaryResume(null);
       setCurrentRoute(route);
       setRouteParams(event.state?.taxpayRoute === route
         ? event.state.taxpayParams ?? routeContextFromUrl(route, search)
@@ -475,6 +523,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <TaxStateContext.Provider
       value={{
         currentRoute,
+        beneficiaryPaymentHandoff, beneficiaryResumeDraft, startBeneficiaryPaymentManagement, consumeBeneficiaryAddIntent, resumeBeneficiaryPayment,
         isPaymentServiceChoiceOpen,
         setPaymentServiceChoiceOpen,
         paymentServiceInitialSelection,

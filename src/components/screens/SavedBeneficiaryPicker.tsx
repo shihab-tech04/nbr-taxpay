@@ -20,7 +20,8 @@ interface SavedBeneficiaryPickerProps {
   allowMultiple:boolean;
   selectedTins:string[];
   onChoose:(people:SelectedBeneficiary[])=>void;
-  onManage?:()=>void;
+  onManage?:(mode?:'manage'|'add')=>void;
+  showAddAction?:boolean;
   onAvailableTins:(tins:string[] | null)=>void;
   allowOneTimeFallback?:boolean;
   fallbackSelection?:SelectedBeneficiary|null;
@@ -29,7 +30,7 @@ interface SavedBeneficiaryPickerProps {
 }
 
 /** Saved contacts remain first; an explicit one-time sample lookup is available only when enabled by the payment flow. */
-export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins,onManage,allowOneTimeFallback=false,fallbackSelection=null,onFallbackSelect,onFallbackClear}:SavedBeneficiaryPickerProps){
+export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins,onManage,showAddAction=false,allowOneTimeFallback=false,fallbackSelection=null,onFallbackSelect,onFallbackClear}:SavedBeneficiaryPickerProps){
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const {navigate,previewAccount,setPaymentServiceChoiceOpen}=useTaxState();
   const bn=language==='bn';
@@ -201,7 +202,8 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   return <section className="col-span-full space-y-3" data-testid="saved-beneficiary-picker"
       aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
     {/* The parent PaymentFormSection owns the one heading and description. */}
-    <div className="flex justify-end">
+    <div className="flex flex-wrap justify-end gap-2">
+      {showAddAction&&onManage&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={()=>onManage('add')}>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>}
       <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={manage}>
         {tr('Manage beneficiaries','উপকারভোগী পরিচালনা')}
       </UiButton>
