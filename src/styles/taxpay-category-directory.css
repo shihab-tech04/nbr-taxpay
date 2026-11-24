@@ -120,17 +120,29 @@
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group][open] > .other-tax-category-trigger .other-tax-category-trigger__chevron {
   transform: rotate(180deg);
 }
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcut-section {
+  min-width: 0;
+  max-width: 100%;
+}
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  padding: 3px 3px 6px;
   gap: 8px;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts button {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 6px;
   min-height: 44px;
-  padding: 8px 12px;
+  max-width: 190px;
+  padding: 6px 10px;
   border: 1px solid #cedded;
   border-radius: 8px;
   background: #fff;
@@ -154,4 +166,28 @@
   .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger__name {
     flex-basis: 130px;
   }
+}
+
+/* Keep the exact-head shortcuts one compact horizontal row, even when the
+   translated label is long. The original catalogue retains the full label. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-frequent-head__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: start;
+  line-height: 1.35;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-frequent-head__copy small {
+  font-size: 12px;
+  font-weight: 500;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-frequent-head__copy > span {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcuts button > svg {
+  flex-shrink: 0;
 }
