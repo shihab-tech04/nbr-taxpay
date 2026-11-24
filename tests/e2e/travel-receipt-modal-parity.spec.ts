@@ -17,7 +17,7 @@ test('Travel Tax settled record shares modal and has only Download/Print without
   await dialog.getByRole('radio',{name:'Nagad'}).check();
   await dialog.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
   await dialog.getByRole('button',{name:'Confirm sample payment'}).click();
-  const receipt=dialog.locator('.taxpay-modal__body > .receipt-view--embedded');
+  const receipt=dialog.locator('.taxpay-modal__body .receipt-view--embedded');
   await expect(receipt).toBeVisible({timeout:12000});
   const optionalLogin=dialog.getByTestId('walkin-postpayment-login');
   await expect(optionalLogin).toBeVisible();

@@ -697,12 +697,12 @@ test('Travel Tax: full-width travel date and contained calculation panel', async
     await expect(rail).toBeVisible();
     await expect(rail.getByRole('heading', {name: 'Payment calculation'})).toBeVisible();
     await expect(rail.getByTestId('travel-payment-total')).not.toHaveText('—');
-    expect(await rail.evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden');
-    expect(await rail.locator('.travel-flow__age-breakdown').evaluate(element => getComputedStyle(element).overflowY)).toBe('auto');
+    expect(await rail.evaluate(element => getComputedStyle(element).overflowY)).toBe('auto');
+    expect(await rail.locator('.travel-flow__age-breakdown').evaluate(element => getComputedStyle(element).overflowY)).toBe('visible');
     const railBox = await rail.boundingBox();
     const mainBox = await modal.locator('.travel-flow__main').boundingBox();
     expect(railBox!.x).toBeGreaterThanOrEqual(mainBox!.x + mainBox!.width - 2);
-    expect(railBox!.width).toBeGreaterThanOrEqual(260);
+    expect(railBox!.width).toBeGreaterThan((railBox!.width + mainBox!.width) * 0.35);
   } else {
     await expect(modal.locator('.travel-flow__summary')).toBeHidden();
     await expect(modal.getByTestId('mobile-payment-calculation')).toBeVisible();
