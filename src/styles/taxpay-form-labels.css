@@ -84,9 +84,6 @@
   box-shadow: 0 12px 26px rgb(18 42 77 / 20%);
   font: inherit;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions[popover] {
-  animation: none;
-}
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
 .taxpay-citizen-shell .travel-flow__passport-no-results {
   margin: 0;
