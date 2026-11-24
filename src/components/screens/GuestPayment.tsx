@@ -1221,6 +1221,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const settledReceipt: ChallanReceipt = {
         ...(pending.payload.details.combinedPayment === true ? pending.receipt : receipt),
         paymentTransactionId: confirmed.id,
+        allocationContractVersion: pending.payload.details.allocationContractVersion===5?5:undefined,
         treasuryStatus: 'GATEWAY_SUCCESS',
         treasuryScrollNo: undefined,
         treasuryDate: undefined,

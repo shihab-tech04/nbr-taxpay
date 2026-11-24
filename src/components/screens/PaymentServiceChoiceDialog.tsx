@@ -206,6 +206,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     openLogin();
   };
   const returnToService = () => {
+    if(unifiedEntry && useAccount && stage===1){requestClose();return;}
     setDraftToResume(null);
     setStage(1);
     if(genericAccountEntry){setDraftEntryCompleted(false);setDraftEntryMode('choice');setEnteredFromDraftChoice(false);}
