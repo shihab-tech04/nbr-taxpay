@@ -1234,7 +1234,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </div>
                     {!createdReceipt && <div className="unified-v3-review__actions">
                       <button type="button" onClick={() => stepTo(0)}><Pencil size={14} aria-hidden="true"/>
-                        {tr('Edit passengers','যাত্রী সম্পাদনা')}</button>
+                        {tr('Edit passengers','যাত্রী সম্পাদনা')} ({passengers.length})</button>
                       <button type="button" onClick={() => stepTo(1)}><Pencil size={14} aria-hidden="true"/>
                         {tr('Edit travel details','ভ্রমণের তথ্য সম্পাদনা')}</button>
                     </div>}
