@@ -353,3 +353,15 @@ test('Home 2 separates Pay Again olive and Saved Drafts rose on desktop and mobi
   await expect(again.locator('p')).toHaveCSS('color','rgb(83, 92, 59)');
   await expect(drafts).toHaveCSS('background-color','rgb(240, 223, 227)');
 });
+
+
+test('Home 2 uses the uploaded project surface palette without replacing the design',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/?action=home-2&lang=en');
+  const root=page.getByTestId('home2-root');
+  for(const [title,color] of [['All Tax Payments','rgb(220, 235, 233)'],['Payment History','rgb(240, 232, 214)'],['Tax Certificates','rgb(229, 226, 240)'],['Corrections & Requests','rgb(241, 224, 216)'],['Pay Again','rgb(230, 233, 214)'],['Saved Drafts','rgb(240, 223, 227)']]){
+    const tile=root.getByRole('button').filter({has:page.getByRole('heading',{name:title,exact:true})});
+    await expect(tile).toBeVisible();await expect(tile).toHaveCSS('background-color',color);
+  }
+  await expect(root.getByRole('button').filter({has:page.getByRole('heading',{name:'All Tax Payments',exact:true})})).toHaveCSS('color','rgb(21, 32, 51)');
+});
