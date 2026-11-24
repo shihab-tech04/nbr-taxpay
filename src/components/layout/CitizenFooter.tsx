@@ -38,7 +38,7 @@ export function CitizenFooter(){
         </details>
       </div>
       <div className="public-footer__bottom">
-        <p>{bn?'© ২০২৬ সহজকর':'© 2026 Sohojkor'}{(currentRoute==='landing'||currentRoute==='home-2') && <> · <a href={`?action=${currentRoute==='landing'?'home-2':'landing'}${bn?'&lang=bn':''}`} onClick={event=>{if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigate(currentRoute==='landing'?'home-2':'landing');}}} style={{textDecoration:'underline',textUnderlineOffset:3}}>{currentRoute==='landing'?'Home 2':bn?'মূল পাতা':'Original Home'}</a></>}</p>
+        <p>{bn?'© ২০২৬ সহজকর':'© 2026 Sohojkor'}{(currentRoute==='landing'||currentRoute==='home-2') && <a href={`?action=${currentRoute==='landing'?'home-2':'landing'}${bn?'&lang=bn':''}`} onClick={event=>{if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigate(currentRoute==='landing'?'home-2':'landing');}}} style={{display:'block',textAlign:'center',lineHeight:1.2,textDecoration:'underline',textUnderlineOffset:3}}>{currentRoute==='landing'?'Home 2':bn?'মূল পাতা':'Original Home'}</a>}</p>
       </div>
     </div>
   </footer>;

@@ -272,7 +272,7 @@ test('Home 2 is opt-in, retains original home, and reuses the payment entry', as
   await expect(page.getByTestId('home2-root')).toHaveCount(0);
   await expect(page.locator('.public-benefits__item')).toHaveCount(6);
 });
-test('Home 2 bilingual responsive layout keeps all actions available', async ({page})=>{
+test('Home 2 bilingual responsive layout keeps all actions available', async ({page}, info)=>{
   for(const lang of ['en','bn']){
     await page.goto('/?action=home-2&lang='+lang);
     const root=page.getByTestId('home2-root');
@@ -280,6 +280,7 @@ test('Home 2 bilingual responsive layout keeps all actions available', async ({p
     await expect(root.getByTestId('home2-travel')).toBeVisible();
     await expect(root.locator('.public-record-search input')).toBeVisible();
     for(const id of ['corrections','history','again','drafts'])await expect(root.getByTestId('home2-'+id)).toBeVisible();
+    await page.screenshot({path:`test-results/screenshots/sohojkor-home-rhythm-home2-${info.project.name}-${lang}.png`,fullPage:true,animations:'disabled'});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
 });
