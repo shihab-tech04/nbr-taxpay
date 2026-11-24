@@ -1002,7 +1002,7 @@ export function Beneficiaries(){
       onClose={()=>{if(!busy){setConfirmListDelete(false);setModalError('');}}}
       footer={<div className="flex w-full flex-wrap justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setConfirmListDelete(false)}>{tr('Cancel','বাতিল')}</UiButton>
         <UiButton type="button" variant="primary" disabled={busy||people.some(person=>person.list_id===editingList.id)} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
-      <p className="text-sm text-slate-700">{people.some(person=>person.list_id===editingList.id)?groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')):tr(`Delete “${editingList.name}”? Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা মুছে ফেলবেন? বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
+      <p className="text-sm text-slate-700">{people.some(person=>person.list_id===editingList.id)?groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')):tr(`Delete “${editingList.name}”? This cannot be undone. Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা মুছে ফেলবেন? এটি ফিরিয়ে আনা যাবে না। বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
       {modalError&&<p role="alert" className="mt-2 text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
 
