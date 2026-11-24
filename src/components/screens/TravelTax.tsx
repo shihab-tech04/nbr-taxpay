@@ -102,7 +102,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       ?.closest<HTMLElement>('.travel-flow__passport-row');
     const body = row?.closest<HTMLElement>('.taxpay-modal__body');
     if (!row || !body) return;
-    const position = () => {
+    const position = (ensureVisible: boolean) => {
       if (!row.isConnected) return;
       const visibleBottom = Math.min(
         body.getBoundingClientRect().bottom,
@@ -112,22 +112,25 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       );
       const limit = window.innerWidth <= 560 ? Math.min(190, window.innerHeight * .28) : 210;
       const needed = row.getBoundingClientRect().bottom + limit + 8 - visibleBottom;
-      if (needed > 0) body.scrollTop += Math.ceil(needed);
+      if (ensureVisible && needed > 0) body.scrollTop += Math.ceil(needed);
       const available = Math.max(0, visibleBottom - row.getBoundingClientRect().bottom - 8);
       setPassportSuggestionMaxHeight(old => {
         const height = Math.floor(Math.min(limit, available));
         return old === height ? old : height;
       });
     };
-    const frame = requestAnimationFrame(position);
-    const observer = new ResizeObserver(position);
+    // Scroll only when the popup OPENS. Never force-scroll back while the
+    // person moves to another field/tab or clicks outside to dismiss it.
+    const refresh = () => position(false);
+    const frame = requestAnimationFrame(() => position(true));
+    const observer = new ResizeObserver(refresh);
     observer.observe(body); observer.observe(row);
-    window.addEventListener('resize', position);
-    body.addEventListener('scroll', position, {passive: true});
+    window.addEventListener('resize', refresh);
+    body.addEventListener('scroll', refresh, {passive: true});
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
-      window.removeEventListener('resize', position);
-      body.removeEventListener('scroll', position);
+      window.removeEventListener('resize', refresh);
+      body.removeEventListener('scroll', refresh);
     };
   }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
