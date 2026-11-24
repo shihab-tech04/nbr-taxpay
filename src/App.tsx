@@ -180,7 +180,7 @@ const MainRouter: React.FC = () => {
       case 'landing':
       case 'taxpayer_login':
       case 'office_login':
-        return <PublicLanding />;
+        return routeParams.fromHome2 === true ? <PublicLanding key="home-2" home2 /> : <PublicLanding />;
       case 'user_guide':
       case 'guidance': // Legacy help bookmarks use the maintained user guide.
         return <PublicUserGuide />;
@@ -195,7 +195,7 @@ const MainRouter: React.FC = () => {
       case 'travel':
         return <TravelTax />;
       case 'verify':
-        return <PublicLanding />; // Receipt lookup opens in the shared public modal.
+        return routeParams.fromHome2 === true ? <PublicLanding key="home-2" home2 /> : <PublicLanding />; // Existing receipt modal.
       case 'incident':
         return <PublicReport />;
       case 'architecture':
@@ -268,7 +268,7 @@ const MainRouter: React.FC = () => {
             {/* A protected deep link never reveals account data to signed-out visitors.
                 Render only the approved public shell while the shared login dialog
                 handles access, recovery, and close. */}
-            <PublicLanding />
+            {routeParams.fromHome2 === true ? <PublicLanding key="home-2" home2 /> : <PublicLanding />}
             {checkingIdentity && <p role="status">
               {language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}
             </p>}
@@ -313,10 +313,10 @@ const MainRouter: React.FC = () => {
       {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
         <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />
       </React.Suspense>}
-      {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog /></React.Suspense>}
+      {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog onClose={routeParams.fromHome2 === true ? ()=>navigate('home-2') : undefined} /></React.Suspense>}
       {signedOutPrivateLogin && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
         onSuccess={() => navigate(signInReturnRoute)}
-        onClose={() => navigate('landing')}
+        onClose={() => navigate(routeParams.fromHome2 === true ? 'home-2' : 'landing')}
       /></React.Suspense>}
       {(previewAccount || (verifiedApplicationUser && import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED === 'true')) &&
         <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}
