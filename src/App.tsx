@@ -7,8 +7,6 @@ import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
-import {parseGiftTaxReuseDraft} from './services/paymentReuse';
-import {activePreviewSession} from './services/previewAccountSession';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
@@ -35,7 +33,7 @@ const AuthorizationRequestPopup = React.lazy(() => import('./components/screens/
 // Do not load the large payment forms for public visitors who have not started a payment.
 const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
 const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
-const GiftTaxReuseModal = React.lazy(() => import('./components/screens/GiftTaxEntryModal').then(module => ({default: module.GiftTaxEntryModal})));
+const GiftTaxReuseEntry = React.lazy(() => import('./components/screens/GiftTaxReuseEntry').then(module => ({default:module.GiftTaxReuseEntry})));
 const PaymentServiceChoiceDialog = React.lazy(() => import('./components/screens/PaymentServiceChoiceDialog').then(module => ({ default: module.PaymentServiceChoiceDialog })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
@@ -108,13 +106,6 @@ const MainRouter: React.FC = () => {
     setPaymentServiceChoiceOpen(true);
   };
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
-  const giftReuse=paymentReuse?.service==='GIFT_TAX';
-  const giftCopy=giftReuse&&!verifiedApplicationUser&&previewAccount?.id===paymentReuse.ownerUid&&
-    activePreviewSession()?.profileId===paymentReuse.ownerUid
-      ?parseGiftTaxReuseDraft(paymentReuse.formPayload):null;
-  useEffect(()=>{
-    if(isPaymentServiceChoiceOpen&&giftReuse&&!giftCopy)setPaymentServiceChoiceOpen(false);
-  },[isPaymentServiceChoiceOpen,giftReuse,Boolean(giftCopy),setPaymentServiceChoiceOpen]);
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
   const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
@@ -322,8 +313,7 @@ const MainRouter: React.FC = () => {
           </TaxPayModal>}</React.Suspense>}
       {isParityModalOpen && <React.Suspense fallback={null}><ParityRegisterModal /></React.Suspense>}
       {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
-        {giftReuse ? (giftCopy ? <GiftTaxReuseModal key={paymentReuse?.sourcePaymentId} signedIn initialReuse={giftCopy} onClose={()=>setPaymentServiceChoiceOpen(false)}/> : null)
-          : <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />}
+        {paymentReuse?.service==='GIFT_TAX' ? <GiftTaxReuseEntry key={paymentReuse.sourcePaymentId} reuse={paymentReuse} /> : <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />}
       </React.Suspense>}
       {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog onClose={routeParams.fromHome2 === true ? ()=>navigate('home-2') : undefined} /></React.Suspense>}
       {signedOutPrivateLogin && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog

@@ -280,10 +280,10 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               title={f.again.title}
               body={f.again.body}
               onClick={open('again')}
-              tone="bg-[#fdecef] ring-1 ring-[#f6d3da]"
-              iconTone="bg-white text-[#c4364f] shadow-sm"
-              bodyTone="text-[#8a5862]"
-              arrowTone="text-[#dcaab4]"
+              tone="bg-[#e6e9d6] text-[#141b2d] ring-1 ring-[#d6dcc0]"
+              iconTone="bg-white text-[#626b3b] shadow-sm"
+              bodyTone="text-[#535c3b]"
+              arrowTone="text-[#626b3b]"
             />
             <FeatureTile
               row
@@ -293,10 +293,10 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               title={f.drafts.title}
               body={f.drafts.body}
               onClick={open('drafts')}
-              tone="bg-[#141b2d] text-white"
-              iconTone="bg-white/10 text-white"
-              bodyTone="text-white/60"
-              arrowTone="text-white/40"
+              tone="bg-[#f0dfe3] text-[#141b2d] ring-1 ring-[#e6cdd4]"
+              iconTone="bg-white text-[#98566b] shadow-sm"
+              bodyTone="text-[#704e5b]"
+              arrowTone="text-[#98566b]"
             />
             <FeatureTile
               row
