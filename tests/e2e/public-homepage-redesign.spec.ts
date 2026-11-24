@@ -255,3 +255,32 @@ test('six connected benefit cells have soft non-moving hover/focus shadows and c
     ['0px', '0px', '0px', '16px'],
   ]);
 });
+
+test('Home 2 is opt-in, retains original home, and reuses the payment entry', async ({page})=>{
+  await page.goto('/?action=landing');
+  await expect(page.getByTestId('home2-root')).toHaveCount(0);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+  await page.getByRole('link',{name:'Home 2',exact:true}).click();
+  await expect(page.getByTestId('home2-root')).toBeVisible();
+  await expect(page).toHaveURL(/action=home-2/);
+  await page.reload();
+  await expect(page.getByTestId('home2-root')).toBeVisible();
+  await page.getByTestId('home2-pay').click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'}).getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+  await page.goto('/?action=home-2');
+  await page.getByRole('link',{name:'Original Home',exact:true}).click();
+  await expect(page.getByTestId('home2-root')).toHaveCount(0);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+});
+test('Home 2 bilingual responsive layout keeps all actions available', async ({page}, info)=>{
+  for(const lang of ['en','bn']){
+    await page.goto('/?action=home-2&lang='+lang);
+    const root=page.getByTestId('home2-root');
+    await expect(root).toBeVisible();
+    await expect(root.getByTestId('home2-travel')).toBeVisible();
+    await expect(root.locator('.public-record-search input')).toBeVisible();
+    for(const id of ['corrections','history','again','drafts'])await expect(root.getByTestId('home2-'+id)).toBeVisible();
+    await page.screenshot({path:`test-results/screenshots/sohojkor-home-rhythm-home2-${info.project.name}-${lang}.png`,fullPage:true,animations:'disabled'});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
+});

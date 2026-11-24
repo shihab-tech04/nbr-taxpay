@@ -4,6 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
+const Home2Layout = React.lazy(() => import('./Home2Layout').then(m => ({default:m.Home2Layout})));
 
 // Only publicly shipped fictional fixtures may appear in public autocomplete.
 // Never suggest account receipts or hosted payment records.
@@ -19,7 +20,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
   { value: receipt.gatewayTransactionId, kind: 'transaction' as const },
 ]);
 
-export const PublicLanding: React.FC = () => {
+export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
   const { language, navigate, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [otherTaxEntryOpen, setOtherTaxEntryOpen] = useState(false);
@@ -42,7 +43,7 @@ export const PublicLanding: React.FC = () => {
     setActiveSuggestion(-1);
     setPaymentReference(reference);
     // Preserve existing in-memory navigation; never expose references in the URL.
-    navigate('verify', { initialReference: reference });
+    navigate('verify', { initialReference: reference, ...(home2 ? {fromHome2:true} : {}) });
   };
   useEffect(() => {
     const handleOutside = (event: PointerEvent) => {
@@ -98,16 +99,13 @@ export const PublicLanding: React.FC = () => {
     },
   ];
 
-  return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
-    <PublicHeroCarousel
+  const hero = (<PublicHeroCarousel
       language={language}
       onPayTax={() => openAllTaxPayments()}
       onOtherTax={() => setOtherTaxEntryOpen(true)}
       paused={isPaymentServiceChoiceOpen || otherTaxEntryOpen || openService !== null}
-    />
-
-
-    <section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
+    />);
+  const recordSearch = (<section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
       <div className="public-record-discovery__heading">
         <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
         <p id="public-record-discovery-help">{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
@@ -237,7 +235,16 @@ export const PublicLanding: React.FC = () => {
           </div>
         )}
       </div>
-    </section>
+    </section>);
+  const serviceOverlays = (<>{otherTaxEntryOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}>
+      <PaymentServiceChoiceDialog unifiedEntryRequested onDismiss={() => setOtherTaxEntryOpen(false)}
+        onPublicOtherTaxContinue={() => { setOtherTaxEntryOpen(false); setOpenService('other'); }} />
+    </React.Suspense>}
+    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onBack={openService === 'other' ? () => { setOpenService(null); setOtherTaxEntryOpen(true); } : undefined} onChooseOther={setOpenService} /></React.Suspense>}</>);
+  if (home2) return <><Home2Layout hero={hero} recordSearch={recordSearch} />{serviceOverlays}</>;
+  return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
+    {hero}
+    {recordSearch}
 
     <section className="public-benefits" aria-labelledby="public-benefits-title">
       <div className="public-benefits__heading">
@@ -263,10 +270,6 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
 
-    {otherTaxEntryOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}>
-      <PaymentServiceChoiceDialog unifiedEntryRequested onDismiss={() => setOtherTaxEntryOpen(false)}
-        onPublicOtherTaxContinue={() => { setOtherTaxEntryOpen(false); setOpenService('other'); }} />
-    </React.Suspense>}
-    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onBack={openService === 'other' ? () => { setOpenService(null); setOtherTaxEntryOpen(true); } : undefined} onChooseOther={setOpenService} /></React.Suspense>}
+    {serviceOverlays}
   </div>;
 };
