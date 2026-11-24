@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
@@ -382,6 +383,7 @@ test('three taxpayers keep separate heads, years and amounts through combined re
 
 test('Other Tax allocations produce one shared simulation receipt and a reversible confirmation', async ({ page }) => {
   const submitted: Record<string, unknown>[] = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
@@ -630,6 +632,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
 
 test('walk-in self payer keeps multiple heads and years without adding a second taxpayer', async ({ page }) => {
   const submitted: Array<Record<string, unknown>> = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
     await route.fulfill({ json: {
@@ -905,6 +908,7 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   const submitted:Record<string,any>[]=[];
   const exactPostBodies:string[]=[];
   const {dialog}=await mockSignedInOtherTax(page,writes);
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
     const rawBody=route.request().postData();
     if(typeof rawBody!=='string')throw Error('Browser payment POST body unavailable');

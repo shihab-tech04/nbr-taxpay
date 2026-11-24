@@ -54,8 +54,7 @@ test('Travel Tax resends the identical payment after a lost response ' +
       await route.fulfill({ status: 200, headers, json: {
         success: true, simulationOnly: true,
         data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-14T08:00:00.000Z',
-          data: { service: saved.service, amountMinor: saved.amountMinor,
-            origin: 'TAXPAY_UI', details: saved.details } },
+          data: { ...saved, origin: 'TAXPAY_UI' } },
       } });
       return;
     }
@@ -121,7 +120,9 @@ test('Travel Tax resends the identical payment after a lost response ' +
   } else {
     await submit.click();
   }
-  await expect.poll(() => readbackCount).toBe(2);
+  // Refresh restoration may independently re-read the same SQL row; repeated
+  // GET verification is safe and must not be confused with extra payment POSTs.
+  await expect.poll(() => readbackCount).toBeGreaterThanOrEqual(2);
   await expect(modal.locator('.receipt-view__paper')).toBeVisible();
   const receipt = modal.getByTestId('travel-family-challan');
   await expect(receipt.locator('tbody tr')).toHaveCount(2);
