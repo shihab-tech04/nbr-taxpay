@@ -44,3 +44,11 @@ test('published payment picker uses the approved signed-in lists without email g
   assert.match(login,/id="taxpayer-login-password"/);
   assert.doesNotMatch(login,/supabase\.auth\.signInWithOtp|Sign in with email/);
 });
+
+// The signed-in directory is account-scoped; legacy guest data and recovery
+// service remain intact, but no visible restore action or automatic copy.
+test('approved beneficiary directory exposes no guest restore control or transfer',()=>{
+  const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  assert.doesNotMatch(page,/guest-beneficiary-recovery|Restore to my profile|restoreFromThisBrowser|recoverGuestBeneficiariesToProfile|recoverLegacyGuestBeneficiariesToPreview|hasStoredGuestBeneficiaries/);
+  assert.match(page,/loadBeneficiaries\(owner,\{forceFresh:true\}\)/);
+});

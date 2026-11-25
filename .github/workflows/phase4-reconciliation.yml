@@ -1,6 +1,7 @@
 name: Phase 4 - field-level SQL reconciliation contract
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'scripts/ci/phase4-reconcile*.mjs'
       - 'scripts/ci/phase4-bridge-readiness*.mjs'
@@ -17,6 +18,7 @@ permissions:
   contents: read
 jobs:
   immutable-payment-parity:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

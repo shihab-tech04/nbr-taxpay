@@ -315,7 +315,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               </button>
             ))}
           </nav>
-          <div className="text-[12px] text-[#5f6880]"><p>{c.footer.copyright}</p><a href="?action=landing" className="underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a></div>
+          <div className="text-[12px] text-[#5f6880]"><p>{c.footer.copyright}</p><a href="?action=landing" className="underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a>{' · '}<a href={c.langSwitch === 'English'?'?action=home-3&lang=bn':'?action=home-3'} className="underline">Home 3</a></div>
         </div>
       </footer>
 
