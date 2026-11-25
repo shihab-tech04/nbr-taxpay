@@ -1,49 +1,71 @@
-name: MUI v4 ledger table and dialog pilot
+name: MUI v4 combined non-homepage acceptance
 on:
   push:
     branches: [ops/mui-v4-ledger-next-766f320]
 permissions:
   contents: read
-  actions: read
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       CI: 'true'
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
+      BASE_SHA: fd1dc671d81ae03132423154354c94f2c9071cd1
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - uses: actions/download-artifact@v4
-        with:
-          name: mui-v4-glossary-pilot-evidence
-          run-id: 45657043479
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/prior-mui-pilot
-      - run: |
-          cp "$RUNNER_TEMP/prior-mui-pilot/package.json" package.json
-          cp "$RUNNER_TEMP/prior-mui-pilot/package-lock.json" package-lock.json
+      - name: Confirm exact source boundaries and dependency lock
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$BASE_SHA" HEAD
+          test -z "$(git diff "$BASE_SHA" HEAD -- src/App.tsx src/index.css src/styles src/components/layout src/services supabase src/components/screens/PublicLanding.tsx src/components/screens/Home2Layout.tsx src/components/screens/home2 src/components/screens/home3 src/components/screens/PublicHeroCarousel.tsx src/components/screens/PaymentServiceChoiceDialog.tsx src/components/screens/TaxpayerLoginDialog.tsx)"
           npm ci --no-audit --no-fund
           npm run lint
           env -u VITE_SUPABASE_DISABLED -u VITE_SUPABASE_URL -u VITE_SUPABASE_PUBLISHABLE_KEY npm run test:domain
           npm run build
+          du -sb dist
       - run: npx playwright install chromium
-      - name: Verify existing ledger/history and actual MUI semantics
-        run: npx playwright test tests/e2e/event-based-ledger-payment-history.spec.ts tests/e2e/mui-v4-ledger-pilot.spec.ts --workers=2
+      - name: Verify all migrated controls, legal content, ledger and native validation
+        run: |
+          npx playwright test tests/e2e/mui-v4-glossary-pilot.spec.ts tests/e2e/mui-v4-guide-catalogue.spec.ts tests/e2e/mui-v4-ledger-pilot.spec.ts tests/e2e/mui-v4-public-forms.spec.ts tests/e2e/head-catalogue.spec.ts tests/e2e/event-based-ledger-payment-history.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/public-guidance-p3.spec.ts tests/e2e/signed-in-payment-entry.spec.ts --workers=2
+      - name: Compare unchanged Main and combined candidate across full home matrix
+        run: |
+          set -euo pipefail
+          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
+          export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
+          mkdir -p "$MUI_BASELINE_DIR" "$MUI_SNAPSHOT_DIR" mui-evidence
+          git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
+          (
+            cd "$MUI_BASELINE_DIR"
+            npm ci --no-audit --no-fund
+            npm run build
+            du -sb dist > "$RUNNER_TEMP/base-build-bytes.txt"
+          )
+          du -sb dist > mui-evidence/candidate-build-bytes.txt
+          cp "$RUNNER_TEMP/base-build-bytes.txt" mui-evidence/
+          npx playwright test --config playwright.mui-protected.config.ts
+      - name: Collect evidence
+        if: always()
+        run: |
+          mkdir -p mui-evidence
+          if [ -d "$RUNNER_TEMP/mui-snapshots" ]; then cp -R "$RUNNER_TEMP/mui-snapshots" mui-evidence/; fi
+          git rev-parse HEAD > mui-evidence/CANDIDATE_SHA
+          git diff --name-only "$BASE_SHA" HEAD > mui-evidence/CHANGED_FILES
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v4-ledger-pilot-evidence
+          name: mui-v4-combined-acceptance
           path: |
+            mui-evidence/
             test-results/
             playwright-report/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7

@@ -15,30 +15,33 @@
     "test:hosted": "node --import tsx --test tests/external/hosted-simulation.test.ts"
   },
   "dependencies": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
     "@google/genai": "^2.4.0",
+    "@mui/material": "7.3.11",
+    "@supabase/supabase-js": "^2.58.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
     "html2canvas-pro": "2.6.4",
     "jspdf": "4.2.1",
     "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "vite": "^8.3.0",
-    "express": "^4.21.2",
-    "dotenv": "^17.2.3",
-    "motion": "^12.23.24",
-    "@supabase/supabase-js": "^2.58.0"
+    "vite": "^8.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.56.1",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
-    "typescript": "^7.0.2",
-    "@types/express": "^4.17.21",
-    "@playwright/test": "^1.56.1",
-    "@axe-core/playwright": "^4.10.2"
+    "typescript": "^7.0.2"
   }
 }

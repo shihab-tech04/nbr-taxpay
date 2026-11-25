@@ -81,6 +81,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
+  // A successful embedded login changes previewAccount before its continuation
+  // runs. Keep the form mounted until that continuation completes; replacing it
+  // with the signed-in chooser would cancel the child's success timer.
+  const [entrySignInPending, setEntrySignInPending] = useState(false);
+  const showSignedInEntry = alreadySignedIn && !entrySignInPending;
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
   const unifiedEntry = draftToResume
@@ -325,11 +330,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         ? <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} />
         : view === 'entry' ? (
           <div className="taxpay-unified-entry__actions">
-            {alreadySignedIn ? <button type="button" className="tax-service-choice__continue"
+            {showSignedInEntry ? <button type="button" className="tax-service-choice__continue"
               onClick={() => beginUnifiedPayment(true)}>{tr('Continue with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যান')} <ArrowRight size={18} /></button>
             : <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} paymentEntryLabel />}
             <div className="taxpay-unified-entry__divider" aria-hidden="true"><span />{tr('OR', 'অথবা')}<span /></div>
-            <button type="button" className="taxpay-unified-entry__walkin" onClick={() => beginUnifiedPayment(false)}>
+            <button type="button" className="taxpay-unified-entry__walkin" disabled={entrySignInPending} onClick={() => beginUnifiedPayment(false)}>
               {tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')} <ArrowRight size={18} aria-hidden="true" />
             </button>
           </div>
@@ -371,10 +376,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
           </ol>
         </>}
         {view === 'entry' ? (
-          alreadySignedIn
+          showSignedInEntry
             ? <div className="taxpay-unified-entry__signed-in" role="status">{tr('Continue using your signed-in account, or choose Walk-in Payment.', 'সাইন-ইন করা অ্যাকাউন্ট অথবা ওয়াক-ইন পেমেন্ট বেছে নিন।')}</div>
             : <TaxpayerLoginDialog embedded preservePaymentJourney emailReturnTo="taxpayer_home"
-                onClose={requestClose} onValidityChange={setLoginReady} onSuccess={() => beginUnifiedPayment(true)} />
+                onClose={requestClose} onValidityChange={setLoginReady}
+                onSignInPendingChange={setEntrySignInPending} onSuccess={() => beginUnifiedPayment(true)} />
         ) : view === 'payer' ? <PaymentDraftEntryGate
            actor={draftActor} ownerKey={draftOwnerKey}
            mode={draftEntryMode} onModeChange={changeDraftEntryMode} alwaysShowStart={genericAccountEntry}
