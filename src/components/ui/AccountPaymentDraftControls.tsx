@@ -236,7 +236,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
 
   if (!actor || authLoading || (actor.kind === 'guest' && guestReadyOwnerKey !== renderScope)) return null;
   const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
-  const actions = <div className="payment-form-draft-controls__actions">
+  const actions = <div className="payment-form-draft-controls__actions" data-account-owned={actor.kind !== 'guest' ? 'true' : undefined}>
     <button type="button" className="payment-form-draft-controls__save"
       onClick={() => void save()} disabled={busy || loading}>
       <span aria-live="polite" className="inline-flex items-center justify-center gap-1.5">

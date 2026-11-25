@@ -469,8 +469,12 @@ for(const language of ['en','bn'] as const){
       const history=page.getByTestId('beneficiary-payment-history');
       await expect(history).toBeVisible();
       const mobile=(page.viewportSize()?.width??1280)<768;
-      const repeat=history.getByTestId(mobile?'account-pay-again-mobile':'account-pay-again-desktop');
-      await expect(repeat).toBeVisible();
+      await expect(history.getByTestId(mobile?'account-pay-again-mobile':'account-pay-again-desktop')).toHaveCount(0);
+      const entry=mobile?history.getByTestId('beneficiary-payment-mobile-cards').locator('li').filter({hasText:repeatableAdvancePayment.id}):history.getByRole('row').filter({hasText:repeatableAdvancePayment.id});
+      await expect(entry.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true})).toBeVisible();
+      await entry.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).click();
+      const repeat=page.getByRole('dialog').getByTestId('account-pay-again-receipt');
+      await expect(repeat).toBeEnabled();
       await repeat.click();
       const copied=page.getByTestId('pay-again-reuse-notice');
       await expect(copied).toBeVisible();
