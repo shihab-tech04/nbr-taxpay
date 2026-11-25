@@ -54,7 +54,7 @@ for each row execute function taxpay_guest_private.enforce_guest_beneficiary_gro
 -- lifecycle cascades untouched. The row lock precedes this trigger.
 create or replace function taxpay_guest_private.guard_account_group_delete()
 returns trigger language plpgsql security invoker set search_path = pg_catalog
-as $
+as $$
 begin
   if current_user in ('authenticated','anon') and exists (
     select 1 from public.taxpay_beneficiaries
@@ -64,7 +64,7 @@ begin
   end if;
   return old;
 end;
-$;
+$$;
 revoke execute on function taxpay_guest_private.guard_account_group_delete() from public, anon, authenticated;
 drop trigger if exists guard_account_group_delete on public.taxpay_beneficiary_lists;
 create trigger guard_account_group_delete before delete on public.taxpay_beneficiary_lists
@@ -73,7 +73,7 @@ for each row execute function taxpay_guest_private.guard_account_group_delete();
 -- Real account: use the authenticated identity, not a client supplied owner.
 create or replace function public.taxpay_transfer_beneficiary_group(p_source_id uuid,p_target_id uuid)
 returns jsonb language plpgsql security invoker set search_path = pg_catalog
-as $
+as $$
 declare v_owner uuid:=auth.uid(); v_locked integer; v_count integer;
 begin
   if v_owner is null or p_source_id is null or p_target_id is null or p_source_id=p_target_id then
@@ -93,7 +93,7 @@ begin
   if not found then raise exception 'NOT_FOUND'; end if;
   return jsonb_build_object('deleted',true,'moved',v_count);
 end;
-$;
+$$;
 revoke execute on function public.taxpay_transfer_beneficiary_group(uuid,uuid) from public, anon, service_role;
 grant execute on function public.taxpay_transfer_beneficiary_group(uuid,uuid) to authenticated;
 
@@ -101,7 +101,7 @@ grant execute on function public.taxpay_transfer_beneficiary_group(uuid,uuid) to
 -- Existing callers may delete empty lists, never their saved people.
 create or replace function public.taxpay_guest_beneficiary_delete_list(p_capability_hash text,p_list_id uuid)
 returns jsonb language plpgsql security definer set search_path = pg_catalog,taxpay_guest_private
-as $
+as $$
 declare v_session_id uuid;
 begin
   v_session_id:=taxpay_guest_private.touch_session(p_capability_hash);
@@ -114,12 +114,12 @@ begin
   if not found then raise exception 'NOT_FOUND'; end if;
   return jsonb_build_object('deleted',true);
 end;
-$;
+$$;
 
 -- Same service-only capability gate as the existing guest move/delete RPCs.
 create or replace function public.taxpay_guest_beneficiary_transfer_group(p_capability_hash text,p_source_id uuid,p_target_id uuid)
 returns jsonb language plpgsql security definer set search_path = pg_catalog,taxpay_guest_private
-as $
+as $$
 declare v_session_id uuid; v_locked integer; v_count integer;
 begin
   v_session_id:=taxpay_guest_private.touch_session(p_capability_hash);
@@ -138,7 +138,7 @@ begin
   if not found then raise exception 'NOT_FOUND'; end if;
   return jsonb_build_object('deleted',true,'moved',v_count);
 end;
-$;
+$$;
 revoke execute on function public.taxpay_guest_beneficiary_transfer_group(text,uuid,uuid) from public, anon, authenticated;
 grant execute on function public.taxpay_guest_beneficiary_transfer_group(text,uuid,uuid) to service_role;
 
