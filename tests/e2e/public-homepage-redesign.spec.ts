@@ -280,7 +280,9 @@ test('Home 2 bilingual responsive layout keeps all actions available', async ({p
     await expect(root).toHaveAttribute('data-design','uploaded-mobile-bento');
     await expect(root).toHaveAttribute('data-viewport',(page.viewportSize()?.width ?? 1280)>=960?'desktop':'mobile');
     await expect(root.getByTestId('home2-pay')).toBeVisible();
-    await expect(root.getByTestId('home2-other')).toBeVisible();
+    await expect(root.getByTestId('home2-other')).toHaveCount(0);
+    await expect(root.getByTestId('home2-gift-action')).toBeVisible();
+    await expect(root.getByTestId('home2-travel-action')).toBeVisible();
     await expect(root.getByTestId('home2-reference')).toBeVisible();
     await expect(root.getByRole('banner')).toBeVisible();
     await expect(root.getByRole('contentinfo')).toBeVisible();
@@ -317,13 +319,13 @@ test('Imported Home 2 retains source typography and never clips desktop hero or 
       const copy=root.getByTestId('home2-hero-copy');
       await expect(copy.locator('p').first()).toHaveCSS('font-size','14.5px');
       await expect(copy.locator('li')).toHaveCount(0);
-      await expect(root.getByTestId('home2-guide-action')).toHaveCSS('font-size','13px');
+      await expect(root.getByTestId('home2-gift-action')).toHaveCSS('font-size','13px');
       const outer=await hero.boundingBox();
-      for(const id of ['home2-pay','home2-other']){
+      for(const id of ['home2-pay']){
         const action=await root.getByTestId(id).boundingBox();
         expect(action!.y+action!.height,'payment actions remain inside the hero').toBeLessThanOrEqual(outer!.y+outer!.height+1);
       }
-      for(const id of ['home2-guide-action','home2-chat-action']){
+      for(const id of ['home2-gift-action','home2-travel-action']){
         const action=root.getByTestId(id);
         expect(await action.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
       }
@@ -338,18 +340,17 @@ test('Home 2 matches the new uploaded Bento palette and monoline artwork',async(
   for(const lang of ['en','bn']){
     await page.goto('/?action=home-2&lang='+lang);
     const root=page.getByTestId('home2-root');
-    const desktop=(page.viewportSize()?.width??1280)>=960;
     const labels=lang==='en'?['All Tax Payments','Payment History','Tax Certificates','Corrections & Requests','Pay Again','Saved Drafts']:['সকল কর পরিশোধ','পেমেন্টের ইতিহাস','কর সনদ','সংশোধন ও অনুরোধ','আবার পরিশোধ','সংরক্ষিত খসড়া'];
-    const colors=['rgb(165, 188, 225)','rgb(227, 221, 212)','rgb(206, 207, 235)','rgb(227, 210, 212)',desktop?'rgb(227, 221, 212)':'rgb(204, 228, 235)','rgb(213, 230, 212)'];
+    const colors=labels.map(()=> 'rgb(255, 255, 255)');
     for(const [i,label] of labels.entries()){
       const tile=root.getByRole('button').filter({has:page.getByRole('heading',{name:label,exact:true})});
       await expect(tile).toBeVisible();
       await expect(tile).toHaveCSS('background-color',colors[i]);
       await expect(tile.locator('.home2-line-art svg')).toHaveCount(1);
     }
-    await expect(root.getByRole('heading',{name:lang==='en'?'New to paying online?':'অনলাইনে কর দেওয়া নতুন?',exact:true})).toBeVisible();
-    await expect(root.getByTestId('home2-guide-action')).toBeVisible();
-    await expect(root.getByTestId('home2-chat-action')).toBeVisible();
+    await expect(root.getByRole('heading',{name:lang==='en'?'Other Tax Payments':'অন্যান্য কর পরিশোধ',exact:true})).toBeVisible();
+    await expect(root.getByTestId('home2-gift-action')).toBeVisible();
+    await expect(root.getByTestId('home2-travel-action')).toBeVisible();
     await expect(root.getByTestId('slider2').locator('[data-testid="slider2-artwork"][data-active="true"] img')).toHaveCount(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
@@ -365,7 +366,7 @@ test('Home 2 primary banner omits the eyebrow and trust labels in both languages
     await expect(hero.getByRole('heading',{level:1})).toBeVisible();
     await expect(hero.locator('p')).toBeVisible();
     await expect(hero.getByTestId('home2-pay')).toBeVisible();
-    await expect(hero.getByTestId('home2-other')).toBeVisible();
+    await expect(hero.getByTestId('home2-other')).toHaveCount(0);
     for(const label of ['Income tax, simplified','Secure payment','Instant challan','Receipts kept','আয়কর, সহজভাবে','নিরাপদ পেমেন্ট','তাৎক্ষণিক চালান','রসিদ সংরক্ষিত থাকে']){
       await expect(hero.getByText(label,{exact:true})).toHaveCount(0);
     }
@@ -415,9 +416,8 @@ test('Home 3 direct URL and Bengali translation retain the separate Home 2 route
   await expect(page.getByRole('link',{name:'Home 3',exact:true})).toBeVisible();
 });
 
-test('Home 2 uses one section heading, a quiet dashboard button and white payment search card', async ({page})=>{
+test('Home 2 uses one section heading, no duplicate dashboard CTA and white payment search card', async ({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
-  const desktop=(page.viewportSize()?.width??1280)>=960;
   for(const lang of ['en','bn']){
     await page.goto('/?action=home-2&lang='+lang);
     const root=page.getByTestId('home2-root');
@@ -429,16 +429,8 @@ test('Home 2 uses one section heading, a quiet dashboard button and white paymen
     }
     await expect(root.getByTestId('home2-record-heading').locator('..')).toHaveCSS('background-color','rgb(255, 255, 255)');
     await expect(root.getByTestId('home2-reference')).toBeVisible();
-    const dashboard=root.getByTestId('home2-dashboard-action');
-    if(desktop){
-      await expect(dashboard).toBeVisible();
-      await expect(dashboard).toHaveCSS('background-color','rgb(255, 255, 255)');
-      await expect(dashboard).toHaveText(lang==='en'?'Log in for your dashboard':'ড্যাশবোর্ড দেখতে লগইন করুন');
-      const button=await dashboard.boundingBox();
-      expect(button!.height).toBeGreaterThanOrEqual(40);
-      await dashboard.focus();
-      await expect(dashboard).toBeFocused();
-    } else await expect(dashboard).toHaveCount(0);
+    await expect(root.getByTestId('home2-dashboard-action')).toHaveCount(0);
+    await expect(root.getByTestId('home2-other-payments')).toHaveCSS('background-color','rgb(255, 255, 255)');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
 });
@@ -455,7 +447,7 @@ test('Slider 2 artwork fills desktop top and bottom without moving the approved 
     await expect(art).toHaveCSS('object-fit','cover');
     await expect(art).toHaveCSS('object-position','100% 50%');
     const pay=frame.getByTestId('home2-pay');
-    const other=frame.getByTestId('home2-other');
+    
     const payBefore=await pay.boundingBox();
     for(let i=1;i<=5;i++){
       await page.getByTestId('slider2').getByRole('button',{name:'Go to slide '+i}).click();
@@ -474,7 +466,7 @@ test('Slider 2 artwork fills desktop top and bottom without moving the approved 
       const pos=await pay.boundingBox();
       expect(Math.abs(pos!.x-payBefore!.x)).toBeLessThanOrEqual(1);
       expect(Math.abs(pos!.y-payBefore!.y)).toBeLessThanOrEqual(1);
-      await expect(other).toBeVisible();
+      await expect(frame.getByTestId('home2-other')).toHaveCount(0);
     }
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
@@ -535,7 +527,7 @@ test('Slider 2 protects complete bilingual description lines and removes the All
         expect(result.inside).toBe(true);expect(result.protected).toBe(true);
         expect(result.readableFade).toBe(true);expect(result.noTextOverflow).toBe(true);expect(result.noClamp).toBe(true);
         await expect(frame.getByTestId('home2-pay')).toBeVisible();
-        await expect(frame.getByTestId('home2-other')).toBeVisible();
+        await expect(frame.getByTestId('home2-other')).toHaveCount(0);
       }
       expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
       await root.screenshot({path:'test-results/screenshots/home2-readable-'+width+'-'+lang+'.png',animations:'disabled'});
@@ -554,7 +546,7 @@ test('Slider 2 mobile fills artwork region without letterboxing on all five bann
       const slider=page.getByTestId('slider2');
       const frame=slider.getByRole('region');
       const art=frame.locator('[data-testid="slider2-artwork"][data-active="true"] img');
-      const pay=frame.getByTestId('home2-pay'),other=frame.getByTestId('home2-other');
+      const pay=frame.getByTestId('home2-pay');
       const before=await pay.boundingBox();
       for(let i=1;i<=5;i++){
         await slider.getByRole('button',{name:lang==='en'?'Go to slide '+i:'স্লাইড '+i,exact:true}).click();
@@ -581,10 +573,38 @@ test('Slider 2 mobile fills artwork region without letterboxing on all five bann
         const pos=await pay.boundingBox();
         expect(Math.abs(pos!.x-before!.x)).toBeLessThanOrEqual(1);
         expect(Math.abs(pos!.y-before!.y)).toBeLessThanOrEqual(1);
-        await expect(other).toBeVisible();
+        await expect(frame.getByTestId('home2-other')).toHaveCount(0);
         if(width===390)await frame.screenshot({path:'test-results/screenshots/slider2-mobile-'+lang+'-'+i+'.png',animations:'disabled'});
       }
       expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
     }
+  }
+});
+
+test('Home 2 opens each existing dedicated tax journey and preserves the primary entry',async({page})=>{
+  for(const lang of ['en','bn']){
+    await page.goto('/?action=home-2&lang='+lang);
+    const root=page.getByTestId('home2-root');
+    const frame=root.getByTestId('slider2').getByRole('region');
+    const card=root.getByTestId('home2-other-payments');
+    await expect(frame.getByTestId('home2-other')).toHaveCount(0);
+    const primary=frame.getByTestId('home2-pay');
+    await expect(primary).toBeVisible();
+    await expect(card.getByTestId('home2-gift-action')).toHaveCSS('background-color','rgb(237, 243, 252)');
+    await expect(card.getByTestId('home2-travel-action')).toHaveCSS('background-color','rgb(237, 243, 252)');
+    await card.getByTestId('home2-gift-action').click();
+    await expect(page.getByTestId('gift-donor-section')).toBeVisible();
+    await expect(page.getByTestId('gift-donee-section')).toBeVisible();
+    await expect(page.getByTestId('other-tax-chooser')).toHaveCount(0);
+    await expect(frame).toHaveAttribute('data-paused','true');
+    await page.goto('/?action=home-2&lang='+lang);
+    await card.getByTestId('home2-travel-action').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByTestId('other-tax-chooser')).toHaveCount(0);
+    await expect(frame).toHaveAttribute('data-paused','true');
+    await page.goto('/?action=home-2&lang='+lang);
+    await primary.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(frame).toHaveAttribute('data-paused','true');
   }
 });

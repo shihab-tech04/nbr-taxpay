@@ -2,7 +2,7 @@ import { useCallback, useId, useState, useSyncExternalStore, type FormEvent, typ
 import { ArrowRight, Search, X } from 'lucide-react'
 import type { Copy } from './i18n'
 
-export type Home2Action = 'home' | 'original' | 'pay' | 'other' | 'login' | 'guide' | 'report' | 'help' | 'history' | 'certificates' | 'corrections' | 'again' | 'drafts' | 'status' | 'receipts' | 'security' | 'nbr'
+export type Home2Action = 'home' | 'original' | 'pay' | 'other' | 'gift' | 'travel' | 'login' | 'guide' | 'report' | 'help' | 'history' | 'certificates' | 'corrections' | 'again' | 'drafts' | 'status' | 'receipts' | 'security' | 'nbr'
 
 export type ViewProps = {
   c: Copy

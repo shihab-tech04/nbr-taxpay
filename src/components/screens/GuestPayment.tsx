@@ -1149,6 +1149,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         setBeneficiaryChecking(false);
       }
     }
+    // The unified Return editor normally derives the tax type when switching
+    // services. A resumed Return starts with that service already selected.
+    // Retain a saved choice; only fill a missing value from the current profile.
+    if (unifiedAccountSelection && category === 'TAX_WITH_RETURN' && !incomeTaxType) {
+      const type = entityTypeForTin(taxpayerTin);
+      if (type) setIncomeTaxType(type);
+    }
     setStep(2);
   };
 
@@ -2537,7 +2544,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             {unifiedFlow && !otherBatch && unifiedServiceChoice}
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={embedded && category === 'TAX_WITH_RETURN' ? (language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন' : 'Choose the income tax type') : (language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head')}>
             {verifiedReference && <p className="text-xs text-slate-600" role="status">{language === 'bn' ? `NBR রেফারেন্স ${verifiedReference.reference} থেকে করবর্ষ ও পরিমাণ পূরণ করা হয়েছে।` : `Assessment year and amount filled from NBR reference ${verifiedReference.reference}.`}</p>}
-            {!isWithholdingMode && !unifiedFlow && <fieldset className="payment-form-radio-fieldset">
+            {!isWithholdingMode && (!unifiedFlow || (Boolean(initialDraft) && category === 'TAX_WITH_RETURN' && !entityTypeForTin(taxpayerTin))) && <fieldset className="payment-form-radio-fieldset">
               <legend className="payment-form-subheading">{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'} *</legend>
               <div className="payment-radio-card-grid">
                 {INCOME_TAX_TYPES.map(type => <PaymentRadioCard key={type.id} id={`guest-income-type-${type.id}`} name="guest-income-type" value={type.id} checked={incomeTaxType === type.id}

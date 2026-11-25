@@ -450,8 +450,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             <div className="home2-slider2__actions">
               <button type="button" data-testid="home2-pay" className="home2-slider2__pay home2-press"
                 onClick={() => onPayTax()}><WalletCards size={18} aria-hidden="true"/>{slides.length ? action : (bn ? 'কর পরিশোধ' : 'Pay Tax')}</button>
-              <button type="button" data-testid="home2-other" className="home2-slider2__other home2-press"
-                onClick={onOtherTax}><ReceiptText size={18} aria-hidden="true"/>{bn ? 'অন্যান্য কর' : 'Other Tax'}</button>
             </div>
             {!slides.length && bannerStatus === 'unavailable' && <button type="button"
               className="home2-slider2__retry" onClick={() => { setBannerStatus('loading'); setRetryNonce(n => n + 1); }}>

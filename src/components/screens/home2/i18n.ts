@@ -37,6 +37,7 @@ const en = {
     search: 'Search',
     clear: 'Clear search',
   },
+  otherPayments: { title: 'Other Tax Payments', body: 'Pay your Gift Tax or Travel Tax quickly and easily in a few simple steps.', gift: 'Pay Gift Tax', travel: 'Pay Travel Tax' },
   help: {
     title: 'New to paying online?',
     body: 'Our step-by-step guide walks you through your first payment.',
@@ -114,6 +115,7 @@ const bn: Copy = {
     search: 'খুঁজুন',
     clear: 'মুছে ফেলুন',
   },
+  otherPayments: { title: 'অন্যান্য কর পরিশোধ', body: 'সহজ কয়েকটি ধাপে দ্রুত দানকর বা ভ্রমণ কর পরিশোধ করুন।', gift: 'দানকর দিন', travel: 'ভ্রমণ কর দিন' },
   help: {
     title: 'অনলাইনে কর দেওয়া নতুন?',
     body: 'ধাপে ধাপে নির্দেশিকা আপনার প্রথম পেমেন্টে সাহায্য করবে।',
