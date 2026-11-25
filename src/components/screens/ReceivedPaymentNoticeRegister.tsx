@@ -1,6 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {TaxPayDataGrid,TaxPayTableCounter,TaxPayTableState,TaxPayTableControls} from '../ui/TaxPayDataTable';
-import {formatCurrency} from '../../services/numberFormat';
+import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentNoticePresentation';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
@@ -118,7 +118,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language}:
   const current=state.owner===owner?state:{owner,status:'loading' as const,rows:[]};
   const rows=current.rows;
   const filtered=filterStoredReceivedPaymentNotices(rows,{
-    query:search,readStatus:readFilter,dateFrom,dateTo
+    query:search,readStatus:readFilter,dateFrom,dateTo,displayLanguage:language
   });
   const invalidDates=Boolean(dateFrom&&dateTo&&dateFrom>dateTo);
   return <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6"
@@ -140,7 +140,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language}:
         <span>{tr('Find a received notice','প্রাপ্ত বিজ্ঞপ্তি খুঁজুন')}</span>
         <input type="search" value={search} onChange={e=>setSearch(e.target.value)}
           className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
-          placeholder={tr('Reference, head or year','রেফারেন্স, খাত বা করবর্ষ')}/>
+          placeholder={tr('Reference, payer, tax type or year','রেফারেন্স, পেমেন্টকারী, করের ধরন বা করবর্ষ')}/>
       </label>
       <label className="taxpayer-transaction-filter">
         <span>{tr('Read status','পঠিত অবস্থা')}</span>
@@ -189,18 +189,20 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language}:
             mobileTestId="received-payment-notice-cards"
             columns={[
               {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:row=>
-                <p className="break-all text-sm font-mono-plex">{row.receiptReference??row.paymentId}</p>},
-              {key:'year',header:tr('Assessment year / head','করবর্ষ / খাত'),renderCell:row=>
-                <p>{row.assessmentYear} · {row.headId??row.serviceCode??'—'}</p>},
+                <div><p className="break-all text-sm font-mono-plex">{row.receiptReference??row.paymentId}</p>
+                  <p className="text-sm text-taxpay-muted">{receivedPaymentNoticePresentation(row,language).payer}</p></div>},
+              {key:'year',header:tr('Assessment year / tax type','করবর্ষ / করের ধরন'),renderCell:row=>
+                <p>{row.assessmentYear} · {receivedPaymentNoticePresentation(row,language).category}</p>},
               {key:'amount',header:tr('Your allocation','আপনার বরাদ্দ'),
                 headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:row=>
-                <p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
-              {key:'date',header:tr('Recorded','সংরক্ষণের তারিখ'),renderCell:row=>
+                <p className="font-semibold">{receivedPaymentNoticePresentation(row,language).amount}</p>},
+              {key:'date',header:tr('Date and time','তারিখ ও সময়'),renderCell:row=>
                 <time dateTime={row.createdAt}>
-                  {new Date(row.createdAt).toLocaleDateString(bn?'bn-BD':'en-BD',{dateStyle:'medium'})}
+                  {receivedPaymentNoticePresentation(row,language).dateTime}
                 </time>},
               {key:'read',header:tr('Status / action','অবস্থা / কার্যক্রম'),renderCell:row=>
                 <div className="flex flex-wrap items-center gap-2">
+                  <span className="w-full text-sm font-semibold">{receivedPaymentNoticePresentation(row,language).status}</span>
                   {row.isRead
                     ?<span className="text-sm text-taxpay-muted">{tr('Read','পঠিত')}</span>
                     :<button type="button" disabled={busy!==null}
