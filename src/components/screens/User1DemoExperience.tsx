@@ -1088,10 +1088,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </div>
   </section>;
   const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:
-    route==='corrections'&&authorizedPreviewScenario&&(!localQaScenario||routeParams?.applyForCorrection===true)
-      ?<CorrectionRequests historyOnly={routeParams?.applyForCorrection!==true} assessmentYear={correctionYear}
+    route==='corrections'&&authorizedPreviewScenario
+      ?<>{localQaScenario&&routeParams?.applyForCorrection!==true&&exceptions}<CorrectionRequests historyOnly={routeParams?.applyForCorrection!==true} assessmentYear={correctionYear}
         historicalRecords={historicalCorrectionRecords} recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
-        preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
+        preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/></>
       :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-payment-source-state={sqlLoadError?'error':sqlLoading?'loading':'ready'} data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
