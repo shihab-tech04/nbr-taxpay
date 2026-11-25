@@ -6,6 +6,7 @@ import {WalkInDiscardConfirmation} from '../ui/WalkInDiscardConfirmation';
 import {GiftTaxPaymentResult} from './GiftTaxPaymentResult';
 import {simulateGiftTaxPayment, type GiftTaxPaymentInput, type GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
 import {persistGiftTaxSimulation,readPendingGiftTax} from '../../services/giftTaxSimulationPersistence';
+import type {GiftTaxReuseDraft} from '../../services/paymentReuse';
 import {PaymentMethodSelector,type PaymentChannel,type PaymentMethodGroup,type PaymentMethod} from '../ui/PaymentMethodSelector';
 import {Pencil} from 'lucide-react';
 import {SearchableSelect} from '../ui/SearchableSelect';
@@ -43,24 +44,31 @@ const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
  * No authorized Gift Tax head, government payment API, or official credit-posting
  * path currently exists. Never turn this public form into a financial write.
  */
-export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose: () => void; onBack?: () => void; signedIn?: boolean}) {
+export function GiftTaxEntryModal({onClose, onBack, signedIn = false, initialReuse, sourcePaymentId}: {onClose: () => void; onBack?: () => void; signedIn?: boolean;initialReuse?:GiftTaxReuseDraft;sourcePaymentId?:string}) {
   const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
   const [recovered] = useState(()=>signedIn?readPendingGiftTax():null);
+  // An unresolved original submission always takes precedence over a new copy.
+  const initialGift=signedIn&&!recovered?initialReuse?.giftDetails:undefined;
+  const initialChoice=initialGift?(initialGift.donee.tag==='friends_family'?'friends_family:'+initialGift.donee.relationship:initialGift.donee.tag):'';
+  const localizedPerson=(person:Person):Person=>{
+    const found=lookupSampleTaxpayer(person.tin);
+    return {tin:person.tin,name:found?(bn?found.nameBn:found.nameEn):person.name};
+  };
   const [step, setStep] = useState<1 | 2 | 3 | 4>(recovered?4:1);
-  const [tinInput, setTinInput] = useState<Record<Party, string>>({donor: '', donee: ''});
+  const [tinInput, setTinInput] = useState<Record<Party, string>>({donor: initialGift?.donor.tin??'',donee:initialGift?.donee.tin??''});
   const [searched, setSearched] = useState<PartyMap>(emptyParties);
-  const [added, setAdded] = useState<PartyMap>(emptyParties);
+  const [added, setAdded] = useState<PartyMap>(()=>initialGift?{donor:localizedPerson(initialGift.donor),donee:localizedPerson(initialGift.donee)}:emptyParties());
   const [lookupError, setLookupError] = useState<Record<Party, string>>({donor: '', donee: ''});
-  const [giftAmount, setGiftAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [dateOfGift, setDateOfGift] = useState('');
-  const [remarks, setRemarks] = useState('');
+  const [giftAmount, setGiftAmount] = useState(initialGift?String(initialGift.giftAmountMinor/100):'');
+  const [description, setDescription] = useState(initialGift?.description??'');
+  const [dateOfGift, setDateOfGift] = useState(initialGift?.giftDate??'');
+  const [remarks, setRemarks] = useState(initialGift?.remarks??'');
   // Same walk-in payer/receipt fields as the approved Taxpayer Final Preview.
   // Signed-out previews remain local; signed-in simulations use the checked SQL path.
-  const [payerName, setPayerName] = useState('');
-  const [receiptPhone, setReceiptPhone] = useState('');
+  const [payerName, setPayerName] = useState(initialGift?initialReuse?.payerName??'':'');
+  const [receiptPhone, setReceiptPhone] = useState(initialGift?initialReuse?.phone??'':'');
   const [receiptEmail, setReceiptEmail] = useState('');
   const [noticeReference, setNoticeReference] = useState('');
   const [payerTin, setPayerTin] = useState('');
@@ -68,11 +76,11 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
   const [payerError, setPayerError] = useState<'name'|'phone'|'email'|'tin'|null>(null);
   const [formError, setFormError] = useState('');
   const [invalidGiftField, setInvalidGiftField] = useState<'amount' | 'date' | null>(null);
-  const [doneeChoice, setDoneeChoice] = useState('');
-  const [doneeOther, setDoneeOther] = useState('');
+  const [doneeChoice, setDoneeChoice] = useState(initialChoice);
+  const [doneeOther, setDoneeOther] = useState(initialGift?.donee.otherLabel??'');
   // Candidate identity/relationship is distinct from the selected, committed payment details.
-  const [committedDoneeChoice, setCommittedDoneeChoice] = useState('');
-  const [committedDoneeOther, setCommittedDoneeOther] = useState('');
+  const [committedDoneeChoice, setCommittedDoneeChoice] = useState(initialChoice);
+  const [committedDoneeOther, setCommittedDoneeOther] = useState(initialGift?.donee.otherLabel??'');
   const [editing, setEditing] = useState<Record<Party, boolean>>({donor: false, donee: false});
   const [lastRemoved, setLastRemoved] = useState<{
     party: Party; person: Person; doneeChoice: string; doneeOther: string;
@@ -296,6 +304,7 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
         otherLabel: committedDoneeClass.tag === 'others' ? committedDoneeOther.trim() : null},
       giftAmountMinor: giftMinor, estimatedTaxMinor: taxMinor,
       description, giftDate: dateOfGift, remarks, idempotencyKey: key,
+      ...(initialGift&&sourcePaymentId?{sourcePaymentId}:{}),
       payer: {name:payerName.trim(),phone:receiptPhone,email:receiptEmail.trim(),
         noticeReference:noticeReference.trim(),tin:payerTin},
     };

@@ -316,9 +316,9 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await continueToAmount.click();
   const continueToChannel=resumed.getByRole('button',{name:'Continue to payment channel'});
   const resumedAllocation=resumed.getByTestId('other-tax-line').first();
-  await expect(resumedAllocation.locator('select')).toHaveValue('2025-26');
+  await expect(resumedAllocation.locator('select')).toHaveValue('');
   await expect(resumedAllocation.locator('input[type="text"]')).toHaveValue('100.00');
-  await expect(continueToChannel,'A supported recorded assessment year must remain valid after draft resume').toBeEnabled({timeout:5000});
+  await expect(continueToChannel,'F-073: a noncurrent source year requires explicit re-selection after draft resume').toBeDisabled({timeout:5000});
   await resumed.getByTestId('other-tax-head-catalogue')
     .locator('details[data-head-group="Others"] > summary').click();
   await resumedAllocation.locator('select').selectOption('2026-27');

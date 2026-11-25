@@ -53,6 +53,21 @@ export function sourceReadbackMatches(stored: StoredStoryPayment, paymentId: str
   if (expectedRemarks === undefined || actualRemarks !== expectedRemarks) return false;
 
   const sourceDetails = row.details as Record<string, unknown>;
+  // An ACK must prove the same immutable repeat parent and allocation lineage;
+  // matching amount and receipt remarks alone is insufficient.
+  const expectedSource = scoped.details.sourcePaymentId;
+  const actualSource = sourceDetails.sourcePaymentId;
+  if (actualSource !== expectedSource ||
+      (expectedSource !== undefined &&
+        (typeof expectedSource !== 'string' || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(expectedSource) ||
+         expectedSource.toLowerCase() === paymentId.toLowerCase()))) return false;
+  const expectedAllocations = scoped.details.sourceAllocationIds;
+  const actualAllocations = sourceDetails.sourceAllocationIds;
+  if (expectedAllocations !== undefined || actualAllocations !== undefined) {
+    if (!expectedSource || !Array.isArray(expectedAllocations) || !Array.isArray(actualAllocations) ||
+        expectedAllocations.length !== actualAllocations.length ||
+        expectedAllocations.some((id, index) => typeof id !== 'string' || !id || id !== actualAllocations[index])) return false;
+  }
   const receiptSnapshot = sourceDetails.receiptSnapshot;
   if (receiptSnapshot === undefined || receiptSnapshot === null) return expectedRemarks === '';
   const snapshotRemarks = storedChallanRemarks(receiptSnapshot);

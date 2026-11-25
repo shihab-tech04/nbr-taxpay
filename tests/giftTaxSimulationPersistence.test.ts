@@ -46,3 +46,20 @@ test('Gift Tax recovery preserves the same input, method and key only for the ma
  assert.equal(parsePendingGiftTax(JSON.stringify({...pending,input:{...input,idempotencyKey:'not-a-uuid'}}),preview),null);
  assert.equal(parsePendingGiftTax('bad JSON',preview),null);
 });
+
+// F-071/F-072/F-138: same synthetic payer, distinct repeat reference and source lineage.
+test('Gift Tax repeat payload retains source parent and new receipt identity across recovery',()=>{
+ const repeat={...input,sourcePaymentId:id};
+ const story=giftTaxStoryInput(repeat,'BKASH',sessionId,'user1');
+ const scoped=bindPreviewStoryPayer(story,{profileId:'user1',paymentSessionId:sessionId});
+ assert.equal(scoped.details.sourcePaymentId,id);
+ assert.equal(scoped.details.payerId,'user1');
+ const receipt=scoped.details.receiptSnapshot as {tokenNumber:string;challanNo:string};
+ assert.equal(receipt.tokenNumber,receipt.challanNo);
+ assert.notEqual(receipt.tokenNumber,'SIMULATION');
+ assert.deepEqual(parsePendingGiftTax(JSON.stringify({profileId:'user1',sessionId,input:repeat,method:'BKASH'}),{profileId:'user1',paymentSessionId:sessionId})?.input,repeat);
+ assert.throws(()=>giftTaxStoryInput(repeat,'BKASH',sessionId,null),/INVALID_GIFT_REPEAT_SOURCE/);
+ assert.throws(()=>giftTaxStoryInput({...repeat,sourcePaymentId:'not-a-uuid'},'BKASH',sessionId,'user1'),/INVALID_GIFT_REPEAT_SOURCE/);
+ assert.throws(()=>giftTaxStoryInput({...repeat,sourcePaymentId:repeat.idempotencyKey},'BKASH',sessionId,'user1'),/INVALID_GIFT_REPEAT_SOURCE/);
+ assert.equal(giftTaxStoryInput(input,'BKASH',sessionId,'user1').details.sourcePaymentId,undefined);
+});

@@ -551,6 +551,78 @@ try{
   }
   console.log('PASS Gift Tax: exact source/Office SQL parent, capability readback, authorized Office register, remarks, idempotency, notifications and rejected mismatches');
 
+  // Candidate is deliberately not a hosted migration. Apply and exercise it only
+  // here, after the loopback/separate-database checks at the start of this harness.
+  const giftLineageSql=readFileSync(resolve('scripts/recovery/gift-tax-pay-again-lineage.sql'),'utf8');
+  psql(sourceDb,giftLineageSql);
+  psql(sourceDb,giftLineageSql); // idempotent definition update
+  const newGiftRepeat=(parent=giftId)=>{
+    const next=structuredClone(giftPayload);
+    next.idempotencyKey=randomUUID();
+    next.details.sourcePaymentId=parent;
+    const ref='SIM-GIFT-'+next.idempotencyKey;
+    next.details.receiptReference=ref;
+    Object.assign(next.details.receiptSnapshot,{id:ref,challanNo:ref,gatewayTransactionId:ref,tokenNumber:ref});
+    next.details.challanRemarks='Edited repeat remarks: বাংলা';
+    next.details.giftDetails.remarks=next.details.challanRemarks;
+    next.details.receiptSnapshot.paymentRemarks=next.details.challanRemarks;
+    next.details.receiptSnapshot.giftDetails=structuredClone(next.details.giftDetails);
+    return next;
+  };
+  const giftRepeat=newGiftRepeat();
+  const giftRepeatResult=await request('TAXPAY_SQL','/payments','POST',giftRepeat,headers);
+  assert.equal(giftRepeatResult.status,200,'Gift Tax repeat must reach both disposable SQL projects');
+  assert.equal(giftRepeatResult.data.mirrored,true);
+  const giftRepeatId=giftRepeatResult.data.id;
+  assert.ok(giftRepeatId);
+  assert.notEqual(giftRepeatId,giftId);
+  const repeatGiftSql="SELECT jsonb_build_object('id',id,'service',service_code,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id="+sqlText(giftRepeatId)+"::uuid;";
+  const giftRepeatSource=psql(sourceDb,repeatGiftSql);
+  assert.deepEqual(giftRepeatSource.data,giftRepeat);
+  assert.deepEqual(psql(officeDb,repeatGiftSql),giftRepeatSource);
+  assert.deepEqual(psql(sourceDb,giftSql),giftSource,'Original Gift Tax parent must remain immutable');
+  assert.deepEqual(psql(officeDb,giftSql),giftOffice);
+  const giftLineage=await request('OFFICE_SQL','/payments/'+giftRepeatId+'/lineage','GET',undefined,{authorization:'Bearer '+officeToken});
+  assert.equal(giftLineage.status,200);
+  assert.equal(giftLineage.data.data.sourceMirrored,true);
+  assert.equal(giftLineage.data.data.sourcePaymentId,giftId);
+  assert.equal(giftLineage.data.data.paymentId,giftRepeatId);
+  assert.equal(giftLineage.data.data.sourceReceiptReference,giftReference);
+  assert.equal(giftLineage.data.data.repeatReceiptReference,giftRepeat.details.receiptReference);
+  const giftRepeatReplay=await request('TAXPAY_SQL','/payments','POST',giftRepeat,headers);
+  assert.equal(giftRepeatReplay.status,200);
+  assert.equal(giftRepeatReplay.data.id,giftRepeatId);
+  assert.equal(giftRepeatReplay.data.replayed,true);
+  for(const db of [sourceDb,officeDb]){
+    assert.equal(Number(psql(db,"SELECT count(*) FROM demo_payment.story_payments WHERE id="+sqlText(giftRepeatId)+"::uuid;")),1);
+    assert.equal(Number(psql(db,"SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id="+sqlText(giftRepeatId)+"::uuid;")),1);
+  }
+  const rejectedGiftRepeats=[
+    {payload:newGiftRepeat(randomUUID()),auth:headers},
+    {payload:newGiftRepeat(sourceId),auth:headers},
+    {payload:newGiftRepeat(null),auth:headers},
+    {payload:newGiftRepeat('malformed'),auth:headers},
+  ];
+  const badToken=newGiftRepeat();badToken.details.receiptSnapshot.tokenNumber='SIMULATION';
+  rejectedGiftRepeats.push({payload:badToken,auth:headers});
+  const crossPayer=newGiftRepeat();
+  crossPayer.sessionId=unrelatedProfile.paymentSessionId;
+  crossPayer.details.payerId='user4';
+  crossPayer.details.giftDetails.donor={tin:'444444444444',name:'User 4'};
+  crossPayer.details.receiptSnapshot.giftDetails=structuredClone(crossPayer.details.giftDetails);
+  for(const fields of [crossPayer.details,crossPayer.details.receiptSnapshot]){
+    fields.payerTin='444444444444';fields.taxpayerTin='444444444444';fields.taxpayerName='User 4';
+  }
+  crossPayer.details.lines[0].beneficiary='user4';
+  rejectedGiftRepeats.push({payload:crossPayer,auth:{'x-taxpay-guest-capability':unrelatedProfile.capability}});
+  for(const {payload:bad,auth} of rejectedGiftRepeats){
+    const rejected=await request('TAXPAY_SQL','/payments','POST',bad,auth);
+    assert.equal(rejected.status,400,'Invalid Gift Tax repeat must fail before persistence');
+    assert.equal(Number(psql(sourceDb,"SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key="+sqlText(bad.idempotencyKey)+"::uuid;")),0);
+    assert.equal(Number(psql(officeDb,"SELECT count(*) FROM demo_payment.story_payments WHERE data->>'idempotencyKey'="+sqlText(bad.idempotencyKey)+";")),0);
+  }
+  console.log('PASS Gift Tax Pay Again: owned source, distinct parent and tokens, Office lineage, immutable original, idempotent retry, six rejected invalid requests');
+
   const payAgainKey=randomUUID();
   const payAgainAllocationIds=['ws3-pay-again-allocation-2','ws3-pay-again-allocation-3'];
   const payAgainPayload=structuredClone(payload);

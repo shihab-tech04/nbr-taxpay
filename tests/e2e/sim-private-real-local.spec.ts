@@ -277,7 +277,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
- // transaction. A supported historical year remains selected and editable.
+ // transaction. F-073 requires explicit selection of every noncurrent AY.
  await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
  await one.page.getByTestId('pay-again-mobile').first().click();
  await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
@@ -286,7 +286,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByLabel('Amount (৳)').nth(0)).toHaveValue('150.25');
  await expect(one.page.getByLabel('Amount (৳)').nth(1)).toHaveValue('23.50');
  await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
- await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('2025-26');
+ await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
+ // F-073: prior AY must not silently become a new payment year.
+ await one.page.getByRole('button',{name:'Save payment record'}).click();
+ await expect(one.page.getByRole('status').filter({hasText:'Select an assessment year for each allocation.'})).toBeVisible();
  // Reuse remains editable. Simply opening/changing a copy cannot mutate the
  // immutable SQL payment or produce a second receipt.
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');

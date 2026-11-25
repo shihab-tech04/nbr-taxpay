@@ -1,7 +1,11 @@
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
-import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
+import { CURRENT_PAY_AGAIN_YEAR } from './payAgain';
 import { TRAVEL_TAX_ECONOMIC_CODE } from '../data/travelTax2026';
+import {estimateGiftTax} from './giftTaxEstimate';
+import {validGiftDate} from './giftTaxDate';
+import {validBeneficiaryClassification} from './beneficiaryTags';
+import {lookupSampleTaxpayer} from './sampleTaxpayerLookup';
 
 /** This is an editable INPUT snapshot, not a cloned receipt or authorization. */
 export type PaymentReuse = {
@@ -49,8 +53,8 @@ const reconciledHeadMinor = (head: PaymentLineItem) => {
 };
 const copiedYear = (year: string) => {
   if (!validYear(year)) throw Error('Historical assessment year is missing or invalid.');
-  // Retain the exact original valid AY as an editable input; unsupported years require re-selection.
-  return PAY_AGAIN_YEAR_OPTIONS.some(option => option === year) ? year : '';
+  // F-073: retain current AY only; historical AY stays on the immutable source.
+  return year === CURRENT_PAY_AGAIN_YEAR ? year : '';
 };
 
 type SourceAllocation = {
@@ -78,6 +82,38 @@ export function oneChoicePerRecordedParent<T extends {id: string}>(
   });
 }
 
+/** Editable Gift Tax input only; never copy the original payment reference,
+ * result, gateway method, payment authority, or issued receipt into the new form. */
+export type GiftTaxReuseDraft={
+  giftDetails:NonNullable<ChallanReceipt['giftDetails']>;
+  payerName:string;
+  phone:string;
+};
+export function parseGiftTaxReuseDraft(value:unknown):GiftTaxReuseDraft|null{
+  if(!value||typeof value!=='object')return null;
+  const raw=value as Partial<GiftTaxReuseDraft>&{schemaVersion?:number};
+  const g=raw.giftDetails;
+  if(raw.schemaVersion!==1||!g||!g.donor||!g.donee||
+     typeof g.donor.tin!=='string'||typeof g.donee.tin!=='string'||
+     !/^\d{12}$/.test(g.donor.tin)||!/^\d{12}$/.test(g.donee.tin)||g.donor.tin===g.donee.tin||
+     typeof g.donor.name!=='string'||typeof g.donee.name!=='string'||
+     !Number.isSafeInteger(g.giftAmountMinor)||g.giftAmountMinor<=0||
+     !Number.isSafeInteger(g.estimatedTaxMinor)||g.estimatedTaxMinor<=0||
+     Math.round((estimateGiftTax(g.giftAmountMinor/100)??-1)*100)!==g.estimatedTaxMinor||
+     typeof g.giftDate!=='string'||!validGiftDate(g.giftDate,'2099-12-31')||
+     typeof g.description!=='string'||typeof g.remarks!=='string'||
+     !validBeneficiaryClassification(g.donee.tag,g.donee.relationship,g.donee.otherLabel)||
+     typeof raw.payerName!=='string'||typeof raw.phone!=='string')return null;
+  const donor=lookupSampleTaxpayer(g.donor.tin),donee=lookupSampleTaxpayer(g.donee.tin);
+  if(!donor||!donee||![donor.nameEn,donor.nameBn].includes(g.donor.name)||
+     ![donee.nameEn,donee.nameBn].includes(g.donee.name))return null;
+  // Explicit field projection rather than spreading an untrusted old snapshot.
+  return {giftDetails:{donor:{tin:g.donor.tin,name:g.donor.name},
+    donee:{tin:g.donee.tin,name:g.donee.name,tag:g.donee.tag,relationship:g.donee.relationship??null,otherLabel:g.donee.otherLabel??null},
+    giftAmountMinor:g.giftAmountMinor,estimatedTaxMinor:g.estimatedTaxMinor,giftDate:g.giftDate,
+    description:g.description,remarks:g.remarks},
+    payerName:raw.payerName,phone:/^01[3-9]\d{8}$/.test(raw.phone)?raw.phone:''};
+}
 /**
  * Never infer a missing taxpayer/head/year from a batch summary label. Only
  * reconstruct from each verified SQL receipt's full head/allocation pair.
@@ -99,6 +135,27 @@ export function reuseRecordedPayment(
       sourcePaymentId !== source[0].paymentTransactionId)
     throw Error('The original payment identity does not match the selected receipt.');
   const service = source[0].paymentCategory;
+  if(service==='GIFT_TAX'){
+    const receipt=source[0];
+    const draft=parseGiftTaxReuseDraft({schemaVersion:1,giftDetails:receipt.giftDetails,
+      payerName:receipt.payerName??'',phone:receipt.receiptMobile??''});
+    if(source.length!==1||!receipt.isSimulatedDemo||receipt.batchId||!draft||
+       receipt.paymentTransactionId!==sourcePaymentId||
+       !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(sourcePaymentId)||
+       receipt.taxCreditStatus!=='NOT_APPLICABLE'||receipt.items.length!==1)
+      throw Error('Original Gift Tax details are incomplete.');
+    const gift=draft.giftDetails,head=receipt.items[0];
+    const year=Number(gift.giftDate.slice(0,4))+(Number(gift.giftDate.slice(5,7))>=7?1:0);
+    if(receipt.taxpayerTin!==gift.donor.tin||receipt.taxpayerName!==gift.donor.name||
+       receipt.paymentRemarks!==gift.remarks||
+       receipt.assessmentYear!==year+'-'+String(year+1).slice(-2)||
+       checkedMinor(receipt.totalAmount)!==gift.estimatedTaxMinor||
+       head.headId!==0||head.economicCode!=='SIM-GIFT'||head.headNameEn!=='Gift Tax'||
+       reconciledHeadMinor(head)!==gift.estimatedTaxMinor||
+       head.penaltyAmount!==0||head.surchargeAmount!==0||head.interestAmount!==0)
+      throw Error('Original Gift Tax receipt does not reconcile.');
+    return {ownerUid,sourcePaymentId,service,formPayload:{schemaVersion:1,...draft}};
+  }
   // Travel receipts deliberately contain only masked passports. Copy the
   // itinerary and passenger names, but require fresh identity and travel-date
   // checks. Never invent a passport/DOB from a masked financial receipt.

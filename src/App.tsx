@@ -33,6 +33,7 @@ const AuthorizationRequestPopup = React.lazy(() => import('./components/screens/
 // Do not load the large payment forms for public visitors who have not started a payment.
 const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
 const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
+const GiftTaxReuseEntry = React.lazy(() => import('./components/screens/GiftTaxReuseEntry').then(module => ({default:module.GiftTaxReuseEntry})));
 const PaymentServiceChoiceDialog = React.lazy(() => import('./components/screens/PaymentServiceChoiceDialog').then(module => ({ default: module.PaymentServiceChoiceDialog })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
@@ -312,7 +313,7 @@ const MainRouter: React.FC = () => {
           </TaxPayModal>}</React.Suspense>}
       {isParityModalOpen && <React.Suspense fallback={null}><ParityRegisterModal /></React.Suspense>}
       {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
-        <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />
+        {paymentReuse?.service==='GIFT_TAX' ? <GiftTaxReuseEntry key={paymentReuse.sourcePaymentId} reuse={paymentReuse} /> : <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />}
       </React.Suspense>}
       {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog onClose={routeParams.fromHome2 === true ? ()=>navigate('home-2') : undefined} /></React.Suspense>}
       {signedOutPrivateLogin && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
