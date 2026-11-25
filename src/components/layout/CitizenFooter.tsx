@@ -13,7 +13,7 @@ export function CitizenFooter(){
   const signedIn=Boolean(user || previewAccount);
   const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
-  const isPublic=['landing','home-2','user_guide','guidance','incident','verify','payment_details'].includes(currentRoute);
+  const isPublic=['landing','home-2','home-3','user_guide','guidance','incident','verify','payment_details'].includes(currentRoute);
   const publicFooterLinks = () => <>
     <button onClick={()=>navigate('verify')} type="button">{bn?'পেমেন্টের অবস্থা ও রসিদ':'Payment status & receipt'}</button>
     <button onClick={()=>navigate('user_guide',{category:'records'})} type="button">{bn?'রসিদ ও সংশোধন':'Receipts & corrections'}</button>
@@ -38,7 +38,7 @@ export function CitizenFooter(){
         </details>
       </div>
       <div className="public-footer__bottom">
-        <p>{bn?'© ২০২৬ সহজকর':'© 2026 Sohojkor'}{(currentRoute==='landing'||currentRoute==='home-2') && <a href={`?action=${currentRoute==='landing'?'home-2':'landing'}${bn?'&lang=bn':''}`} onClick={event=>{if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigate(currentRoute==='landing'?'home-2':'landing');}}} style={{display:'block',textAlign:'center',lineHeight:1.2,textDecoration:'underline',textUnderlineOffset:3}}>{currentRoute==='landing'?'Home 2':bn?'মূল পাতা':'Original Home'}</a>}</p>
+        <p>{bn?'© ২০২৬ সহজকর':'© 2026 Sohojkor'}{(currentRoute==='landing'||currentRoute==='home-2') && <span style={{display:'block',textAlign:'center',lineHeight:1.2}}><a href={`?action=${currentRoute==='landing'?'home-2':'landing'}${bn?'&lang=bn':''}`} onClick={event=>{if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigate(currentRoute==='landing'?'home-2':'landing');}}} style={{textDecoration:'underline',textUnderlineOffset:3}}>{currentRoute==='landing'?'Home 2':bn?'মূল পাতা':'Original Home'}</a>{currentRoute==='landing' && <>{' · '}<a href={`?action=home-3${bn?'&lang=bn':''}`} onClick={event=>{if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigate('home-3');}}} style={{textDecoration:'underline',textUnderlineOffset:3}}>Home 3</a></>}</span>}</p>
       </div>
     </div>
   </footer>;

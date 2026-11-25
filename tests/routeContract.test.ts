@@ -14,6 +14,7 @@ test('the TaxPay route contract matches its public and taxpayer app router', () 
   assert.equal(validRoute(''), 'landing');
   assert.equal(validRoute('history'), 'history');
   assert.equal(validRoute('home-2'), 'home-2');
+  assert.equal(validRoute('home-3'), 'home-3');
   for (const route of OFFICE_MANAGEMENT_ROUTE_ALIASES) {
     assert.equal((ROUTES as readonly string[]).includes(route), false, route + ' must stay outside TaxPay routes');
     assert.equal(validRoute(route), 'landing', route);
