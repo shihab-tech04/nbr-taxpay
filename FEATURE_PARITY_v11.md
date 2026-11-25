@@ -8,6 +8,7 @@
 |---|---|
 | landing | src/components/screens/PublicLanding.tsx |
 | home-2 | src/components/screens/Home2Layout.tsx |
+| home-3 | src/components/screens/PublicLanding.tsx |
 | user_guide | src/components/screens/PublicUserGuide.tsx |
 | secure_workspace | src/components/screens/SecureWorkspace.tsx |
 | head_catalogue | src/components/screens/HeadCatalogue.tsx |
