@@ -64,7 +64,7 @@ for(const language of ['en','bn'] as const){
   await page.goto('/?action=taxpayer_home&lang='+language);
   const popup=page.getByTestId('received-payment-notice');
   await expect(popup).toBeVisible();
-  const initial=page.getByRole('dialog',{name:tr('A payment has been initiated on your behalf','আপনার পক্ষ থেকে একটি পেমেন্ট শুরু করা হয়েছে')});
+  const initial=page.getByRole('dialog',{name:tr('A payment has been initiated on your behalf','আপনার পক্ষ থেকে একটি পেমেন্ট শুরু হয়েছে')});
   await expect(initial).toBeVisible();
   await expect(popup.locator('dt')).toHaveCount(7);
   await initial.getByRole('button',{name:tr('Report Payment','পেমেন্ট রিপোর্ট করুন'),exact:true}).click();
