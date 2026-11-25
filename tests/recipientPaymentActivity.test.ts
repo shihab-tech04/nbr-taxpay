@@ -20,3 +20,11 @@ test('unconfirmed legacy payment never inflates completed total, including a dis
  const view=projectRecipientPaymentActivity([{...base,paymentStatus:undefined}]);
  assert.equal(view.rows.length,1);assert.equal(view.completedMinor,0n);assert.equal(view.completedPaymentCount,0);
 });
+
+test('initiated allocation stays in Activity, then contributes exactly once on completion',()=>{
+ const pending={...base,paymentStatus:'SIMULATED_INITIATED' as const};
+ const before=projectRecipientPaymentActivity([pending]);
+ assert.equal(before.rows.length,1);assert.equal(before.completedPaymentCount,0);assert.equal(before.completedMinor,0n);
+ const after=projectRecipientPaymentActivity([base,{...base}]);
+ assert.equal(after.completedPaymentCount,1);assert.equal(after.completedMinor,123456n);
+});

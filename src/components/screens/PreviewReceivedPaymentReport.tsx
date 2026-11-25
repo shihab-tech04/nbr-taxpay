@@ -10,7 +10,7 @@ export function PreviewReceivedPaymentReport({profileId,intent,language,onExit}:
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading');
  const [reason,setReason]=useState('');const [busy,setBusy]=useState(false);
  const [error,setError]=useState(false);const [record,setRecord]=useState<PreviewCorrectionRecord|null>(null);
- const [attempt,setAttempt]=useState(0);const key=useRef(crypto.randomUUID());
+ const [attempt,setAttempt]=useState(0);const key=useRef(crypto.randomUUID());const submitLock=useRef(false);
  useEffect(()=>{let active=true;setPhase('loading');void Promise.all([listReceivedPaymentNotices(profileId),listPreviewCorrections()]).then(([rows,reports])=>{
   const row=rows.find(r=>r.eventId===intent.eventId&&r.allocationId===intent.targetAllocationId);
   if(!row)throw Error('Recipient record unavailable');
@@ -30,9 +30,9 @@ export function PreviewReceivedPaymentReport({profileId,intent,language,onExit}:
   return()=>{active=false;window.clearInterval(timer);};
  },[record?.id,record?.officeSyncState,intent.eventId]);
  const close=()=>{if(!busy){clearReceivedPaymentCaseIntent();onExit();}};
- const submit=async()=>{if(!notice||busy||reason.trim().length<10||reason.trim().length>1000)return;setBusy(true);setError(false);
+ const submit=async()=>{if(!notice||submitLock.current||reason.trim().length<10||reason.trim().length>1000)return;submitLock.current=true;setBusy(true);setError(false);
  try{const saved=await submitPreviewReceivedPaymentReport({caseKind:'UNSOLICITED_PAYMENT_REPORT',eventId:notice.eventId,requestKey:key.current,reason});
- if(saved.paymentId!==notice.paymentId||saved.allocationId!==notice.allocationId)throw Error('Report target mismatch');setRecord(saved);}catch{setError(true);}finally{setBusy(false);}};
+ if(saved.paymentId!==notice.paymentId||saved.allocationId!==notice.allocationId)throw Error('Report target mismatch');setRecord(saved);}catch{setError(true);}finally{submitLock.current=false;setBusy(false);}};
  return <TaxPayModal title={tr('Report Payment','পেমেন্ট রিপোর্ট করুন')} onClose={close} footer={<div className="flex w-full gap-3"><button type="button" className="taxpay-modal__footer-close" disabled={busy} onClick={close}>{tr('Close','বন্ধ করুন')}</button>{phase==='ready'&&record?.officeSyncState!=='ACKNOWLEDGED'&&<button type="button" className="tax-service-choice__continue" disabled={busy||reason.trim().length<10||reason.trim().length>1000} onClick={()=>void submit()}>{busy?tr('Submitting…','জমা হচ্ছে…'):record?(record.paymentCompleted===false?tr('Check report status','রিপোর্টের অবস্থা দেখুন'):tr('Retry Office delivery','অফিসে আবার পাঠান')):tr('Submit Report','রিপোর্ট জমা দিন')}</button>}</div>}>
  {phase==='loading'&&<p role="status">{tr('Loading payment details…','পেমেন্টের তথ্য লোড হচ্ছে…')}</p>}
  {phase==='error'&&<div role="alert"><p>{tr('Payment details unavailable.','পেমেন্টের তথ্য পাওয়া যায়নি।')}</p><button type="button" onClick={()=>setAttempt(a=>a+1)}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>}

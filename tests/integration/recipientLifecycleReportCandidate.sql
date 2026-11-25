@@ -243,6 +243,19 @@ BEGIN
       THEN RAISE EXCEPTION 'REPORT_ACK_READBACK_FAILED'; END IF;
     IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_correction_notices(recipient2_hash,100,0)->'items') n WHERE n->>'requestId'=report_id::text AND n->>'code'='REPORT_OFFICE_RECEIVED')
       THEN RAISE EXCEPTION 'REPORT_NOTIFICATION_MISSING'; END IF;
+    -- Exercise the same authorized decision RPC used by the existing signed Office dispatcher.
+    DECLARE command jsonb; decision jsonb; message uuid:=gen_random_uuid();
+    BEGIN
+      command:=jsonb_build_object('schemaVersion','1.0.0','origin','OFFICE_SQL','sourceProject','v2','simulationOnly',true,'commandType','CORRECTION_REVIEW','requestId',report_id,'messageId',message,'officerUid','80000000-0000-4000-8000-000000000011','officerRole','MAKER','action','MAKER_ACKNOWLEDGE','expectedReviewState','PENDING_OFFICER','reason','Received the simulated report');
+      decision:=public.taxpay_demo_correction_office_decision(command);
+      IF decision->>'reviewState' IS DISTINCT FROM 'MAKER_ACKNOWLEDGED' OR public.taxpay_demo_correction_office_decision(command) IS DISTINCT FROM decision
+      THEN RAISE EXCEPTION 'REPORT_DECISION_REPLAY_FAILED'; END IF;
+      IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_correction_list(recipient2_hash,100,0)) q WHERE q->>'id'=report_id::text AND q->>'reviewState'='MAKER_ACKNOWLEDGED')
+        OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_correction_notices(recipient2_hash,100,0)->'items') n WHERE n->>'requestId'=report_id::text AND n->>'code'='REPORT_MAKER_ACKNOWLEDGED')
+      THEN RAISE EXCEPTION 'REPORT_DECISION_READBACK_FAILED'; END IF;
+      IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_correction_notices(recipient3_hash,100,0)->'items') n WHERE n->>'requestId'=report_id::text)
+      THEN RAISE EXCEPTION 'REPORT_DECISION_OWNER_LEAK'; END IF;
+    END;
     IF (SELECT data FROM demo_payment.story_payments WHERE id=payment_id) IS DISTINCT FROM before_data
       THEN RAISE EXCEPTION 'REPORT_CHANGED_PAYMENT'; END IF;
   END;
