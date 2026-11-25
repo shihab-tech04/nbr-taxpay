@@ -131,19 +131,11 @@ test('when source backend is unreachable, read-only offline fallback is explicit
 test('public footer accurately describes service and does not promise challan issuance',async({page})=>{
  await page.goto('/?action=landing');
  const footer=page.locator('footer');
- const desktop=(page.viewportSize()?.width??1280)>=768;
- const identity=footer.locator('.public-footer__identity');
- await expect(identity).toContainText('Income tax payment information');
- if(desktop)await expect(identity).toBeVisible();
- else{
-   await expect(identity).toBeHidden();
-   await expect(footer.locator('.public-footer__mobile-more summary')).toBeVisible();
- }
+ // Frozen homepage: retain exact Main's visible bilingual service identity contract.
+ await expect(footer.getByText('Income tax payment information')).toBeVisible();
  await expect(footer.getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await switchToBengali(page);
- await expect(identity).toContainText('আয়কর পরিশোধের তথ্য');
- if(desktop)await expect(identity).toBeVisible();
- else await expect(footer.locator('.public-footer__mobile-more summary')).toBeVisible();
+ await expect(footer.getByText('আয়কর পরিশোধের তথ্য')).toBeVisible();
  await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 
