@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {createServer} from 'node:http';
-import {randomUUID,webcrypto,createHmac,createHash} from 'node:crypto';
+import {randomUUID,randomBytes,webcrypto,createHmac,createHash} from 'node:crypto';
 import vm from 'node:vm';
 import {transformSync} from 'esbuild';
 
@@ -18,9 +18,15 @@ const isV2=process.env.WS3_TEST_TAXPAY_SOURCE==='v2';
 const testDispatchToken='isolated-demo-mirror-dispatch-token';
 const store=new Map(),keys=new Map(),office=new Map();
 const authorizationSource=new Map(),authorizationOffice=new Map();
+// Disposable capabilities bind the requested actor to the same SHA-256 lookup
+// that the real hardened Edge endpoint performs. No hosted credentials.
+const actorCapabilities=Object.fromEntries(['user1','user2','user3'].map(actor=>
+ [actor,randomBytes(32).toString('base64url')]));
+const authorizationActors=new Map(Object.entries(actorCapabilities).map(([actor,token])=>
+ [createHash('sha256').update(token).digest('hex'),actor]));
 let authorizationSnapshotReads=0;
 const urls={};let failOfficeOnce=false,sourceReads=0;
-function dataAccess(origin,name,args={}){
+function dataAccess(origin,name,args={},credential){
  if(origin==='TAXPAY_SQL'){
   if(name==='payment_v1_internal_bridge_config')return {
    origin:'TAXPAY_SQL',enabled:!isV2,dispatchToken:testDispatchToken,
@@ -28,7 +34,12 @@ function dataAccess(origin,name,args={}){
    peerUrl:'https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/payment-sync-bridge'
   };
   if(name==='demo_story1_mirror_claim')return [];
+  if(name==='taxpay_demo_authorization_actor'){
+   assert.equal(credential,secret,'Actor capability lookup requires the service client');
+   return authorizationActors.get(args.p_capability_hash)??null;
+  }
   if(name==='demo_auth_public_snapshot'){
+   assert.equal(credential,secret,'Authorization snapshot must remain service-role only');
    authorizationSnapshotReads++;
    return authorizationSource.get(args.p_request)??null;
   }
@@ -117,7 +128,7 @@ function loadHandler(file,origin){
    require(spec){
     if(spec.startsWith('.'))return evaluate(resolve(dirname(absolute),spec));
     assert.match(spec,/^npm:@supabase\/supabase-js@/);
-    return {createClient:()=>({rpc:async(name,args)=>{try{return {data:dataAccess(origin,name,args)}}
+    return {createClient:(_url,credential)=>({rpc:async(name,args)=>{try{return {data:dataAccess(origin,name,args,credential)}}
      catch(e){return {data:null,error:{message:e.message}};}}})};
    },
   };
@@ -319,7 +330,33 @@ try{
  assert.equal(authorizationOffice.size,0);
  // The genuine Taxpayer handler signs with the authorization-only purpose,
  // reads source SQL privately and then Office reads the same source with proof.
- const authSynced=await post('TAXPAY_SQL','/demo-story1-taxpay/authorizations/sync',{id:authId});
+ const syncAuthorization=async(actor,capability)=>{
+  const headers={'content-type':'application/json'};
+  if(capability!==undefined)headers['x-taxpay-guest-capability']=capability;
+  const response=await fetch(urls.TAXPAY_SQL+'/demo-story1-taxpay/authorizations/sync',{
+   method:'POST',headers,body:JSON.stringify({id:authId,actor})});
+  return {status:response.status,data:await response.json()};
+ };
+ // Missing, malformed, unrecognized and actor-spoofed capabilities must be
+ // denied before privileged snapshot access, even with a valid request UUID.
+ for(const [actor,capability] of [['user1',undefined],['user1','invalid'],
+  ['user1',randomBytes(32).toString('base64url')],['user1',actorCapabilities.user2]]){
+  const denied=await syncAuthorization(actor,capability);
+  assert.equal(denied.status,403);
+  assert.equal(denied.data.error,'AUTHORIZATION_ACTOR_NOT_VERIFIED');
+  assert.equal(authorizationSnapshotReads,0);
+  assert.equal(authorizationOffice.size,0);
+ }
+ // An authenticated but unrelated account is also denied; the source may
+ // check party membership, but must never forward or return the snapshot.
+ const unrelated=await syncAuthorization('user3',actorCapabilities.user3);
+ assert.equal(unrelated.status,403);
+ assert.equal(unrelated.data.error,'AUTHORIZATION_ACTOR_NOT_VERIFIED');
+ assert.deepEqual(Object.keys(unrelated.data).sort(),['error','success']);
+ assert.equal(authorizationSnapshotReads,1);
+ assert.equal(authorizationOffice.size,0);
+ const beforeAuthorizedSync=authorizationSnapshotReads;
+ const authSynced=await syncAuthorization('user1',actorCapabilities.user1);
  assert.equal(authSynced.status,200);
  assert.equal(authSynced.data.mirrored,true);
  assert.equal(authSynced.data.data.id,authId);
@@ -327,11 +364,11 @@ try{
    'Public retry must not return the private authorization status/actor snapshot');
  assert.equal(authorizationOffice.size,1);
  assert.equal(authorizationOffice.get(authId).status,'PENDING');
- assert.equal(authorizationSnapshotReads,2,'Source retry and Office source readback both required');
- const authRetried=await post('TAXPAY_SQL','/demo-story1-taxpay/authorizations/sync',{id:authId});
+ assert.equal(authorizationSnapshotReads,beforeAuthorizedSync+2,'Source retry and Office source readback both required');
+ const authRetried=await syncAuthorization('user2',actorCapabilities.user2);
  assert.equal(authRetried.status,200);
  assert.deepEqual(Object.keys(authRetried.data.data),['id']);
  assert.equal(authorizationOffice.size,1);
- assert.equal(authorizationSnapshotReads,4);
+ assert.equal(authorizationSnapshotReads,beforeAuthorizedSync+4);
  console.log('PASS WS3 Story 1 Edge HTTP: Office requires signed proof, forged/missing proof denied, source signed proof verified on fetch, same-parent source-outage retry and single Office mirror, original v3 allocation/receipt IDs, Pay Again distinct parent/source parent lineage, and submitted masked Travel Tax passengers; RPC persistence is isolated stand-in, not production SQL');
 }finally{await Promise.all(servers.map(s=>new Promise(ok=>s.close(ok))));}
