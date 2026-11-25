@@ -333,40 +333,26 @@ test('Imported Home 2 retains source typography and never clips desktop hero or 
 });
 
 
-test('Home 2 Saved Drafts uses the approved soft rose palette on desktop and mobile',async({page})=>{
+test('Home 2 matches the new uploaded Bento palette and monoline artwork',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto('/?action=home-2&lang=en');
-  const tile=page.getByTestId('home2-root').getByRole('button').filter({has:page.getByRole('heading',{name:'Saved Drafts',exact:true})});
-  await expect(tile).toBeVisible();
-  await expect(tile).toHaveCSS('background-color','rgb(240, 223, 227)');
-  await expect(tile).toHaveCSS('color','rgb(20, 27, 45)');
-  await expect(tile.locator('p')).toHaveCSS('color','rgb(112, 78, 91)');
-});
-
-
-test('Home 2 separates Pay Again olive and Saved Drafts rose on desktop and mobile',async({page})=>{
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto('/?action=home-2&lang=en');
-  const root=page.getByTestId('home2-root');
-  const again=root.getByRole('button').filter({has:page.getByRole('heading',{name:'Pay Again',exact:true})});
-  const drafts=root.getByRole('button').filter({has:page.getByRole('heading',{name:'Saved Drafts',exact:true})});
-  await expect(again).toBeVisible();
-  await expect(again).toHaveCSS('background-color','rgb(230, 233, 214)');
-  await expect(again).toHaveCSS('color','rgb(20, 27, 45)');
-  await expect(again.locator('p')).toHaveCSS('color','rgb(83, 92, 59)');
-  await expect(drafts).toHaveCSS('background-color','rgb(240, 223, 227)');
-});
-
-
-test('Home 2 uses the uploaded project surface palette without replacing the design',async({page})=>{
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto('/?action=home-2&lang=en');
-  const root=page.getByTestId('home2-root');
-  for(const [title,color] of [['All Tax Payments','rgb(220, 235, 233)'],['Payment History','rgb(240, 232, 214)'],['Tax Certificates','rgb(229, 226, 240)'],['Corrections & Requests','rgb(241, 224, 216)'],['Pay Again','rgb(230, 233, 214)'],['Saved Drafts','rgb(240, 223, 227)']]){
-    const tile=root.getByRole('button').filter({has:page.getByRole('heading',{name:title,exact:true})});
-    await expect(tile).toBeVisible();await expect(tile).toHaveCSS('background-color',color);
+  for(const lang of ['en','bn']){
+    await page.goto('/?action=home-2&lang='+lang);
+    const root=page.getByTestId('home2-root');
+    const desktop=(page.viewportSize()?.width??1280)>=960;
+    const labels=lang==='en'?['All Tax Payments','Payment History','Tax Certificates','Corrections & Requests','Pay Again','Saved Drafts']:['সকল কর পরিশোধ','পেমেন্টের ইতিহাস','কর সনদ','সংশোধন ও অনুরোধ','আবার পরিশোধ','সংরক্ষিত খসড়া'];
+    const colors=['rgb(165, 188, 225)','rgb(227, 221, 212)','rgb(206, 207, 235)','rgb(227, 210, 212)',desktop?'rgb(227, 221, 212)':'rgb(204, 228, 235)','rgb(213, 230, 212)'];
+    for(const [i,label] of labels.entries()){
+      const tile=root.getByRole('button').filter({has:page.getByRole('heading',{name:label,exact:true})});
+      await expect(tile).toBeVisible();
+      await expect(tile).toHaveCSS('background-color',colors[i]);
+      await expect(tile.locator('.home2-line-art svg')).toHaveCount(1);
+    }
+    await expect(root.getByRole('heading',{name:lang==='en'?'New to paying online?':'অনলাইনে কর দেওয়া নতুন?',exact:true})).toBeVisible();
+    await expect(root.getByTestId('home2-guide-action')).toBeVisible();
+    await expect(root.getByTestId('home2-chat-action')).toBeVisible();
+    await expect(root.getByTestId('home2-primary-slide').locator('img')).toHaveCount(1);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
-  await expect(root.getByRole('button').filter({has:page.getByRole('heading',{name:'All Tax Payments',exact:true})})).toHaveCSS('color','rgb(21, 32, 51)');
 });
 
 
@@ -385,4 +371,46 @@ test('Home 2 primary banner omits the eyebrow and trust labels in both languages
     }
     await expect(hero.locator('img')).toHaveCount(1);
   }
+});
+
+
+test('Home 3 is reachable from the original footer and preserves existing payment entry', async ({ page }) => {
+  await page.goto('/?action=landing&lang=en');
+  await page.getByRole('link', {name:'Home 3',exact:true}).click();
+  await expect(page).toHaveURL(/action=home-3/);
+  const home=page.getByTestId('home3-root');
+  await expect(home).toBeVisible();
+  await expect(home.getByRole('heading',{name:/Pay and Manage\s*Your Taxes Digitally/i})).toBeVisible();
+  await expect(home.getByText('Find Your Payment Record',{exact:true}).filter({visible:true})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'Payment History'})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'Tax Certificates'})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'Corrections & Requests'})).toBeVisible();
+  await expect(home.locator('a[href="#"]')).toHaveCount(0);
+  await expect.poll(()=>home.locator('img').evaluateAll(imgs=>imgs.every(i=>i instanceof HTMLImageElement&&i.complete&&i.naturalWidth>0))).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await expect(home.getByRole('link',{name:/Pay\s+Gift Tax/})).toBeVisible();
+  await expect(home.getByRole('link',{name:/Pay\s+Travel Tax/})).toBeVisible();
+  if ((page.viewportSize()?.width ?? 1280)>=640) {
+    await home.getByRole('button',{name:'Search',exact:true}).click();
+    await expect(home.getByRole('alert')).toHaveText('Enter a payment reference.');
+  } else {
+    await home.getByRole('link',{name:/Find Your Payment Record/}).click();
+    await expect(page).toHaveURL(/action=verify/);
+    await page.goto('/?action=home-3&lang=en');
+  }
+  await home.getByRole('link',{name:'Pay Income Tax',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'}).getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+  await page.getByRole('dialog',{name:'Pay Tax'}).getByRole('button',{name:'Close payment services'}).click();
+  await expect(home).toBeVisible();
+  await home.getByRole('link',{name:'Original Home',exact:true}).click();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(page.locator('.public-record-discovery')).toBeVisible();
+});
+test('Home 3 direct URL and Bengali translation retain the separate Home 2 route', async ({page})=>{
+  await page.goto('/?action=home-3&lang=bn');
+  await expect(page.getByTestId('home3-root').getByRole('heading',{name:/ডিজিটাল পদ্ধতিতে কর/})).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await page.getByTestId('home3-root').getByRole('link',{name:'Home 2',exact:true}).click();
+  await expect(page.getByTestId('home2-root')).toBeVisible();
+  await expect(page.getByRole('link',{name:'Home 3',exact:true})).toBeVisible();
 });
