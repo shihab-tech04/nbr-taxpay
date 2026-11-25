@@ -52,7 +52,21 @@ test('Travel Tax keeps taxpayer v5 review and checkout components without a sque
   await expect(preview).toBeVisible();
   await expect(preview).toHaveClass(/payment-review--unified-v5/);
   await expect(preview.locator('.unified-v3-review')).toBeVisible();
-  await expect(preview.locator('.unified-v3-review__table tbody tr')).toHaveCount(2);
+  const passengerRows=preview.locator('.unified-v3-review__table tbody tr');
+  await expect(passengerRows).toHaveCount(2);
+  if ((page.viewportSize()?.width ?? 1280) <= 520) {
+    for(const row of await passengerRows.all()){
+      const metrics=await row.evaluate(el=>{
+        const cells=Array.from(el.querySelectorAll('td'));
+        return {height:el.getBoundingClientRect().height,labels:cells.slice(1).map(td=>getComputedStyle(td,'::before').content),
+          heights:cells.map(td=>td.getBoundingClientRect().height),overflow:el.scrollWidth-el.clientWidth};
+      });
+      expect(metrics.height,'Compact passenger row must not inherit three 76px desktop cell heights').toBeLessThanOrEqual(165);
+      expect(Math.max(...metrics.heights)).toBeLessThan(76);
+      expect(metrics.labels).toEqual(['"Passport"','"Age"','"Tax"']);
+      expect(metrics.overflow).toBeLessThanOrEqual(2);
+    }
+  }
   await expect(preview.getByTestId('travel-preview-total')).toContainText('2,000');
   await expect(preview.getByTestId('travel-preview-total-in-words')).toContainText('Two Thousand');
   await expect(preview.locator('.unified-v3-review__table tfoot')).toHaveCount(0);
