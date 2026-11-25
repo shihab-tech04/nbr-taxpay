@@ -108,7 +108,7 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
       <p className="text-sm text-taxpay-error">{tr('Earlier payment records could not be verified.','আগের পেমেন্টের তথ্য যাচাই করা যায়নি।')}</p>
       <MuiButtonBase data-mui-coverage="MUI-RECOVERED-HISTORY-RETRY" disableRipple sx={{minHeight:44,border:'1px solid var(--color-taxpay-border)',borderRadius:'8px',padding:'0 12px',font:'inherit',fontSize:14,fontWeight:600,color:'var(--color-taxpay-primary)','&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2},'&.Mui-disabled':{opacity:.5}}} type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3"
         onClick={()=>setRevision(v=>v+1)}>{tr('Retry','আবার চেষ্টা করুন')}</MuiButtonBase>
-    </div>:rows.length>0?<TaxPayDataGrid data-mui-coverage="MUI-RECOVERED-HISTORY-TABLE" desktopSlots={citizenMuiDesktopTableSlots} variant="tabular" rows={rows} getRowKey={p=>p.id}
+    </div>:rows.length>0?<TaxPayDataGrid variant="tabular" data-mui-coverage="MUI-RECOVERED-HISTORY-TABLE" desktopSlots={citizenMuiDesktopTableSlots} rows={rows} getRowKey={p=>p.id}
       ariaLabel={tr('Earlier payments','আগের পেমেন্ট')} testId="recovered-story-payments"
       mobileTestId="recovered-story-payment-cards" onViewRow={setSelected} columns={[
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:p=><span className="break-all text-sm">{p.id}</span>},

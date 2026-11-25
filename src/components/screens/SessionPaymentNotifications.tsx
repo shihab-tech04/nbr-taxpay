@@ -68,7 +68,7 @@ export const SessionPaymentNotifications: React.FC<{ language: 'en' | 'bn' }> = 
         </TaxPayTableControls>
         <TaxPayTableCounter label={label('Records','রেকর্ড')} shown={filtered.length} total={notices.length}/>
         {filtered.length===0?<TaxPayTableState>{label('No payment updates match your search.','অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।')}</TaxPayTableState>:
-          <TaxPayDataGrid data-mui-coverage="MUI-SESSION-NOTICE-TABLE" desktopSlots={citizenMuiDesktopTableSlots} variant="tabular" rows={filtered} getRowKey={notice=>String(notice.id)}
+          <TaxPayDataGrid variant="tabular" data-mui-coverage="MUI-SESSION-NOTICE-TABLE" desktopSlots={citizenMuiDesktopTableSlots} rows={filtered} getRowKey={notice=>String(notice.id)}
             ariaLabel={label('Browser session payment register','ব্রাউজার সেশনের পেমেন্ট রেকর্ড')}
             testId="session-payment-table" mobileTestId="session-payment-cards"
             columns={[
