@@ -255,6 +255,10 @@ rollback;
 -- Never change a database reached through a hosted connection.
 select :'HOST' in ('localhost','127.0.0.1','::1') and :'PORT'='54322' and :'DBNAME'='postgres' as local_beneficiary_candidate \gset
 \if :local_beneficiary_candidate
+\set user1_variant original
+\ir beneficiaryUser1Reconciliation.sql
+\set user1_variant v2
+\ir beneficiaryUser1Reconciliation.sql
 \ir ../../docs/beneficiary-group-cap-candidate.sql
 \else
 \echo 'Refusing candidate SQL outside disposable local Supabase'
