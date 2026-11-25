@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      BASE_SHA: 594fcca473e3349923c32783aff6817baa98f9e1
+      BASE_SHA: 1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
@@ -21,8 +21,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/recovery"
-          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/15051516252/zip" -o "$RUNNER_TEMP/recovery.zip"
-          printf '%s  %s\n' '400dec05eab71c0729f3709c019e856ffd15fcdc63fc1fa45abdf11b0d14e8ea' "$RUNNER_TEMP/recovery.zip" | sha256sum -c -
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/15055926942/zip" -o "$RUNNER_TEMP/recovery.zip"
+          printf '%s  %s\n' 'e06452421fa6da1c9362e2fd3ec286b9975fd7547467ddf7688bc450b12b8c58' "$RUNNER_TEMP/recovery.zip" | sha256sum -c -
           unzip -q "$RUNNER_TEMP/recovery.zip" -d "$RUNNER_TEMP/recovery"
           cd "$RUNNER_TEMP/recovery"
           sha256sum -c SHA256SUMS
@@ -59,13 +59,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 594fcca473e3349923c32783aff6817baa98f9e1
+          ref: 1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
           fetch-depth: 0
       - name: Create exact recovery tag without replacing a tag
         run: |
           set -euo pipefail
-          expected=594fcca473e3349923c32783aff6817baa98f9e1
-          tag=recovery/mui-v4-594fcca4
+          expected=1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
+          tag=recovery/mui-v4-1d96c6df
           current="$(git ls-remote origin "refs/tags/$tag" | cut -f1)"
           if [ -z "$current" ]; then git push origin "$expected:refs/tags/$tag"; else test "$current" = "$expected"; fi
           test "$(git ls-remote origin "refs/tags/$tag" | cut -f1)" = "$expected"
