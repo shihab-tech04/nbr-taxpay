@@ -220,6 +220,7 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestPaymentFormDraftIsolation.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoRecipientNotices.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientImmediateDualSourceCandidateMigration.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
           node tests/integration/guestPaymentFormDraftEdge.mjs
 
