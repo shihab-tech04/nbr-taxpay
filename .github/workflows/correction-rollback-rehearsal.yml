@@ -1,0 +1,29 @@
+name: Correction release rollback rehearsal (disposable only)
+on:
+  push:
+    branches: [recovery/correction-rollback-rehearsal-1f890451]
+permissions:
+  contents: read
+jobs:
+  rollback-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+      - name: Restore exact baseline and run reversible correction migration rehearsal
+        shell: bash
+        run: bash scripts/ci/rehearse-correction-rollback-1f890451.sh
+      - name: Stop disposable database
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$RUNNER_TEMP/correction-baseline" ]; then
+            cd "$RUNNER_TEMP/correction-baseline"
+            supabase stop --no-backup
+          fi
