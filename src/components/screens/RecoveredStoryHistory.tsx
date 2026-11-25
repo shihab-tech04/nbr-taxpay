@@ -114,11 +114,10 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
         {key:'date',header:tr('Date','তারিখ'),renderCell:p=><span>{new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{dateStyle:'medium',timeZone:'Asia/Dhaka'}).format(new Date(p.createdAt))}</span>},
         {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right',renderCell:p=><span>{money(p.amountMinor)}</span>},
         {key:'action',header:tr('Action','কার্যক্রম'),renderCell:p=><button type="button"
-          data-testid="recovered-pay-again" disabled={!reusable.has(p.id)}
-          title={!reusable.has(p.id)?tr('Complete original allocations are unavailable','আগের বরাদ্দের সম্পূর্ণ তথ্য নেই'):undefined}
-          onClick={()=>payAgain(p)}
-          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary disabled:cursor-not-allowed disabled:opacity-50">
-          {tr('Pay Again','আবার পরিশোধ')}
+          data-testid="recovered-payment-details"
+          onClick={()=>setSelected(p)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+          {tr('View details','বিস্তারিত দেখুন')}
         </button>}
       ]}/>:<TaxPayTableState>{tr('No earlier saved records.','আগের কোনো রেকর্ড নেই।')}</TaxPayTableState>}
     {selected&&(embedded

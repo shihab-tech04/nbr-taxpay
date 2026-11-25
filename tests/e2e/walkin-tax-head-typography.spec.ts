@@ -1,3 +1,4 @@
+import { expectTaxHeadSpacing } from './payment-head-spacing-assertion';
 import { expect, test } from '@playwright/test';
 
 /** Use the same supported walk-in journey as the frozen v5 acceptance tests.
@@ -36,6 +37,7 @@ test('approved Payment Head group typography and selection survive desktop/mobil
       await expect(section).toHaveCSS('font-weight', '600');
     }
     await expect(editor.locator('.unified-v5-tax-head-heading')).toBeVisible();
+    await expectTaxHeadSpacing(editor);
     await expect(advanceTax).toHaveCSS('border-radius', '8px');
     await modal.screenshot({ path: `test-results/sohojkor-v5-candidate-tax-head-${width}.png`, animations: 'disabled' });
     await expect(status).toHaveCSS('font-size', '14px');

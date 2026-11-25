@@ -511,16 +511,6 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-3 text-sm font-medium text-taxpay-primary">
                {txt('View details','বিস্তারিত দেখুন')}</button>
-             <button type="button" onClick={()=>setSelectedPayment(tx)}
-               className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
-               {txt('Timeline','সময়রেখা')}</button>
-             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
-               className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
-               {txt('Request correction','সংশোধনের আবেদন')}</button>
-             {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-desktop"
-               onClick={e=>{e.stopPropagation();payAgain(tx);}}
-               className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
-               {txt('Pay Again','আবার পরিশোধ')}</button>}
            </div>}
          ]}
          renderMobileCard={tx=><div className="space-y-2">
@@ -544,14 +534,6 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            <div className="taxpay-mobile-table-card__actions">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
-             <button type="button" onClick={()=>setSelectedPayment(tx)}
-               className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
-             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
-               className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
-               {txt('Request correction','সংশোধনের আবেদন')}</button>
-             {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-mobile"
-               onClick={()=>payAgain(tx)} className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
-               {txt('Pay Again','আবার পরিশোধ')}</button>}
            </div>
          </div>}/>}
       <TaxPayOfficeRegisterFooter shown={visibleRows.length} total={rows.length}
@@ -572,12 +554,16 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         taxCreditStatus:txt('Not verified','যাচাই হয়নি'),source:'TaxPay SQL',
         ...lifecycleParts(selectedPayment)
       }}/>
-      {canPayAgain(selectedPayment,id??'',view)&&<div className="mt-4 flex justify-end">
-        <button type="button" data-testid="pay-again-details" onClick={()=>payAgain(selectedPayment)}
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        {canPayAgain(selectedPayment,id??'',view)&&<button type="button" data-testid="pay-again-details" onClick={()=>payAgain(selectedPayment)}
           className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm text-taxpay-primary">
           {txt('Pay Again','আবার পরিশোধ')}
+        </button>}
+        <button type="button" onClick={()=>{const reference=selectedPayment.id;setSelectedPayment(null);navigate('corrections',{originalReference:reference});}}
+          className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm text-taxpay-primary">
+          {txt('Request correction','সংশোধনের আবেদন')}
         </button>
-      </div>}
+      </div>
     </TaxPayModal>}
   </main>;
 };
