@@ -30,7 +30,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
   const open = (action: Home2Action) => () => onAction(action)
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f3f4f8] pb-28 shadow-[0_0_60px_-20px_rgba(20,27,45,0.25)]">
+    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6f9] pb-28 shadow-[0_0_60px_-20px_rgba(20,27,45,0.25)]">
       {/* Header */}
       <header role="banner" className="sticky top-0 z-30 flex items-center justify-between border-b border-[#e7e9ef]/70 bg-[#f3f4f8]/85 px-4 py-2.5 backdrop-blur-xl">
         <Logo />
@@ -57,14 +57,11 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
         {/* Hero carousel */}
         <Tile>
           <div ref={car.ref} onScroll={car.onScroll} className="home2-no-scrollbar flex snap-x snap-mandatory overflow-x-auto rounded-[26px]">
-            <div className="relative h-[392px] w-full shrink-0 snap-center overflow-hidden rounded-[24px] bg-[#f8f0dc]">
+            <div data-testid="home2-primary-slide" className="relative h-[392px] w-full shrink-0 snap-center overflow-hidden rounded-[24px] bg-gradient-to-b from-[#e6ecfa] to-[#cad7f2]">
               <img src={hero} alt="" className="absolute inset-x-0 bottom-0 h-[74%] w-full object-cover object-[50%_80%]" />
-              <div className="absolute inset-x-0 top-0 h-[56%] bg-gradient-to-b from-[#f8f0dc] via-[#f8f0dc]/95 to-transparent" />
+              <div className="absolute inset-x-0 top-0 h-[56%] bg-gradient-to-b from-[#e6ecfa] via-[#e6ecfa]/95 to-transparent" />
               <div className="relative px-5 pt-5">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#6b5a1e] uppercase ring-1 ring-[#6b5a1e]/10">
-                  <ShieldCheck className="size-3.5" /> {c.eyebrow}
-                </span>
-                <h1 className="mt-2.5 text-[26px] leading-[1.12] font-bold tracking-[-0.02em] text-[#4a3d10]">{c.heroTitle}</h1>
+                <h1 className="text-[26px] leading-[1.12] font-bold tracking-[-0.02em] text-[#4a3d10]">{c.heroTitle}</h1>
                 <p className="mt-2 max-w-[330px] text-[13px] leading-relaxed text-[#6b5f3a]">{c.heroBody}</p>
               </div>
               <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-1.5 rounded-[18px] bg-white/75 p-1.5 shadow-[0_10px_30px_-12px_rgba(74,61,16,0.45)] backdrop-blur-md">
@@ -107,7 +104,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
         </Tile>
 
         {/* Search */}
-        <Tile delay={80} className="rounded-[24px] bg-white p-4 ring-1 ring-[#e7e9ef]">
+        <Tile delay={80} className="rounded-[24px] bg-[#e8edf4] p-4 ring-1 ring-[#e7e9ef]">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-[16px] leading-tight font-semibold tracking-[-0.01em]">{c.find.title}</h2>
@@ -128,7 +125,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
 
         <div className="grid grid-cols-2 gap-3">
           <Tile delay={180} className="col-span-2">
-            <button onClick={open('pay')} className="home2-press relative block w-full overflow-hidden rounded-[24px] bg-gradient-to-br from-[#2f55a4] to-[#1f3c7a] p-4 text-left text-white">
+            <button onClick={open('pay')} className="home2-press relative block w-full overflow-hidden rounded-[24px] bg-[#dcebe9] p-4 text-left text-[#152033]">
               <div className="pointer-events-none absolute -top-16 -right-14 size-52 rounded-full bg-white/10" />
               <div className="pointer-events-none absolute -right-4 -bottom-20 size-40 rounded-full bg-[#f2a516]/25 blur-2xl" />
               <div className="relative flex items-start justify-between">
@@ -140,7 +137,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
                 </span>
               </div>
               <h3 className="relative mt-5 text-[19px] leading-tight font-semibold tracking-[-0.01em]">{f.all.title}</h3>
-              <p className="relative mt-1 text-[12.5px] text-white/75">{f.all.body}</p>
+              <p className="relative mt-1 text-[12.5px] text-[#4b5567]">{f.all.body}</p>
               <div className="relative mt-3 flex flex-wrap gap-1.5">
                 {f.all.chips.map((x) => (
                   <span key={x} className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11.5px] font-medium ring-1 ring-white/15">
@@ -152,7 +149,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
           </Tile>
 
           <Tile delay={220} className="row-span-2">
-            <button onClick={open('history')} className="home2-press flex h-full w-full flex-col rounded-[24px] bg-[#fdf3e3] p-4 text-left ring-1 ring-[#f3e1c0]">
+            <button onClick={open('history')} className="home2-press flex h-full w-full flex-col rounded-[24px] bg-[#f0e8d6] p-4 text-left ring-1 ring-[#f3e1c0]">
               <div className="grid size-9 place-items-center rounded-xl bg-white text-[#c27a10] shadow-sm">
                 <History className="size-[18px]" />
               </div>
@@ -169,13 +166,13 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
             </button>
           </Tile>
 
-          <SmallTile delay={260} icon={FileCheck2} title={f.certs.title} body={f.certs.short} onClick={open('certificates')} tone="bg-white ring-1 ring-[#e7e9ef]" iconTone="bg-[#e6f4f1] text-[#0f7a68]" />
-          <SmallTile delay={300} icon={FilePen} title={f.corrections.title} body={f.corrections.short} onClick={open('corrections')} tone="bg-white ring-1 ring-[#e7e9ef]" iconTone="bg-[#f1ecfb] text-[#6a45c2]" />
+          <SmallTile delay={260} icon={FileCheck2} title={f.certs.title} body={f.certs.short} onClick={open('certificates')} tone="bg-[#e5e2f0] ring-1 ring-[#e7e9ef]" iconTone="bg-[#e6f4f1] text-[#0f7a68]" />
+          <SmallTile delay={300} icon={FilePen} title={f.corrections.title} body={f.corrections.short} onClick={open('corrections')} tone="bg-[#f1e0d8] ring-1 ring-[#e7e9ef]" iconTone="bg-[#f1ecfb] text-[#6a45c2]" />
           <SmallTile delay={340} icon={Repeat2} title={f.again.title} body={f.again.short} onClick={open('again')} tone="bg-[#e6e9d6] text-[#141b2d] ring-1 ring-[#d6dcc0]" iconTone="bg-white text-[#626b3b] shadow-sm" bodyTone="text-[#535c3b]" />
           <SmallTile delay={380} icon={Save} title={f.drafts.title} body={f.drafts.short} onClick={open('drafts')} tone="bg-[#f0dfe3] text-[#141b2d] ring-1 ring-[#e6cdd4]" iconTone="bg-white text-[#98566b] shadow-sm" bodyTone="text-[#704e5b]" />
 
           <Tile delay={420} className="col-span-2">
-            <div className="flex items-center gap-3 rounded-[24px] bg-[#e9f2ea] px-4 py-3.5 ring-1 ring-[#d3e6d6]">
+            <div className="flex items-center gap-3 rounded-[24px] bg-[#e8edf4] px-4 py-3.5 ring-1 ring-[#d3e6d6]">
               <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-[#1d7a46] shadow-sm">
                 <ShieldCheck className="size-5" />
               </div>
