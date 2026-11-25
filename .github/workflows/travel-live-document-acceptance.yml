@@ -1,0 +1,35 @@
+name: Travel Tax live document journey acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/verify-live-travel-passport.mjs
+      - .github/workflows/travel-live-document-acceptance.yml
+permissions:
+  contents: read
+jobs:
+  deployed-document-journey:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Install isolated browser verifier
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium --only-shell
+      - name: Check actual deployed Travel Tax result and documents without hosted writes
+        env:
+          TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
+        run: node scripts/verify-live-travel-passport.mjs
+      - name: Capture actual deployed result and documents
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: travel-live-document-evidence
+          path: test-results/live-travel-passport-*.png
+          if-no-files-found: error
