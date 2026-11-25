@@ -1354,6 +1354,58 @@
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
       "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-JOURNEY-REVIEW-STATUS",
+      "file": "src/components/screens/TaxJourney.tsx",
+      "symbol": "TaxJourney",
+      "component": "MuiChip",
+      "control": "review status badge",
+      "route": "journey / owner-scoped timeline",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "responsive",
+        "light/dark",
+        "filtered"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v55-timeline-status.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/Chip; existing status label, class, colors and timeline composition retained"
+    },
+    {
+      "id": "MUI-JOURNEY-PAYMENT-STATUS",
+      "file": "src/components/screens/AccountSqlPaymentJourney.tsx",
+      "symbol": "AccountSqlPaymentJourney",
+      "component": "MuiChip",
+      "control": "recorded payment status badge",
+      "route": "journey / owner-scoped timeline",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "responsive",
+        "light/dark",
+        "filtered"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v55-timeline-status.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/Chip; existing status label, class, colors and timeline composition retained"
     }
   ],
   "unresolved": [

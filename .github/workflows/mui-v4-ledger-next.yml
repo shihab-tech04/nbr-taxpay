@@ -50,7 +50,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/account-tax-journey-private.spec.ts tests/e2e/mui-v51-review-controls.spec.ts tests/e2e/mui-v52-source-proposals.spec.ts tests/e2e/taxpay-notification-register-ux.spec.ts tests/e2e/mui-v54-record-consumers.spec.ts --workers=2
+        run: npx playwright test tests/e2e/account-tax-journey-private.spec.ts tests/e2e/mui-v51-review-controls.spec.ts tests/e2e/mui-v52-source-proposals.spec.ts tests/e2e/taxpay-notification-register-ux.spec.ts tests/e2e/mui-v54-record-consumers.spec.ts tests/e2e/mui-v55-timeline-status.spec.ts --workers=2
       - name: Verify all direct authorization actions and scoped record control contracts
         run: npx playwright test tests/e2e/manage-authorization-desktop.spec.ts --workers=2
       - name: Verify integrated public service directory

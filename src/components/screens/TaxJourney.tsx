@@ -1,5 +1,5 @@
 import React, {useEffect,useMemo,useState} from 'react';
-import {CitizenMuiScope,MuiButton,MuiNativeSelect,MuiInputBase} from '../../design-system/mui';
+import {CitizenMuiScope,MuiButton,MuiNativeSelect,MuiInputBase,MuiChip,citizenMuiTimelineChipSx} from '../../design-system/mui';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadAccountTaxJourney,type AccountJourneyItem} from '../../services/accountTaxJourney';
@@ -90,7 +90,7 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
                   ?tr('Review request submitted','পর্যালোচনা অনুরোধ জমা দেওয়া হয়েছে')
                   :tr('Review status event','পর্যালোচনা অবস্থার ঘটনা')}</h3>
               </div>
-              <span className="rounded-lg border border-taxpay-border bg-white px-2 py-1 text-xs font-medium text-taxpay-primary">{status(item.status)}</span>
+              <MuiChip component="span" data-mui-coverage="MUI-JOURNEY-REVIEW-STATUS" className="rounded-lg border border-taxpay-border bg-white px-2 py-1 text-xs font-medium text-taxpay-primary" label={status(item.status)} sx={{...citizenMuiTimelineChipSx,borderRadius:'8px',fontWeight:500}}/>
             </div>
             <p className="mt-2 break-all text-xs text-taxpay-muted">{tr('Request reference','অনুরোধের রেফারেন্স')}: {item.reference}</p>
             <p className="mt-2 text-sm font-semibold tabular-nums text-taxpay-text">

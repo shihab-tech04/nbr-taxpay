@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {MuiButton,MuiNativeSelect,MuiInputBase} from '../../design-system/mui';
+import {MuiButton,MuiNativeSelect,MuiInputBase,MuiChip,citizenMuiTimelineChipSx} from '../../design-system/mui';
 import {FileText} from 'lucide-react';
 import {loadAccountSqlPaymentJourney, type AccountSqlJourneyEvent} from '../../services/accountSqlPaymentJourney';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -119,9 +119,7 @@ export function AccountSqlPaymentJourney({ownerUid,language}:{
                       {entry.paymentHead} · {tr('AY','করবর্ষ')} {entry.assessmentYear}
                     </p>
                   </div>
-                  <span className="rounded-md border border-taxpay-border bg-white px-2 py-1 text-xs text-taxpay-primary">
-                    {tr('Recorded','নথিভুক্ত')}
-                  </span>
+                  <MuiChip component="span" data-mui-coverage="MUI-JOURNEY-PAYMENT-STATUS" className="rounded-md border border-taxpay-border bg-white px-2 py-1 text-xs text-taxpay-primary" label={tr('Recorded','নথিভুক্ত')} sx={{...citizenMuiTimelineChipSx,borderRadius:'6px',fontWeight:'inherit'}}/>
                 </div>
                 <p className="mt-2 break-all text-xs text-taxpay-muted">
                   {tr('TIN','টিআইএন')}: {entry.taxpayerTin||'—'} · {tr('Reference','রেফারেন্স')}: {entry.paymentId}

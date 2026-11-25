@@ -5,6 +5,7 @@ import MuiButtonBase from '@mui/material/ButtonBase';
 import MuiIconButton from '@mui/material/IconButton';
 import MuiInputBase from '@mui/material/InputBase';
 import MuiNativeSelect from '@mui/material/NativeSelect';
+import MuiChip from '@mui/material/Chip';
 
 /** MUI v4 migration boundary: import only from explicitly eligible route modules.
  * No CssBaseline, GlobalStyles, root provider, or changes to native legacy controls.
@@ -38,4 +39,12 @@ export const citizenMuiTheme = createTheme({
 export function CitizenMuiScope({children}:PropsWithChildren) {
   return <ThemeProvider theme={citizenMuiTheme}>{children}</ThemeProvider>;
 }
-export { MuiButton, MuiButtonBase, MuiIconButton, MuiInputBase, MuiNativeSelect };
+/** Read-only, non-home timeline status badges retain their approved dimensions and
+ * native label wording. The MUI Chip owns the rendered status component. */
+export const citizenMuiTimelineChipSx = {
+  height: 'auto', maxWidth: '100%', fontFamily: 'inherit', fontSize: '0.75rem',
+  lineHeight: '1rem', color: 'var(--color-taxpay-primary)', backgroundColor: 'white',
+  border: '1px solid var(--color-taxpay-border)', padding: '4px 8px',
+  '& .MuiChip-label': { padding: 0, whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip' },
+} as const;
+export { MuiButton, MuiButtonBase, MuiIconButton, MuiInputBase, MuiNativeSelect, MuiChip };
