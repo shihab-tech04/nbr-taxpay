@@ -1286,9 +1286,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                         <th scope="col" className="text-right">{tr('Tax','কর')}</th>
                       </tr></thead>
                       <tbody>{passengers.map(item => <tr key={item.id}>
-                        <td>{item.name}</td><td>{maskPassport(item.passport)}</td>
-                        <td>{assessTravelPassenger(item, unitRate, travelDate)?.age ?? '—'}</td>
-                        <td className="text-right tabular-nums"><TravelCurrency amount={assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0} language={language}/></td>
+                        <td>{item.name}</td><td data-travel-label={tr('Passport','পাসপোর্ট')}>{maskPassport(item.passport)}</td>
+                        <td data-travel-label={tr('Age','বয়স')}>{assessTravelPassenger(item, unitRate, travelDate)?.age ?? '—'}</td>
+                        <td data-travel-label={tr('Tax','কর')} className="text-right tabular-nums"><TravelCurrency amount={assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0} language={language}/></td>
                       </tr>)}</tbody>
                     </TaxPayUnifiedTable>
                   </div>
