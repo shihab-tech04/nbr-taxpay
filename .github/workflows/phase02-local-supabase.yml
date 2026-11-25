@@ -91,17 +91,6 @@ jobs:
         with:
           version: latest
 
-      - name: Generate ordered v7 migration filenames with installed Supabase CLI
-        run: |
-          set -euo pipefail
-          supabase migration new --help
-          mkdir -p "$RUNNER_TEMP/v7-migration-names"
-          cd "$RUNNER_TEMP/v7-migration-names"
-          supabase init
-          supabase migration new recipient_immediate_dual_source
-          supabase migration new office_recipient_immediate_dual_source
-          ls -1 supabase/migrations/*.sql
-
       - name: Isolate disposable Supabase project identity and host ports
         run: |
           python3 scripts/ci/isolate-local-supabase.test.py
@@ -231,13 +220,18 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestPaymentFormDraftIsolation.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoRecipientNotices.sql
+          # Clean install already applied the ordered migration. Verify it before
+          # restoring the exact predecessor definitions for an upgrade rehearsal.
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientImmediatePreviousDefinitions.sql
+          psql -X -v ON_ERROR_STOP=1 -c "drop function public.taxpay_demo_original_report_claim(integer,uuid)"
           # Capture the exact source definitions and ACLs before candidate installation.
           for name in 'taxpay_guest_private.story_correction_event(taxpay_guest_private.story_correction_requests)' 'public.taxpay_demo_correction_claim(integer,uuid)' 'public.taxpay_demo_correction_office_decision(jsonb)'; do
             psql -X -At -v ON_ERROR_STOP=1 -c "select pg_get_functiondef('$name'::regprocedure)" >> "$RUNNER_TEMP/v7-source-restore.sql"
             echo ';' >> "$RUNNER_TEMP/v7-source-restore.sql"
             psql -X -At -v ON_ERROR_STOP=1 -c "select proowner,proacl::text from pg_proc where oid='$name'::regprocedure" >> "$RUNNER_TEMP/v7-source-before-acl.txt"
           done
-          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientImmediateDualSourceCandidateMigration.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261125205131_recipient_immediate_dual_source.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
           psql -X -v ON_ERROR_STOP=1 -f "$RUNNER_TEMP/v7-source-restore.sql"
           psql -X -v ON_ERROR_STOP=1 -c "drop function public.taxpay_demo_original_report_claim(integer,uuid)"
@@ -248,7 +242,7 @@ jobs:
           done
           cmp "$RUNNER_TEMP/v7-source-restore.sql" "$RUNNER_TEMP/v7-source-after.sql"
           cmp "$RUNNER_TEMP/v7-source-before-acl.txt" "$RUNNER_TEMP/v7-source-after-acl.txt"
-          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientImmediateDualSourceCandidateMigration.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261125205131_recipient_immediate_dual_source.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
           echo "PASS exact v7 source definition/ACL rollback and reapply"
           node tests/integration/guestPaymentFormDraftEdge.mjs
@@ -599,12 +593,18 @@ jobs:
           # Preserve the exact current-Main tests above, then pair v7 with the
           # separately accepted Office draft source and its candidate SQL.
           V7_OFFICE_DIR="$RUNNER_TEMP/ws5-v7-office-candidate"
-          V7_OFFICE_SHA="c2e317a1c36ad1badf7b9851d90ad82d2715acad"
+          V7_OFFICE_SHA="8269d993aac2e59116b85e18b86a5fe5b80e5736"
           git clone --depth 1 --branch ws5/recipient-report-immediate-intake-v7-20261126 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$V7_OFFICE_DIR"
           git -C "$V7_OFFICE_DIR" fetch --depth 1 origin "$V7_OFFICE_SHA"
           git -C "$V7_OFFICE_DIR" checkout --detach "$V7_OFFICE_SHA"
           test "$(git -C "$V7_OFFICE_DIR" rev-parse HEAD)" = "$V7_OFFICE_SHA"
-          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$V7_OFFICE_DIR/tests/integration/officeRecipientImmediateIntakeCandidateMigration.sql"
+          # When Office has released first, its ordered migration is already
+          # installed above. Prove exact identity rather than reapplying it.
+          if [ -f "$OFFICE_DIR/supabase/migrations/20261125205132_office_recipient_immediate_dual_source.sql" ]; then
+            cmp "$OFFICE_DIR/supabase/migrations/20261125205132_office_recipient_immediate_dual_source.sql" "$V7_OFFICE_DIR/supabase/migrations/20261125205132_office_recipient_immediate_dual_source.sql"
+          else
+            psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$V7_OFFICE_DIR/supabase/migrations/20261125205132_office_recipient_immediate_dual_source.sql"
+          fi
           export WS3_V7_OFFICE_SOURCE="$V7_OFFICE_DIR"
           node tests/integration/pairedRecipientReportEdgeSql.mjs
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
