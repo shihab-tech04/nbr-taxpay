@@ -1,4 +1,5 @@
-import {expect,test} from '@playwright/test';
+import {expect,test,type Route} from '@playwright/test';
+import {createHash} from 'node:crypto';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {mockPublishedBannerCms} from './mock-published-banners';
@@ -19,6 +20,41 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
  await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});
  await page.route('**/*.supabase.co/**',route=>route.abort());
  await mockPublishedBannerCms(page);
+ // Google Fonts returns different stylesheets/subsets and occasionally fails between navigations.
+ // Preserve the same successful resource bytes across Main, its self-control, and the candidate.
+ // No production files, typography, screenshots, pixel masks or acceptance tolerances are changed.
+ type FontAsset={status:number;headers:Record<string,string>;body:Buffer;sha256:string};
+ const fontAssets=new Map<string,Promise<FontAsset>>();
+ const fontErrors:string[]=[];
+ await page.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//,async(route:Route)=>{
+   const url=route.request().url();
+   let cached=fontAssets.get(url);
+   if(!cached){
+     cached=(async()=>{
+       let last:unknown;
+       for(let i=0;i<3;i++){
+         try{
+           const response=await route.fetch({timeout:20000,maxRetries:2});
+           if(!response.ok())throw new Error('HTTP '+response.status());
+           const body=await response.body();
+           const headers={...response.headers()};
+           for(const key of ['content-encoding','content-length','transfer-encoding','connection','vary'])delete headers[key];
+           headers['access-control-allow-origin']='*';
+           return {status:response.status(),headers,body,sha256:createHash('sha256').update(body).digest('hex')};
+         }catch(error){last=error;}
+       }
+       throw new Error('Unable to obtain approved font '+url+': '+String(last));
+     })();
+     fontAssets.set(url,cached);
+   }
+   try{
+     const resource=await cached;
+     await route.fulfill({status:resource.status,headers:resource.headers,body:resource.body});
+   }catch(error){
+     fontErrors.push(String(error));
+     await route.abort().catch(()=>{});
+   }
+ });
  const dir=join(process.env.MUI_SNAPSHOT_DIR!,info.project.name);
  mkdirSync(dir,{recursive:true});
  async function signIn(origin:string) {
@@ -38,20 +74,38 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   await expect(page.locator(h.root)).toBeVisible();
   await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',lang);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe(signedIn?'user1':null);
-  await page.evaluate(async()=>{
+  await page.waitForLoadState('load');
+  await page.mouse.move(0,0);
+  const fontState=await page.evaluate(async()=>{
    await document.fonts.ready;
+   const requests=new Map<string,Set<string>>();
+   const walk=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+   for(let n=walk.nextNode();n;n=walk.nextNode()){
+     const el=n.parentElement,text=n.textContent?.trim();
+     if(!el||!text||!el.getClientRects().length)continue;
+     const style=getComputedStyle(el);
+     const descriptor=style.fontStyle+' '+style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
+     const chars=requests.get(descriptor)??new Set<string>();
+     for(const ch of text)chars.add(ch);
+     requests.set(descriptor,chars);
+   }
+   await Promise.all([...requests].map(([descriptor,chars])=>document.fonts.load(descriptor,[...chars].join(''))));
    await Promise.all([...document.images].map(image=>image.decode().catch(()=>undefined)));
    await document.fonts.ready;
+   return [...document.fonts].filter(face=>face.status==='loaded').map(face=>[face.family,face.style,face.weight,face.unicodeRange].join('|')).sort();
   });
+  expect(fontErrors,'Failed approved font resource').toEqual([]);
+  expect(fontState.length,'No approved web fonts loaded').toBeGreaterThan(0);
   await expect(page.locator('[data-mui-citizen-region]')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  return fontState;
  }
  // Keep the two builds in the same Chromium process, page, viewport and software renderer.
  // Baselines are written only from the exact Main server. Both A/A and A/B must pass zero tolerance.
  await signIn(baseline);
  for(const h of homes){
   const name=h.name+'-'+lang+'-'+theme+'-'+(signedIn?'local-account':'guest')+'.png';
-  await visit(baseline,h);
+  const baselineFonts=await visit(baseline,h);
   let previous=await page.screenshot(screenshotOptions),stable:Buffer|undefined;
   for(let attempt=0;attempt<8;attempt++){
    const next=await page.screenshot(screenshotOptions);
@@ -60,10 +114,12 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   }
   expect(stable,'Unchanged Main screenshot did not settle to an identical frame: '+name).toBeDefined();
   writeFileSync(join(dir,name),stable!);
-  await visit(baseline,h);
+  expect(await visit(baseline,h),'Same approved fonts on Main self-control').toEqual(baselineFonts);
   await expect(page,'Unchanged Main self-control '+name).toHaveScreenshot(name,{...screenshotOptions,maxDiffPixels:0,threshold:0});
   await signIn(candidate);
-  await visit(candidate,h);
+  expect(await visit(candidate,h),'Same approved fonts on candidate').toEqual(baselineFonts);
   await expect(page,'MUI candidate versus exact Main '+name).toHaveScreenshot(name,{...screenshotOptions,maxDiffPixels:0,threshold:0});
  }
+ const manifest=await Promise.all([...fontAssets].map(async([url,asset])=>({url,sha256:(await asset).sha256})));
+ writeFileSync(join(dir,'fonts-'+lang+'-'+theme+'-'+(signedIn?'local-account':'guest')+'.json'),JSON.stringify(manifest,null,2));
 });
