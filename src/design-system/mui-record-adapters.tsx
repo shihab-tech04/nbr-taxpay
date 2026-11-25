@@ -20,8 +20,8 @@ export const citizenMuiDesktopTableSlots:TaxPayDesktopTableSlots={
   Head:props=><TableHead {...props}/>,
   Body:props=><TableBody {...props}/>,
   Row:props=><TableRow {...props}/>,
-  HeaderCell:props=><TableCell {...props} component="th" variant="head" sx={{font:'inherit',color:'inherit'}}/>,
-  Cell:props=><TableCell {...props} component="td" variant="body" sx={{font:'inherit',color:'inherit'}}/>,
+  HeaderCell:({align,...props})=><TableCell {...props} align={align==="char"?undefined:align} component="th" variant="head" sx={{font:'inherit',color:'inherit'}}/>,
+  Cell:({align,...props})=><TableCell {...props} align={align==="char"?undefined:align} component="td" variant="body" sx={{font:'inherit',color:'inherit'}}/>,
 };
 
 /** Only the read-only ledger event dialog opts in. MUI owns escape/backdrop,
@@ -47,7 +47,7 @@ export function MuiReadOnlyLedgerDialog({title,onClose,onBackdropClose,children,
         padding:'clamp(.6rem, 2.5vw, 1.5rem)',
         '@media(max-width:700px)':{alignItems:'flex-end',padding:'0 0 2px'}}},
       paper:{className:('relative taxpay-modal public-service-dialog '+className).trim(),
-        'data-mui-record-dialog':'true',sx:{margin:0,boxShadow:'var(--taxpay-shadow-modal)',backgroundImage:'none'}}
+        sx:{margin:0,boxShadow:'var(--taxpay-shadow-modal)',backgroundImage:'none'}}
     }}>
     <header className="taxpay-modal__header public-service-dialog__header">
       <span className="taxpay-modal__back-placeholder" aria-hidden="true"/>
