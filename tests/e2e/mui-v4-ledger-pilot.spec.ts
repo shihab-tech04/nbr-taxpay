@@ -43,6 +43,9 @@ test('MUI ledger event details remain a single scrollable mobile bottom sheet in
  await expect(dialog).toHaveCount(1);
  await expect(dialog).toHaveAttribute('aria-modal','true');
  await expect(dialog.getByTestId('tax-event-details')).toBeVisible();
+ // Evaluate the approved bottom-sheet geometry after its existing entrance
+ // animation has settled, without changing the thresholds or production CSS.
+ await dialog.evaluate(async element=>{await Promise.all(element.getAnimations().map(animation=>animation.finished.catch(()=>undefined)));});
  const box=await dialog.boundingBox();
  expect(box).not.toBeNull();
  expect(box!.x).toBeGreaterThanOrEqual(-1);
