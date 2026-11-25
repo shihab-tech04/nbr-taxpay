@@ -2,6 +2,7 @@
 name: Story 1 Hosted Payment Sync
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
     paths:
       - 'src/services/simulatedPaymentStory.ts'
@@ -16,6 +17,7 @@ permissions:
   contents: read
 jobs:
   sync-smoke:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
