@@ -1,7 +1,7 @@
 import type {ReceivedPaymentNotice} from '../../services/demoReceivedPaymentNotices';
 import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentNoticePresentation';
 
-export function ReceivedPaymentNoticeDetails({notice,language}:{notice:ReceivedPaymentNotice;language:'en'|'bn'}){
+export function ReceivedPaymentNoticeDetails({notice,language}:{notice:Omit<ReceivedPaymentNotice,'isRead'>;language:'en'|'bn'}){
   const bn=language==='bn';
   const details=receivedPaymentNoticePresentation(notice,language);
   return <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
