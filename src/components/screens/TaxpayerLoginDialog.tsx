@@ -54,13 +54,15 @@ export function TaxpayerLoginFooter({ formId, disabled, language, paymentEntryLa
   </div>;
 }
 
-export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange }: {
+export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange, onSignInPendingChange }: {
   onClose?: () => void;
   onSuccess?: () => void;
   preservePaymentJourney?: boolean;
   /** Reuse the parent payment modal's title, close control, overlay and footer. */
   embedded?: boolean;
   onValidityChange?: (valid: boolean) => void;
+  /** Keep the parent entry mounted from validated submit through its continuation. */
+  onSignInPendingChange?: (pending: boolean) => void;
   /** Kept for existing callers; the approved login has no email prompt. */
   emailReturnTo?: string;
   verifiedOnly?: boolean;
@@ -143,6 +145,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
 
   const finishDemoSignIn=async(usedOtp:boolean)=>{
     setSigningIn(true);setError(null);
+    onSignInPendingChange?.(true);
+    let signedIn = false;
     try{
       // This creates only the existing fictional preview capability. It never
       // calls Supabase Auth or authenticates a production taxpayer account.
@@ -156,13 +160,15 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         try{window.sessionStorage.setItem('sohojkor.preview-first-login-welcome.v1',profileId);}
         catch{/* The sign-in remains usable if storage is unavailable. */}
       }
+      signedIn = true;
       setStep('success');
       transitionTimer.current=window.setTimeout(()=>{
         if(onSuccess)onSuccess();
         else if(!preservePaymentJourney)navigate('taxpayer_home');
+        onSignInPendingChange?.(false);
       },750);
     }catch{setError('unavailable');}
-    finally{setSigningIn(false);}
+    finally{setSigningIn(false);if(!signedIn)onSignInPendingChange?.(false);}
   };
 
   const submit = async (event: React.FormEvent) => {
