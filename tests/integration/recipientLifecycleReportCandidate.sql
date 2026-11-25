@@ -9,7 +9,7 @@ DECLARE
   lines jsonb; allocations jsonb; snapshot jsonb; payload jsonb;
   payment jsonb; replay jsonb; notice2 jsonb; notice3 jsonb;
   event2 text; event3 text; ack jsonb;
-  payment_id uuid; before_data jsonb;
+  payment_id uuid; before_data jsonb; early_report jsonb;
   before_outbox bigint; before_payment_count bigint;
   before_story_notices bigint; denied boolean;
   invalid_case text; bad_payload jsonb; v_bad_key uuid;
@@ -84,6 +84,10 @@ BEGIN
   event2:=payment_id::text||':allocation:1';
   IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(notice2->'items') x WHERE x->>'eventId'=event2 AND x->>'paymentStatus'='SIMULATED_INITIATED' AND x->>'amountMinor'='1500')
   THEN RAISE EXCEPTION 'INITIATION_RECIPIENT_MISSING'; END IF;
+  early_report:=public.taxpay_demo_received_payment_report_save(recipient2_hash,event2,gen_random_uuid(),'Unrecognized simulated payment allocation');
+  IF early_report->>'paymentId'<>payment_id::text OR early_report->>'paymentCompleted'<>'false'
+    OR jsonb_array_length(public.taxpay_demo_correction_claim(1,(early_report->>'id')::uuid))<>0
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_OR_PREMATURE_OFFICE_DISPATCH'; END IF;
   payment:=public.taxpay_demo_story1_submit(payer_hash,payload);
   IF payment->>'id'<>payment_id::text OR payment->>'status'<>'SIMULATED_SUCCESS'
   THEN RAISE EXCEPTION 'INITIATION_COMPLETION_ID_DRIFT'; END IF;
@@ -223,7 +227,7 @@ BEGIN
     report:=public.taxpay_demo_received_payment_report_save(recipient2_hash,event2,gen_random_uuid(),'Unrecognized simulated payment allocation');
     report_id:=(report->>'id')::uuid;
     duplicate:=public.taxpay_demo_received_payment_report_save(recipient2_hash,event2,gen_random_uuid(),'Unrecognized simulated payment allocation');
-    IF report->>'caseKind'<>'UNSOLICITED_PAYMENT_REPORT' OR duplicate->>'id'<>report_id::text OR report->>'officeSyncState'<>'PENDING' THEN RAISE EXCEPTION 'REPORT_IDEMPOTENCY_FAILED'; END IF;
+    IF report->>'caseKind'<>'UNSOLICITED_PAYMENT_REPORT' OR duplicate->>'id'<>report_id::text OR report->>'id'<>early_report->>'id' OR report->>'paymentCompleted'<>'true' OR report->>'officeSyncState'<>'PENDING' THEN RAISE EXCEPTION 'REPORT_IDEMPOTENCY_FAILED'; END IF;
     BEGIN
       PERFORM public.taxpay_demo_received_payment_report_save(recipient3_hash,event2,gen_random_uuid(),'Unauthorized other allocation report');
     EXCEPTION WHEN OTHERS THEN
@@ -312,8 +316,11 @@ BEGIN
   guest:=jsonb_set(guest,'{details,receiptSnapshot,payerName}',to_jsonb('User 4'::text));
   guest:=jsonb_set(guest,'{details,receiptSnapshot,payerTin}',to_jsonb('444444444444'::text));
   guest:=jsonb_set(guest,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||guest_key::text));
-  result:=public.demo_story1_submit(guest);
+  result:=public.demo_story1_initiate(guest);
   guest_id:=(result->>'id')::uuid;
+  IF result->>'status'<>'SIMULATED_INITIATED' OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'unread')->'items') n WHERE n->>'paymentId'=guest_id::text AND n->>'paymentStatus'='SIMULATED_INITIATED') THEN RAISE EXCEPTION 'WALKIN_INITIATION_NOT_VISIBLE'; END IF;
+  result:=public.demo_story1_submit(guest);
+  IF result->>'id'<>guest_id::text THEN RAISE EXCEPTION 'WALKIN_INITIATION_ID_DRIFT'; END IF;
   replay:=public.demo_story1_submit(guest);
   IF result->>'status' IS DISTINCT FROM 'SIMULATED_SUCCESS'
     OR replay->>'id' IS DISTINCT FROM guest_id::text
@@ -335,7 +342,7 @@ BEGIN
     OR notice2->>'payerName' IS DISTINCT FROM 'User 4'
     OR notice2->>'paymentStatus' IS DISTINCT FROM 'SIMULATED_SUCCESS'
     OR notice2->>'serviceCode' IS DISTINCT FROM 'ADVANCE_TAX'
-    OR (notice2->>'createdAt')::timestamptz IS DISTINCT FROM (SELECT created_at FROM demo_payment.story_payments WHERE id=guest_id)
+    OR (notice2->>'createdAt')::timestamptz IS DISTINCT FROM (SELECT created_at FROM demo_payment.story_payment_initiations WHERE id=guest_id)
     OR notice2->>'receiptReference' IS DISTINCT FROM 'SIM-'||guest_key::text
     OR notice2 ? 'payerTin' OR notice2 ? 'allocations'
     OR EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(payer_hash,'list')->'items') n

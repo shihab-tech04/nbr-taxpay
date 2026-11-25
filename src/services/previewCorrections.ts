@@ -8,7 +8,7 @@ export type PreviewCorrectionInput = {
 };
 export type PreviewReportInput={caseKind:'UNSOLICITED_PAYMENT_REPORT';eventId:string;requestKey:string;reason:string};
 export type PreviewCorrectionRecord = {
-  caseKind?:'CORRECTION_REVIEW'|'UNSOLICITED_PAYMENT_REPORT';recipientEventId?:string|null;
+  caseKind?:'CORRECTION_REVIEW'|'UNSOLICITED_PAYMENT_REPORT';recipientEventId?:string|null;paymentCompleted?:boolean;
   id:string; paymentId:string|null; originalReference:string; allocationIndex:number|null; allocationId:string|null;
   currentAY:string; proposedAY:string; currentCircle:string; proposedCircle:string;
   currentHeadCode:string; proposedHeadCode:string; reason:string; createdAt:string; status:'RECORDED';
@@ -25,8 +25,9 @@ export function correctionsForAssessmentYear(rows:readonly PreviewCorrectionReco
 export function recentPreviewCorrections(rows:readonly PreviewCorrectionRecord[]) {
   return [...rows].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.id.localeCompare(b.id));
 }
-export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'>,language:'en'|'bn'){
+export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'|'paymentCompleted'>,language:'en'|'bn'){
   const bn=language==='bn';
+  if(record.paymentCompleted===false)return bn?'পেমেন্ট সম্পন্ন হওয়ার অপেক্ষায়':'Awaiting payment completion';
   if(record.officeSyncState!=='ACKNOWLEDGED')return bn?'অফিসে পাঠানো হচ্ছে':'Awaiting Office';
   switch(record.reviewState){
     case 'MAKER_ACKNOWLEDGED':return bn?'অফিস গ্রহণ করেছে':'Acknowledged';
@@ -47,6 +48,7 @@ function checked(raw:unknown):PreviewCorrectionRecord{
   if(row.officeSyncState!==undefined&&!['PENDING','ACKNOWLEDGED'].includes(String(row.officeSyncState)))throw Error('Invalid Office delivery state');
   if(row.reviewState!==undefined&&!['PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','REJECTED'].includes(String(row.reviewState)))throw Error('Invalid Office review state');
   if(row.reviewReason!==undefined&&row.reviewReason!==null&&typeof row.reviewReason!=='string')throw Error('Invalid Office review reason');
+  if(row.paymentCompleted!==undefined&&typeof row.paymentCompleted!=='boolean')throw Error('Invalid report payment state');
   if(row.caseKind!==undefined&&!['CORRECTION_REVIEW','UNSOLICITED_PAYMENT_REPORT'].includes(String(row.caseKind)))throw Error('Invalid case kind');
   if(row.caseKind==='UNSOLICITED_PAYMENT_REPORT'&&(typeof row.recipientEventId!=='string'||!row.recipientEventId.startsWith(String(row.paymentId)+':')))throw Error('Invalid report event identity');
   return row as unknown as PreviewCorrectionRecord;
