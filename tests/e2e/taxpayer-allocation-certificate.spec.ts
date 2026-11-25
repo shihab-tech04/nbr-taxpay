@@ -242,7 +242,16 @@ async function installCertificateAccountFixture(
     }
     if (url.pathname === '/rest/v1/rpc/taxpay_claim_story1_session' ||
         url.pathname === '/rest/v1/rpc/taxpay_claim_walkin_payer_payments') {
-      await route.fulfill({ status: 200, headers, body: 'null' });
+      // The SQL contract acknowledges a successful idempotent claim with
+      // a non-negative integer. Zero means no new owner link was created;
+      // the subsequent owner-scoped read must still prove all record data.
+      expect(request.method()).toBe('POST');
+      const body=request.postDataJSON() as Record<string,unknown>;
+      if(url.pathname.endsWith('taxpay_claim_story1_session')){
+        expect(Object.keys(body)).toEqual(['p_session_id']);
+        expect(typeof body.p_session_id).toBe('string');
+      }else expect(body).toEqual({});
+      await route.fulfill({ status: 200, headers, body: '0' });
       return;
     }
     if (url.pathname === '/rest/v1/rpc/taxpay_my_story1_payment_by_reference') {

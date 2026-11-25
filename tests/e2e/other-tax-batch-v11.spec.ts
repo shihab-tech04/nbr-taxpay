@@ -279,6 +279,8 @@ test('all five original non-return liability groups keep an editable year and am
 });
 
 test('switching taxpayer preserves each person’s head, year and amount without a target dropdown', async ({ page }) => {
+  // Full mobile journey; prior CI timed out after reaching purpose and amount.
+  test.setTimeout(90000);
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
