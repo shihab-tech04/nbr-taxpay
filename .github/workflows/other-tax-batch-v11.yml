@@ -2,7 +2,7 @@ name: TaxPay Other Tax v11 multi-taxpayer acceptance
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'src/components/screens/GuestPayment.tsx'
@@ -53,7 +53,7 @@ on:
       - '.github/workflows/other-tax-batch-v11.yml'
 
 concurrency:
-  group: taxpay-other-tax-v11-${{ github.ref }}
+  group: taxpay-other-tax-v11-${{ github.ref }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   # Cancel superseded PR checks only; production checks remain active.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 

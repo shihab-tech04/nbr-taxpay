@@ -4,7 +4,7 @@ import { beneficiaryNameForStorage } from './beneficiaryNames';
 import {normalizeOtherLabel,validBeneficiaryClassification,validNewBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
 import {
   addGuestBeneficiaries,restoreLegacyGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,loadLegacyGuestBeneficiaries, hasStoredGuestBeneficiaries,
-  removeGuestBeneficiary, updateGuestBeneficiary, editGuestBeneficiaryClassification, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
+  removeGuestBeneficiary, updateGuestBeneficiary, editGuestBeneficiaryClassification, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList, transferGuestBeneficiaryGroup,
 } from './guestBeneficiaries';
 
 export interface BeneficiaryList { id: string; owner_uid?: string; name: string; created_at: string; }
@@ -173,6 +173,7 @@ export async function createBeneficiaryList(ownerUid:string | null,name:string):
   if(!trimmed || trimmed.length>80)throw new Error('Enter a list name of up to 80 characters.');
   if (!ownerUid) return createGuestBeneficiaryList(trimmed);
   const {data,error}=await client().from('taxpay_beneficiary_lists').insert({owner_uid:ownerUid,name:trimmed}).select('id,owner_uid,name,created_at').single();
+  if(error?.message.includes('BENEFICIARY_GROUP_LIMIT'))throw new Error('BENEFICIARY_GROUP_LIMIT');
   if(error)throw error;
   return data as BeneficiaryList;
 }
@@ -294,7 +295,14 @@ export async function renameBeneficiaryList(ownerUid:string|null,id:string,name:
   }
   if(!data)throw new Error('This beneficiary list no longer exists. Refresh and try again.');
 }
-/** Deleting a list cascades to its saved contacts only. Database RLS scopes the owner. */
+/** Transfer and remove a list atomically, with authorization enforced by SQL. */
+export async function transferBeneficiaryGroup(ownerUid:string|null,id:string,targetListId:string):Promise<void>{
+  if(!targetListId||targetListId===id)throw new Error('Choose another saved list.');
+  if(!ownerUid)return transferGuestBeneficiaryGroup(id,targetListId);
+  const {error}=await client().rpc('taxpay_transfer_beneficiary_group',{p_source_id:id,p_target_id:targetListId});
+  if(error)throw new Error(error.message);
+}
+/** Empty group deletion only. SQL guards nonempty groups. */
 export async function deleteBeneficiaryList(ownerUid:string|null,id:string):Promise<void>{
   if(!ownerUid)return deleteGuestBeneficiaryList(id);
   const {data,error}=await client().from('taxpay_beneficiary_lists')

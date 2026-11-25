@@ -1,7 +1,7 @@
 name: Transaction Story UI Integrity
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'src/components/screens/PaymentWizard.tsx'
@@ -14,7 +14,7 @@ permissions:
   contents: read
 # Cancel only superseded updates to this same PR; manual acceptance stays independent.
 concurrency:
-  group: taxpay-transaction-ui-${{ github.event.pull_request.number || github.run_id }}
+  group: taxpay-transaction-ui-${{ github.event.pull_request.number || github.run_id }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

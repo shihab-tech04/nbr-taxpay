@@ -7,6 +7,13 @@
   position:relative; isolation:isolate; overflow:hidden; min-width:0;
   height:100%; min-height:340px; border:1px solid var(--slider2-outline);
   border-radius:24px; background:var(--slider2-bg); touch-action:pan-y;
+  --slider2-copy-width:min(500px,68%);
+  --slider2-copy-start:36px;
+  --slider2-copy-end:24px;
+  --slider2-body-max:360px;
+  /* The solid palette reaches the complete body text line box, not a fixed
+   * fraction of the image. The artwork remains full-bleed on the right. */
+  --slider2-text-edge:calc(min(calc(var(--slider2-copy-width) - var(--slider2-copy-end)),calc(var(--slider2-copy-start) + var(--slider2-body-max))) + 4px);
   transition:background-color 750ms ease-in-out,border-color 750ms ease-in-out;
 }
 .home2-import-root .home2-slider2__artwork,
@@ -20,21 +27,23 @@
 .home2-import-root .home2-slider2__layer > picture {
   position:absolute; inset:0; display:block; width:100%; height:100%;
 }
+/* Fill the desktop artwork height without letterboxing; anchor the illustration
+ * to the right and retain the palette fade over the cropped left edge. */
 .home2-import-root .home2-slider2__layer img {
   position:absolute; inset:0; display:block; width:100%; height:100%;
-  max-width:none; max-height:none; object-fit:contain; object-position:right center;
+  max-width:none; max-height:none; object-fit:cover; object-position:right center;
 }
 .home2-import-root .home2-slider2__layer::after {
   position:absolute; inset:0; content:''; pointer-events:none;
-  background:linear-gradient(to right,var(--slider2-bg) 0%,var(--slider2-bg) 34%,
-    color-mix(in srgb,var(--slider2-bg) 96%,transparent) 43%,
-    color-mix(in srgb,var(--slider2-bg) 78%,transparent) 50%,
-    color-mix(in srgb,var(--slider2-bg) 42%,transparent) 59%,transparent 70%);
+  background:linear-gradient(to right,var(--slider2-bg) 0%,var(--slider2-bg) var(--slider2-text-edge),
+    color-mix(in srgb,var(--slider2-bg) 92%,transparent) calc(var(--slider2-text-edge) + 4%),
+    color-mix(in srgb,var(--slider2-bg) 50%,transparent) calc(var(--slider2-text-edge) + 11%),
+    transparent calc(var(--slider2-text-edge) + 18%));
 }
 .home2-import-root .home2-slider2__copy {
   position:relative; z-index:1; display:flex; flex-direction:column; justify-content:center;
-  min-height:340px; height:100%; width:min(500px,68%); min-width:0;
-  padding:28px 24px 28px 36px;
+  min-height:340px; height:100%; width:var(--slider2-copy-width); min-width:0;
+  padding:28px var(--slider2-copy-end) 28px var(--slider2-copy-start);
 }
 .home2-import-root .home2-slider2__content {min-width:0;}
 .home2-import-root .home2-slider2__copy h1 {
@@ -43,8 +52,10 @@
   transition:color 750ms ease-in-out;
 }
 .home2-import-root .home2-slider2__copy p {
-  margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--slider2-body);
-  overflow-wrap:anywhere; transition:color 750ms ease-in-out;
+  margin:12px 0 0; max-width:var(--slider2-body-max); min-width:0;
+  font-size:14.5px; line-height:1.6; color:var(--slider2-body);
+  white-space:normal; overflow-wrap:anywhere; overflow:visible; text-overflow:clip;
+  transition:color 750ms ease-in-out;
 }
 .home2-import-root .home2-slider2__mobile-copy {display:none;}
 .home2-import-root .home2-slider2__actions {display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;}
@@ -90,7 +101,7 @@
 }
 .home2-import-root .home2-slider2__frame:focus-visible {outline-offset:-3px;}
 @media (min-width:960px) and (max-width:1100px) {
-  .home2-import-root .home2-slider2__copy {width:70%;padding-inline:28px 16px;}
+  .home2-import-root .home2-slider2__frame {--slider2-copy-width:70%;--slider2-copy-start:28px;--slider2-copy-end:16px;}
   .home2-import-root .home2-slider2__copy h1 {font-size:32px;}
   .home2-import-root .home2-slider2__actions button {padding-inline:16px;}
 }
@@ -100,15 +111,15 @@
   .home2-import-root .home2-slider2__copy {width:100%;min-height:392px;height:auto;padding:20px 12px 12px;justify-content:flex-start;}
   .home2-import-root .home2-slider2__content {display:flex;flex:1;flex-direction:column;min-height:360px;}
   .home2-import-root .home2-slider2__copy h1 {font-size:26px;line-height:1.12;margin-inline:8px;}
-  .home2-import-root .home2-slider2__copy p {font-size:13px;margin:8px 8px 0;line-height:1.55;}
+  .home2-import-root .home2-slider2__copy p {max-width:none;font-size:13px;margin:8px 8px 0;line-height:1.55;}
   .home2-import-root .home2-slider2__desktop-copy {display:none;}
   .home2-import-root .home2-slider2__mobile-copy {display:inline;}
   .home2-import-root .home2-slider2__layer > picture {inset:auto 0 0;width:100%;height:74%;}
-  .home2-import-root .home2-slider2__layer img {object-position:center bottom;}
+  .home2-import-root .home2-slider2__layer img {object-fit:contain;object-position:center bottom;}
   .home2-import-root .home2-slider2__layer::after {
-    background:linear-gradient(to bottom,var(--slider2-bg) 0%,var(--slider2-bg) 25%,
-      color-mix(in srgb,var(--slider2-bg) 92%,transparent) 34%,
-      color-mix(in srgb,var(--slider2-bg) 62%,transparent) 46%,transparent 65%);
+    background:linear-gradient(to bottom,var(--slider2-bg) 0%,var(--slider2-bg) 34%,
+      color-mix(in srgb,var(--slider2-bg) 92%,transparent) 42%,
+      color-mix(in srgb,var(--slider2-bg) 62%,transparent) 50%,transparent 65%);
   }
   .home2-import-root .home2-slider2__actions {
     display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;

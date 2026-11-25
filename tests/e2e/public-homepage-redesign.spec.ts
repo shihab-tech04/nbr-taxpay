@@ -414,3 +414,131 @@ test('Home 3 direct URL and Bengali translation retain the separate Home 2 route
   await expect(page.getByTestId('home2-root')).toBeVisible();
   await expect(page.getByRole('link',{name:'Home 3',exact:true})).toBeVisible();
 });
+
+test('Home 2 uses one section heading, a quiet dashboard button and white payment search card', async ({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const desktop=(page.viewportSize()?.width??1280)>=960;
+  for(const lang of ['en','bn']){
+    await page.goto('/?action=home-2&lang='+lang);
+    const root=page.getByTestId('home2-root');
+    const heading=root.locator('#features-title');
+    await expect(heading).toHaveText(lang==='en'?'Everything in one place':'সবকিছু এক জায়গায়');
+    await expect(heading).toBeVisible();
+    for(const removed of ['Services','Pay, organise and track your taxes.','সেবাসমূহ','কর পরিশোধ, সংরক্ষণ ও ট্র্যাক করুন।']){
+      await expect(root.getByText(removed,{exact:true})).toHaveCount(0);
+    }
+    await expect(root.getByTestId('home2-record-heading').locator('..')).toHaveCSS('background-color','rgb(255, 255, 255)');
+    await expect(root.getByTestId('home2-reference')).toBeVisible();
+    const dashboard=root.getByTestId('home2-dashboard-action');
+    if(desktop){
+      await expect(dashboard).toBeVisible();
+      await expect(dashboard).toHaveCSS('background-color','rgb(255, 255, 255)');
+      await expect(dashboard).toHaveText(lang==='en'?'Log in for your dashboard':'ড্যাশবোর্ড দেখতে লগইন করুন');
+      const button=await dashboard.boundingBox();
+      expect(button!.height).toBeGreaterThanOrEqual(40);
+      await dashboard.focus();
+      await expect(dashboard).toBeFocused();
+    } else await expect(dashboard).toHaveCount(0);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
+});
+
+test('Slider 2 artwork fills desktop top and bottom without moving the approved copy or payment buttons',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop letterbox regression across viewport widths');
+  test.setTimeout(90000);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const width of [960,1024,1280,1920]){
+    await page.setViewportSize({width,height:900});
+    await page.goto('/?action=home-2&lang=en');
+    const frame=page.getByTestId('slider2').getByRole('region');
+    const art=frame.locator('[data-testid="slider2-artwork"][data-active="true"] img');
+    await expect(art).toHaveCSS('object-fit','cover');
+    await expect(art).toHaveCSS('object-position','100% 50%');
+    const pay=frame.getByTestId('home2-pay');
+    const other=frame.getByTestId('home2-other');
+    const payBefore=await pay.boundingBox();
+    for(let i=1;i<=5;i++){
+      await page.getByTestId('slider2').getByRole('button',{name:'Go to slide '+i}).click();
+      await expect(frame).toHaveAttribute('data-active-slide',String(i-1));
+      await expect.poll(()=>art.evaluate((image:HTMLImageElement)=>image.complete && image.naturalWidth>0 && image.naturalHeight>0)).toBe(true);
+      const b=await frame.boundingBox(), image=await art.boundingBox();
+      expect(Math.abs(image!.y-b!.y)).toBeLessThanOrEqual(2);
+      expect(Math.abs(image!.y+image!.height-b!.y-b!.height)).toBeLessThanOrEqual(2);
+      const result=await art.evaluate((image:HTMLImageElement)=>{
+        const fit=getComputedStyle(image).objectFit;
+        const w=image.clientWidth,h=image.clientHeight;
+        const scale=fit==='cover'?Math.max(w/image.naturalWidth,h/image.naturalHeight):Math.min(w/image.naturalWidth,h/image.naturalHeight);
+        return {fillWidth:image.naturalWidth*scale>=w-.5,fillHeight:image.naturalHeight*scale>=h-.5};
+      });
+      expect(result).toEqual({fillWidth:true,fillHeight:true});
+      const pos=await pay.boundingBox();
+      expect(Math.abs(pos!.x-payBefore!.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(pos!.y-payBefore!.y)).toBeLessThanOrEqual(1);
+      await expect(other).toBeVisible();
+    }
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
+});
+
+test('Slider 2 protects complete bilingual description lines and removes the All Tax Payments badge', async ({page},info)=>{
+  test.setTimeout(90000);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const desktop=info.project.name==='desktop-1280';
+  const widths=desktop?[960,1280,1920]:[page.viewportSize()!.width];
+  for(const width of widths){
+    await page.setViewportSize({width,height:900});
+    for(const lang of ['en','bn']){
+      await page.goto('/?action=home-2&lang='+lang);
+      const root=page.getByTestId('home2-root');
+      const slider=root.getByTestId('slider2');
+      const frame=slider.getByRole('region');
+      const body=frame.locator('.home2-slider2__copy p');
+      await expect(body).toBeVisible();
+      await expect(body).toHaveCSS('white-space','normal');
+      await expect(body).toHaveCSS('overflow','visible');
+      const copy=root.getByTestId('home2-all-payments-copy');
+      await expect(copy.getByRole('heading',{name:lang==='en'?'All Tax Payments':'সকল কর পরিশোধ',exact:true})).toBeVisible();
+      await expect(root.getByText(/^(Start here|এখান থেকে শুরু)$/i)).toHaveCount(0);
+      const paymentCard=copy.locator('xpath=ancestor::button[1]');
+      await expect(paymentCard.locator('ol li')).toHaveCount(3);
+      await expect(paymentCard.getByText(lang==='en'?'Yourself':'নিজের জন্য',{exact:true})).toBeVisible();
+      await expect(paymentCard.getByText(lang==='en'?'Family':'পরিবার',{exact:true})).toBeVisible();
+      // Check every actual text line against the frame and its solid fade edge.
+      for(let index=0;index<5;index++){
+        await slider.getByRole('button',{name:lang==='en'?'Go to slide '+(index+1):'স্লাইড '+(index+1),exact:true}).click();
+        await expect(frame).toHaveAttribute('data-active-slide',String(index));
+        const result=await body.evaluate(p=>{
+          const frame=p.closest('.home2-slider2__frame') as HTMLElement;
+          const copy=p.closest('.home2-slider2__copy') as HTMLElement;
+          const active=frame.querySelector('.home2-slider2__layer[data-active=true]')!;
+          const span=Array.from(p.querySelectorAll('span')).find(x=>getComputedStyle(x).display!=='none')!;
+          const range=document.createRange();range.selectNodeContents(span);
+          const bounds=frame.getBoundingClientRect(), cb=copy.getBoundingClientRect();
+          const pb=p.getBoundingClientRect();
+          const cp=getComputedStyle(copy), ps=getComputedStyle(p);
+          const right=Math.min(cb.right-parseFloat(cp.paddingRight),pb.right);
+          const lines=Array.from(range.getClientRects()).filter(x=>x.width>0&&x.height>0);
+          const gradient=getComputedStyle(active,'::after').backgroundImage;
+          const desktop=window.innerWidth>=960;
+          const probe=document.createElement('div');
+          probe.style.cssText='position:absolute;visibility:hidden;pointer-events:none;height:0;left:0;width:var(--slider2-text-edge)';
+          frame.appendChild(probe);
+          const edge=probe.getBoundingClientRect().right;probe.remove();
+          return {lineCount:lines.length,inside:lines.every(r=>r.left>=bounds.left-1&&r.right<=right+1&&r.bottom<=bounds.bottom+1),
+            protected:!desktop||lines.every(r=>r.right<=edge+1),
+            readableFade:gradient.includes('linear-gradient')&&gradient.includes('transparent')||gradient.includes('linear-gradient')&&gradient.includes('rgba(0, 0, 0, 0)'),
+            noTextOverflow:p.scrollWidth<=p.clientWidth+1&&p.scrollHeight<=p.clientHeight+1,
+            noClamp:ps.webkitLineClamp==='none'||ps.webkitLineClamp==='',
+          };
+        });
+        expect(result.lineCount).toBeGreaterThan(0);
+        expect(result.inside).toBe(true);expect(result.protected).toBe(true);
+        expect(result.readableFade).toBe(true);expect(result.noTextOverflow).toBe(true);expect(result.noClamp).toBe(true);
+        await expect(frame.getByTestId('home2-pay')).toBeVisible();
+        await expect(frame.getByTestId('home2-other')).toBeVisible();
+      }
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+      await root.screenshot({path:'test-results/screenshots/home2-readable-'+width+'-'+lang+'.png',animations:'disabled'});
+    }
+  }
+});

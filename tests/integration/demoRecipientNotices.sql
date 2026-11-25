@@ -160,6 +160,10 @@ BEGIN
      OR notice3->'items'->0->>'assessmentYear' IS DISTINCT FROM '2025-26'
      OR notice2->'items'->0->>'recipientTin' IS DISTINCT FROM '222222222222'
      OR notice3->'items'->0->>'recipientTin' IS DISTINCT FROM '333333333333'
+     OR notice2->'items'->0->>'payerName' IS DISTINCT FROM 'WS3 disposable payer'
+     OR notice2->'items'->0->>'paymentStatus' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+     OR notice2->'items'->0->>'serviceCode' IS DISTINCT FROM 'ADVANCE_TAX'
+     OR (notice2->'items'->0->>'createdAt')::timestamptz IS DISTINCT FROM (SELECT created_at FROM demo_payment.story_payments WHERE id=payment_id)
      OR notice2->'items'->0->>'paymentId' IS DISTINCT FROM payment_id::text
      OR notice2->'items'->0->>'receiptReference' IS DISTINCT FROM 'SIM-'||payment_key::text
      OR notice2->'items'->0 ? 'payerTin'
@@ -197,12 +201,10 @@ BEGIN
 END;
 $demo_recipient_notice$;
 
--- Existing registered-source checks above are unchanged. Exercise the proposed
--- replacement only in this disposable transaction; DDL and synthetic rows
--- must roll back together. This is NOT hosted or settlement acceptance.
--- The paired runner streams SQL via stdin from the repository root and
--- replaces the final ROLLBACK with a capture/COMMIT. Protect candidate DDL
--- and all walk-in rows with a separate savepoint even in that runner.
+-- Exercise the function installed by the normal ordered migration chain.
+-- No test-only DDL injection: this verifies clean database reproducibility.
+-- Preserve the separate savepoint for synthetic walk-in rows because the
+-- paired runner may capture/commit the registered source fixture.
 CREATE TEMP TABLE p0_notice_restore_check ON COMMIT DROP AS
 SELECT pg_get_functiondef('public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)'::regprocedure) AS definition,
   (SELECT count(*) FROM demo_payment.story_payments) AS payment_count,
@@ -210,7 +212,6 @@ SELECT pg_get_functiondef('public.taxpay_demo_received_payment_notices(text,text
   (SELECT count(*) FROM demo_payment.mirror_outbox) AS outbox_count,
   (SELECT count(*) FROM taxpay_guest_private.demo_received_payment_notice_ack) AS ack_count;
 SAVEPOINT p0_walkin_candidate;
-\i tests/integration/p0WalkInRecipientNoticeCandidate.sql
 DO $p0_walkin$
 DECLARE
   payer jsonb; recipient2 jsonb; recipient3 jsonb;
@@ -287,6 +288,10 @@ BEGIN
     OR notice3->>'amountMinor' IS DISTINCT FROM '3500'
     OR notice2->>'assessmentYear' IS DISTINCT FROM '2026-27'
     OR notice3->>'assessmentYear' IS DISTINCT FROM '2025-26'
+    OR notice2->>'payerName' IS DISTINCT FROM 'User 4'
+    OR notice2->>'paymentStatus' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+    OR notice2->>'serviceCode' IS DISTINCT FROM 'ADVANCE_TAX'
+    OR (notice2->>'createdAt')::timestamptz IS DISTINCT FROM (SELECT created_at FROM demo_payment.story_payments WHERE id=guest_id)
     OR notice2->>'receiptReference' IS DISTINCT FROM 'SIM-'||guest_key::text
     OR notice2 ? 'payerTin' OR notice2 ? 'allocations'
     OR EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(payer_hash,'list')->'items') n

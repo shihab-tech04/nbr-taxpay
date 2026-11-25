@@ -63,3 +63,13 @@ test('F-094 preserves ordinary review and denies forged inquiry categories',()=>
  assert.equal(invalid.allowedToRecordInquiry,false);
  assert.equal(invalid.authorizesFinancialCorrection,false);
 });
+
+test('P6 supporting evidence keeps approved Office field optional and bounded at 2,000 Unicode characters',()=>{
+ const accepted=validateCorrectionInquiry({...valid,evidenceNote:'ব্যাখ্যা: '+ 'আ'.repeat(1990)});
+ assert.equal(accepted.allowedToRecordInquiry,true);
+ assert.equal(validateCorrectionInquiry({...valid,evidenceNote:'A'.repeat(2000)}).allowedToRecordInquiry,true);
+ assert.equal(validateCorrectionInquiry({...valid,evidenceNote:'A'.repeat(2001)}).allowedToRecordInquiry,false);
+ assert.equal(validateCorrectionInquiry({...valid,evidenceNote:'😀'.repeat(2000)}).allowedToRecordInquiry,true);
+ assert.equal(validateCorrectionInquiry({...valid,evidenceNote:'😀'.repeat(2001)}).allowedToRecordInquiry,false);
+ assert.equal(validateCorrectionInquiry(valid).allowedToRecordInquiry,true);
+});

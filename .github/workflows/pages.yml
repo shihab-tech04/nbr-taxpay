@@ -2,7 +2,7 @@ name: TaxPay - build and GitHub Pages
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
   push:
     branches: [main]
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: taxpay-pages-${{ github.ref }}
+  group: taxpay-pages-${{ github.ref }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   # Replace only superseded PR previews. Never interrupt a main-branch production release.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
       - name: Check verifier regression cases
         run: |
-          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs scripts/ci/sohojkor-v2-cutover-gate.test.mjs scripts/ci/main-sql-release-gate.test.mjs
+          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs scripts/ci/sohojkor-v2-cutover-gate.test.mjs scripts/ci/main-sql-release-gate.test.mjs scripts/ci/draft-ready-concurrency.test.mjs
       - name: Confirm exact-source PR acceptance and review artifact
         id: probe
         env:
@@ -233,6 +233,12 @@ jobs:
           VITE_SUPABASE_URL: 'https://dashboard-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/dashboard-unified-preview.spec.ts --project=desktop-1280 --project=mobile-375
+      - name: Verify connected User1 correction dashboard SQL response and retry contract
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://dashboard-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/taxpayer-correction-dashboard-api.spec.ts --project=desktop-1280 --project=mobile-375
       - name: Verify shared public and signed-in mobile navigation parity
         env:
           VITE_SUPABASE_DISABLED: 'true'

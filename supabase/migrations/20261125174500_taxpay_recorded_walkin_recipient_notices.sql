@@ -1,5 +1,6 @@
--- P0 R01/R02 recorded walk-in notice candidate; isolated disposable test only.
--- Not a hosted migration. Applied inside the caller's transaction and rolled back.
+-- Extend existing recorded simulated-payment notices to explicit walk-in allocations.
+-- Read-only payment projection; existing acknowledgement and account contracts remain.
+-- No new authentication, role, payment gateway or financial mutation.
 CREATE OR REPLACE FUNCTION public.taxpay_demo_received_payment_notices(
   p_capability_hash text,
   p_action text DEFAULT 'list',
@@ -95,7 +96,10 @@ BEGIN
       a.value->>'headId' AS head_id,
       coalesce(a.value->>'serviceCode',p.service_code) AS service_code,
       a.value->>'assessmentYear' AS assessment_year,
-      (a.value->>'amountMinor')::bigint AS amount_minor
+      (a.value->>'amountMinor')::bigint AS amount_minor,
+      CASE WHEN char_length(btrim(coalesce(p.data->'details'->>'payerName',''))) BETWEEN 1 AND 200
+        THEN p.data->'details'->>'payerName' ELSE NULL END AS payer_name,
+      p.status AS payment_status
     FROM valid_parents p
     CROSS JOIN LATERAL jsonb_array_elements(
       CASE WHEN jsonb_typeof(p.data->'details'->'allocations')='array'
@@ -113,7 +117,10 @@ BEGIN
         p.data->'details'->'receiptSnapshot'->>'challanNo'),
       NULL::text AS recipient_tin,l.value->>'headId',
       p.service_code,l.value->>'assessmentYear',
-      (l.value->>'amountMinor')::bigint AS amount_minor
+      (l.value->>'amountMinor')::bigint AS amount_minor,
+      CASE WHEN char_length(btrim(coalesce(p.data->'details'->>'payerName',''))) BETWEEN 1 AND 200
+        THEN p.data->'details'->>'payerName' ELSE NULL END,
+      p.status
     FROM valid_parents p
     CROSS JOIN LATERAL jsonb_array_elements(
       CASE WHEN jsonb_typeof(p.data->'details'->'lines')='array'
@@ -129,7 +136,8 @@ BEGIN
       'allocationId',e.allocation_id,'receiptReference',e.receipt_reference,
       'recipientTin',e.recipient_tin,'headId',e.head_id,
       'serviceCode',e.service_code,'assessmentYear',e.assessment_year,
-      'amountMinor',e.amount_minor,'createdAt',e.created_at)
+      'amountMinor',e.amount_minor,'createdAt',e.created_at,
+      'payerName',e.payer_name,'paymentStatus',e.payment_status)
     ORDER BY e.created_at,e.payment_id,e.event_id
   ),'[]'::jsonb) INTO v_events FROM eligible e;
 

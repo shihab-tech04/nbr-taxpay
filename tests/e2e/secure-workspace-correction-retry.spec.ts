@@ -36,6 +36,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
     created_at: '2026-01-01T00:00:00.000Z',
     reason: 'Synthetic request for review.',
     requested_outcome: 'Please review this synthetic sample.',
+    evidence_note: 'বাংলা supporting evidence for the original payment',
     change_kind: 'ASSESSMENT_YEAR',
     old_value: '2024-25',
     new_value: '2025-26',
@@ -78,6 +79,10 @@ test('owner can recover a failed private inquiry history load without duplicatin
 
     if (request.method() === 'OPTIONS') return json({}, 200);
     if (url.pathname === '/auth/v1/user' && request.method() === 'GET') return json(authUser);
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_office_initiated_corrections' && request.method() === 'POST') {
+      expect(request.postDataJSON()).toEqual({p_limit:20});
+      return json(0);
+    }
     if (url.pathname === '/rest/v1/rpc/taxpay_claim_story1_session' && request.method() === 'POST') {
       sessionClaimCalls++;
       expect(request.postDataJSON()).toMatchObject({ p_session_id: expect.any(String) });
@@ -140,6 +145,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await page.getByLabel('Original payment reference (must match your linked payment history)').fill('SYN-REF-123456');
   await page.getByLabel('Reason for requesting a correction review').fill('Synthetic request for review.');
   await page.getByLabel('What outcome are you requesting?').fill('Please review this synthetic sample.');
+  await page.getByTestId('correction-supporting-evidence').fill('বাংলা supporting evidence for the original payment');
   await page.getByLabel('Proposed attribution field (optional)').selectOption('ASSESSMENT_YEAR');
   await page.getByLabel('Original value (user supplied)').fill('2024-25');
   await page.getByLabel('Requested value (unverified)').fill('2025-26');
@@ -155,6 +161,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
     original_reference: 'SYN-REF-123456',
     reason: 'Synthetic request for review.',
     requested_outcome: 'Please review this synthetic sample.',
+    evidence_note: 'বাংলা supporting evidence for the original payment',
     change_kind: 'ASSESSMENT_YEAR',
     old_value: '2024-25',
     new_value: '2025-26',

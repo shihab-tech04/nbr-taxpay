@@ -7,6 +7,8 @@ export type ReceivedPaymentNotice = {
   recipientTin:string|null; serviceCode:string|null; headId:string|null;
   assessmentYear:string; amountMinor:number; receiptReference:string|null;
   createdAt:string; isRead:false;
+  /** Optional during original/V2 rollout; do not invent a missing payer or state. */
+  payerName?:string|null; paymentStatus?:'SIMULATED_SUCCESS';
 };
 
 export function parseReceivedPaymentNotice(value:unknown):ReceivedPaymentNotice {
@@ -27,6 +29,8 @@ export function parseReceivedPaymentNotice(value:unknown):ReceivedPaymentNotice 
     headId:optional('headId'),assessmentYear:row.assessmentYear,
     amountMinor:row.amountMinor,receiptReference:optional('receiptReference'),
     createdAt:row.createdAt,isRead:false,
+    ...(Object.hasOwn(row,'payerName')?{payerName:optional('payerName')}:{}),
+    ...(row.paymentStatus==='SIMULATED_SUCCESS'?{paymentStatus:row.paymentStatus}:{}),
   };
 }
 

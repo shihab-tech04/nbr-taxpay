@@ -183,3 +183,16 @@ test('SQL microsecond recipient order survives same-millisecond cross-page payme
     total:2,offset,limit,hasMore:offset+limit<2,
   }),1),/ordering/);
 });
+
+
+test('recorded notice exposes exact payer name and recorded state without manufacturing legacy fields',()=>{
+  const current=parseReceivedPaymentNotice({...valid,payerName:'Walk-in payer',paymentStatus:'SIMULATED_SUCCESS'});
+  assert.equal(current.payerName,'Walk-in payer');
+  assert.equal(current.paymentStatus,'SIMULATED_SUCCESS');
+  const legacy=parseReceivedPaymentNotice(valid);
+  assert.equal(legacy.payerName,undefined);
+  assert.equal(legacy.paymentStatus,undefined);
+  const unknown=parseReceivedPaymentNotice({...valid,payerName:null,paymentStatus:'UNSUPPORTED'});
+  assert.equal(unknown.payerName,null);
+  assert.equal(unknown.paymentStatus,undefined);
+});
