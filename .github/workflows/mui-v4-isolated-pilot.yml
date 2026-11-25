@@ -75,21 +75,18 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/mui-exact-main" "$RUNNER_TEMP/mui-snapshots" pilot-evidence
           git archive "$BASE_SHA" | tar -x -C "$RUNNER_TEMP/mui-exact-main"
-          cp playwright.mui-protected.config.ts "$RUNNER_TEMP/mui-exact-main/"
-          cp tests/e2e/mui-v4-protected-home.spec.ts "$RUNNER_TEMP/mui-exact-main/tests/e2e/"
           export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
+          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
           (
-            cd "$RUNNER_TEMP/mui-exact-main"
+            cd "$MUI_BASELINE_DIR"
             npm ci --no-audit --no-fund
             npm run build
             du -sb dist > "$RUNNER_TEMP/base-build-bytes.txt"
-            npx playwright test --config playwright.mui-protected.config.ts --update-snapshots
-            npx playwright test --config playwright.mui-protected.config.ts
-            echo 'UNCHANGED_MAIN_CONTROL_PIXEL_COMPARISON_PASS'
           )
           du -sb dist > pilot-evidence/candidate-build-bytes.txt
           cp "$RUNNER_TEMP/base-build-bytes.txt" pilot-evidence/
           npx playwright test --config playwright.mui-protected.config.ts
+          echo 'UNCHANGED_MAIN_CONTROL_AND_CANDIDATE_PIXEL_COMPARISON_PASS'
           cp -R "$MUI_SNAPSHOT_DIR" pilot-evidence/home-snapshots
           echo 'CANDIDATE_HOME_PIXEL_COMPARISON_PASS'
       - name: Preserve exact candidate for authorized protected PR review
@@ -106,6 +103,14 @@ jobs:
           git diff --name-only "$BASE_SHA" HEAD > pilot-evidence/CHANGED_FILES
           cp package.json package-lock.json pilot-evidence/
           git bundle create pilot-evidence/candidate.bundle HEAD
+      - name: Preserve visual evidence even when a comparison fails
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p pilot-evidence
+          if [ -d "$RUNNER_TEMP/mui-snapshots" ]; then
+            cp -R "$RUNNER_TEMP/mui-snapshots" pilot-evidence/actual-main-snapshots
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
