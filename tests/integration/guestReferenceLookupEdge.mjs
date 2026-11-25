@@ -2,18 +2,20 @@
 // One approved synthetic profile-capability owner, never public reference alone.
 // Local Docker/Supabase only; no production data, credentials or Office writes.
 import assert from 'node:assert/strict';
+import {localSupabaseEndpoints} from './localSupabaseEndpoints.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {writeFileSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 
-const base='http://127.0.0.1:54321/functions/v1/demo-story1-taxpay/payments/reference';
+const {origin,dbPort}=localSupabaseEndpoints();
+const base=origin+'/functions/v1/demo-story1-taxpay/payments/reference';
 const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
 assert.ok(key,'Disposable Supabase public key required');
 function lit(v){return "'"+String(v).replaceAll("'","''")+"'";}
 function sqlJson(statement){
  const p=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-c',statement],{
-  encoding:'utf8',env:{...process.env,PGHOST:'127.0.0.1',PGPORT:'54322',
+  encoding:'utf8',env:{...process.env,PGHOST:'127.0.0.1',PGPORT:dbPort,
     PGDATABASE:'postgres',PGUSER:'postgres',PGPASSWORD:'postgres'}
  });
  assert.equal(p.status,0,'Local SQL test fixture failed: '+(p.stderr||'').slice(0,1000));
