@@ -288,3 +288,31 @@ test('F-125 T02/T03: account switch hides prior rows and failed history read rec
   expect(state.syntheticClaims.every(subject=>subject===ownerA.id||subject===ownerB.id)).toBe(true);
   expect(state.unsafeWrites).toEqual([]);
 });
+
+test('G0: recorded Gift and Travel Tax history remains visible in table, mobile cards and details',async({page},info)=>{
+  const language=info.project.name==='mobile-375'?'bn':'en';
+  const gift=makeHistoryRow(2,'user2'), travel=makeHistoryRow(1,'user2');
+  const state:FixtureState={currentUser:ownerB,profileId:'user2',
+    historyRows:[{...gift,allocations:[{...gift.allocations[0],category:'GIFT_TAX'}]},
+      {...travel,allocations:[{...travel.allocations[0],category:'TRAVEL_TAX'}]}],
+    people:[],lists:[],failHistoryResponses:0,historySubjects:[],peopleRangeStarts:[],
+    syntheticClaims:[],unsafeWrites:[]};
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await installPrivateFixture(page,state);
+  await page.goto('/?action=history&lang='+language);
+  const rows=currentHistoryRows(page);
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText(gift.id);
+  await rows.first().getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details'}).click();
+  const modal=page.getByRole('dialog').last();
+  await expect(modal).toContainText(language==='bn'?'দানকর':'Gift Tax');
+  await expect(modal).toContainText(gift.id);
+  await page.keyboard.press('Escape');
+  await rows.last().getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details'}).click();
+  await expect(page.getByRole('dialog').last()).toContainText(language==='bn'?'ভ্রমণ কর':'Travel Tax');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(currentHistoryRows(page)).toHaveCount(2);
+  expect(errors).toEqual([]);
+  expect(state.unsafeWrites).toEqual([]);
+});
