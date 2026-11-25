@@ -501,7 +501,7 @@ test('Slider 2 protects complete bilingual description lines and removes the All
       await expect(root.getByText(/^(Start here|এখান থেকে শুরু)$/i)).toHaveCount(0);
       const paymentCard=copy.locator('xpath=ancestor::button[1]');
       await expect(paymentCard.locator('ol li')).toHaveCount(3);
-      await expect(paymentCard.getByText(lang==='en'?'Yourself':'নিজে',{exact:true})).toBeVisible();
+      await expect(paymentCard.getByText(lang==='en'?'Yourself':'নিজের জন্য',{exact:true})).toBeVisible();
       await expect(paymentCard.getByText(lang==='en'?'Family':'পরিবার',{exact:true})).toBeVisible();
       // Check every actual text line against the frame and its solid fade edge.
       for(let index=0;index<5;index++){
