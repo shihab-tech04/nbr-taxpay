@@ -36,11 +36,12 @@ return <div className="flex min-h-screen flex-col bg-[#f4f6fa]"><header role="ba
 <div className="grid grid-cols-12 grid-rows-[repeat(2,minmax(150px,auto))_minmax(112px,auto)] gap-4"><Tile delay={240} className="col-span-6 row-span-2">
 <button onClick={open('pay')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-[#a5bce1] p-7 text-left " + surface + " " + hover}>
  <LineArt name="wallet" accent="#cad8ef" className="absolute top-6 right-6 size-28 text-[#162d53]" />
- <span className="relative w-fit rounded-md bg-white/70 px-2.5 py-1 text-[11.5px] font-semibold tracking-[0.04em] uppercase">{f.all.badge}</span>
- <div className="relative mt-auto pt-6">
+ <div className="relative flex min-w-0 flex-1 flex-col">
+ <div data-testid="home2-all-payments-copy" className="min-h-28 pr-28">
  <h3 className="flex items-center gap-2 text-[26px] leading-tight font-bold tracking-[-0.025em]">{f.all.title} <ArrowUpRight className="size-5 text-[#162d53]/50 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#0f1d34]" /></h3>
  <p className="mt-1.5 max-w-[320px] text-[14px] leading-snug text-[#0f1d34]/75">{f.all.body}</p>
- <div className="mt-4 flex flex-wrap gap-1.5">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2.5 py-1 text-[12px] font-medium">{x}</span>)}</div>
+ </div>
+ <div className="mt-auto flex flex-wrap gap-1.5 pt-4">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2.5 py-1 text-[12px] font-medium">{x}</span>)}</div>
  <ol className="mt-5 grid grid-cols-3 gap-2">{f.all.steps.map((step,i)=><li key={step} className="rounded-xl bg-white/75 p-3.5"><span className="grid size-6 place-items-center rounded-full bg-[#162d53] text-[11px] font-bold text-white">{i+1}</span><span className="mt-2.5 text-[13px] block leading-tight font-semibold">{step}</span></li>)}</ol>
  </div></button></Tile>
  <Tile delay={280} className="col-span-3 row-span-2"><button onClick={open('history')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-[#e3ddd4] p-6 text-left " + surface + " " + hover}>

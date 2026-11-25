@@ -26,10 +26,10 @@ return <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6fa] pb
 <div className="grid grid-cols-2 gap-3"><Tile delay={180} className="col-span-2">
 <button onClick={open('pay')} className={"home2-press relative block w-full overflow-hidden bg-[#a5bce1] p-5 text-left " + surface}>
  <LineArt name="wallet" accent="#cad8ef" className="absolute top-4 right-4 size-20 text-[#162d53]" />
- <span className="relative inline-flex rounded-md bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-[0.04em] uppercase">{f.all.badge}</span>
-
- <h3 className="relative mt-5 flex items-center gap-1.5 text-[20px] leading-tight font-bold tracking-[-0.02em]">{f.all.title} <ArrowUpRight className="size-4 text-[#162d53]/50" /></h3>
+ <div data-testid="home2-all-payments-copy" className="relative min-h-20 pr-20">
+ <h3 className="relative flex items-center gap-1.5 text-[20px] leading-tight font-bold tracking-[-0.02em]">{f.all.title} <ArrowUpRight className="size-4 text-[#162d53]/50" /></h3>
  <p className="relative mt-1 max-w-[230px] text-[12.5px] leading-snug text-[#0f1d34]/75">{f.all.body}</p>
+ </div>
  <div className="relative mt-3 flex flex-wrap gap-1.5">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2 py-0.5 text-[11.5px] font-medium">{x}</span>)}</div>
  <ol className="relative mt-4 grid grid-cols-3 gap-1.5">{f.all.steps.map((step,i)=><li key={step} className="rounded-xl bg-white/75 p-2.5"><span className="grid size-5 place-items-center rounded-full bg-[#162d53] text-[10px] font-bold text-white">{i+1}</span><span className="mt-2 text-[11.5px] block leading-tight font-semibold">{step}</span></li>)}</ol>
  </button></Tile>
