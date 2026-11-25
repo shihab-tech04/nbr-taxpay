@@ -20,9 +20,11 @@
 .home2-import-root .home2-slider2__layer > picture {
   position:absolute; inset:0; display:block; width:100%; height:100%;
 }
+/* Fill the desktop artwork height without letterboxing; anchor the illustration
+ * to the right and retain the palette fade over the cropped left edge. */
 .home2-import-root .home2-slider2__layer img {
   position:absolute; inset:0; display:block; width:100%; height:100%;
-  max-width:none; max-height:none; object-fit:contain; object-position:right center;
+  max-width:none; max-height:none; object-fit:cover; object-position:right center;
 }
 .home2-import-root .home2-slider2__layer::after {
   position:absolute; inset:0; content:''; pointer-events:none;
@@ -104,7 +106,7 @@
   .home2-import-root .home2-slider2__desktop-copy {display:none;}
   .home2-import-root .home2-slider2__mobile-copy {display:inline;}
   .home2-import-root .home2-slider2__layer > picture {inset:auto 0 0;width:100%;height:74%;}
-  .home2-import-root .home2-slider2__layer img {object-position:center bottom;}
+  .home2-import-root .home2-slider2__layer img {object-fit:contain;object-position:center bottom;}
   .home2-import-root .home2-slider2__layer::after {
     background:linear-gradient(to bottom,var(--slider2-bg) 0%,var(--slider2-bg) 25%,
       color-mix(in srgb,var(--slider2-bg) 92%,transparent) 34%,

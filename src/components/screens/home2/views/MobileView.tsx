@@ -15,14 +15,14 @@ return <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6fa] pb
  <button onClick={open('login')} className="home2-press flex h-9 items-center gap-1 rounded-lg bg-white pr-2.5 pl-3 text-[12.5px] font-semibold text-[#1c3d70] ring-1 ring-[#cad8ef]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড' : 'Dashboard') : c.login}<ArrowRight className="size-[15px]" /></button></div></header><section aria-label={c.section.title} className="space-y-3 px-4 pt-3">        {/* Slider 2: existing CMS, Home 2 presentation */}
           <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction} paused={sliderPaused}/></Tile>
 
-<Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-[#f4f7fc] p-5 ring-1 ring-[#e6edf8]">
+<Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-white p-5 ring-1 ring-[#dfe5ee]">
   <LineArt name="search" accent="#cad8ef" className="absolute top-4 right-4 size-14 text-[#162d53]" />
-  <div className="relative pr-16">
+  <div className="relative pr-16" data-testid="home2-record-heading">
     <h2 className="text-[17px] leading-tight font-bold tracking-[-0.015em]">{c.find.title}</h2>
     <p className="mt-1 text-[12.5px] leading-snug text-[#3e4b62]">{c.find.body}</p>
   </div>
   <div className="relative mt-4"><SearchPanel c={c} onSearch={onSearch} /></div>
-</Tile><div className="home2-v2-type space-y-3"><Tile delay={140} className="px-1 pt-4 pb-1"><p className="text-[11px] font-semibold tracking-[0.08em] text-[#244d8f] uppercase">{c.section.eyebrow}</p><h2 className="mt-1 text-[22px] leading-tight font-bold tracking-[-0.025em]">{c.section.title}</h2><p className="mt-0.5 text-[12.5px] text-[#3e4b62]">{c.section.body}</p></Tile>
+</Tile><div className="home2-v2-type space-y-3"><Tile delay={140} className="px-1 pt-4 pb-1"><h2 id="features-title" className="text-[22px] leading-tight font-bold tracking-[-0.025em]">{c.section.title}</h2></Tile>
 <div className="grid grid-cols-2 gap-3"><Tile delay={180} className="col-span-2">
 <button onClick={open('pay')} className={"home2-press relative block w-full overflow-hidden bg-[#a5bce1] p-5 text-left " + surface}>
  <LineArt name="wallet" accent="#cad8ef" className="absolute top-4 right-4 size-20 text-[#162d53]" />
