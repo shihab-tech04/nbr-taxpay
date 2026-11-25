@@ -1,7 +1,8 @@
 import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
-import {TaxPayModal} from '../ui/TaxPayModal';
+import {TaxPayModal,type TaxPayModalProps} from '../ui/TaxPayModal';
+import type {TaxPayDesktopTableSlots} from '../ui/TaxPayDataTable';
 import type {Language} from '../../types/tax';
 import {EXTERNAL_LEDGER_SOURCES} from '../../services/externalLedgerRecords';
 
@@ -176,10 +177,12 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
   </div>;
 }
 
-export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment,showExternalSources=false}:{
+export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment,showExternalSources=false,desktopSlots,ReadOnlyDialog=TaxPayModal}:{
   events:readonly TaxAccountEvent[];language:Language;year?:string;
   onYearChange?:(year:string)=>void;financialBalanceVerified?:boolean;showRecordedScenarioBalance?:boolean;onOpenPayment?:(paymentId:string)=>void;
   showExternalSources?:boolean;
+  desktopSlots?:TaxPayDesktopTableSlots;
+  ReadOnlyDialog?:React.ComponentType<TaxPayModalProps>;
 }){
   const t=(en:string,bn:string)=>pair(en,bn,language);
   const [selectedYear,setSelectedYear]=useState('all');
@@ -263,7 +266,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     </p>}
     <TaxPayTableViewport role="region" aria-label={t('Scrollable tax event ledger','স্ক্রলযোগ্য কর ঘটনার লেজার')} tabIndex={0}>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
-        {(events.length===0||visible.length>0)&&<TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
+        {(events.length===0||visible.length>0)&&<TaxPayDataGrid variant="ledger" desktopSlots={desktopSlots} rows={visible} getRowKey={e=>e.id}
           testId="event-ledger-table" ariaLabel={t('Tax event ledger','কর ঘটনার লেজার')}
           columns={[
             {key:'date',header:t('Date / time','তারিখ / সময়'),cellClassName:'whitespace-nowrap',renderCell:e=>dateTime(e.occurredAt,language)},
@@ -303,7 +306,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     <TaxPayOfficeRegisterFooter shown={visible.length} total={events.length}
       labels={{showing:t('Showing','দেখানো হচ্ছে'),of:t('of','মোট'),records:t('records','রেকর্ড')}}/>
     </div>
-    {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
+    {selected&&<ReadOnlyDialog title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <section className="space-y-4 p-1" data-testid="tax-event-details">
         <div className="flex items-center gap-2 text-xs text-taxpay-muted"><Clock3 size={16}/>{dateTime(selected.occurredAt,language)}</div>
         <p className="rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm">{t('Ledger events retain their recorded source; corrections must be added as linked events.','লেজারের মূল ঘটনাটি অপরিবর্তিত থাকে; সংশোধন নতুন সংযুক্ত ঘটনা হিসেবে যোগ হয়।')}</p>
@@ -330,6 +333,6 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           onClick={()=>{const id=selected.paymentId!;setSelected(null);onOpenPayment(id);}}>
           <FileText size={16}/>{t('Open payment','পেমেন্ট দেখুন')}<ArrowRight size={15}/></button>}
       </section>
-    </TaxPayModal>}
+    </ReadOnlyDialog>}
   </section>;
 }

@@ -1,5 +1,5 @@
 import '../../styles/taxpay-unified-table.css';
-import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
+import {type ComponentPropsWithoutRef,type ComponentType,type ReactNode} from 'react';
 import {compactRecordItems} from './compactRecordItems';
 import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
@@ -256,7 +256,19 @@ export type TaxPayDataColumn<Row> = {
   cellClassName?: string;
   headerClassName?: string;
 };
+/** Optional desktop implementation slots. Native markup remains the default for all
+ * legacy and frozen consumers; eligible routes explicitly supply MUI components.
+ * Column projection, mobile cards, row actions and domain data have one renderer. */
+export type TaxPayDesktopTableSlots = {
+  Table: ComponentType<ComponentPropsWithoutRef<'table'>>;
+  Head: ComponentType<ComponentPropsWithoutRef<'thead'>>;
+  Body: ComponentType<ComponentPropsWithoutRef<'tbody'>>;
+  Row: ComponentType<ComponentPropsWithoutRef<'tr'>>;
+  HeaderCell: ComponentType<ComponentPropsWithoutRef<'th'>>;
+  Cell: ComponentType<ComponentPropsWithoutRef<'td'>>;
+};
 type UnifiedDataProps<Row> = {
+  desktopSlots?:TaxPayDesktopTableSlots;
   rows: readonly Row[];
   columns: readonly TaxPayDataColumn<Row>[];
   getRowKey: (row:Row) => string;
@@ -278,13 +290,19 @@ type UnifiedDataProps<Row> = {
 };
 export function TaxPayDataGrid<Row>({
   rows,columns,getRowKey,variant,ariaLabel,className,testId,mobileTestId,
-  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,loading=false,error,onRetry,pagination
+  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,loading=false,error,onRetry,pagination,desktopSlots
 }:UnifiedDataProps<Row>){
   if(variant==='ledger'||variant==='tabular') {
-    const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
+    const Table=desktopSlots?.Table??TaxPayUnifiedTable;
+    const Head=desktopSlots?.Head??'thead';
+    const Body=desktopSlots?.Body??'tbody';
+    const Row=desktopSlots?.Row??'tr';
+    const HeaderCell=desktopSlots?.HeaderCell??'th';
+    const Cell=desktopSlots?.Cell??'td';
+    const desktopTable = <Table aria-label={ariaLabel} data-testid={testId}
       className={merge(variant==='ledger'?'taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table':'taxpay-unified-table hidden min-w-full w-full text-left text-sm md:table',className)}>
-      <thead><tr>{columns.map(column=><th scope="col" key={column.key} data-column-key={column.key} className={merge('p-3',column.headerClassName)}>{column.headerContent??column.header}</th>)}</tr></thead>
-      <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}
+      <Head><Row>{columns.map(column=><HeaderCell scope="col" key={column.key} data-column-key={column.key} className={merge('p-3',column.headerClassName)}>{column.headerContent??column.header}</HeaderCell>)}</Row></Head>
+      <Body>{rows.map(row=><Row key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}
         data-selected={isSelected?.(row)?'true':'false'}
         data-clickable-row={onViewRow?'true':undefined} tabIndex={onViewRow?0:undefined}
         onClick={onViewRow?(event)=>{
@@ -296,9 +314,9 @@ export function TaxPayDataGrid<Row>({
             event.preventDefault();onViewRow(row);
           }
         }:undefined}>
-        {columns.map(column=><td key={column.key} data-column-key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
-      </tr>)}</tbody>
-    </TaxPayUnifiedTable>;
+        {columns.map(column=><Cell key={column.key} data-column-key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</Cell>)}
+      </Row>)}</Body>
+    </Table>;
     return <>
       {toolbar&&<TaxPayRecordToolbar {...toolbar}/>}
       {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:

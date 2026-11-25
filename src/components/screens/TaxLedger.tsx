@@ -7,7 +7,8 @@ import {
   getBoundSimulationUser,getDemoStoryPaymentHistory,getPrivateSimulationHistory,
   simulationCategoryLabels,type SimulationTransaction
 } from '../../services/simulatedPaymentsApi';
-import {EventBasedTaxLedger,PaymentLifecycleDetails,type TaxAccountEvent,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
+import {PaymentLifecycleDetails,type TaxAccountEvent,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
+import {MuiEventBasedTaxLedger} from './MuiEventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {escapeLedgerCsvCell,loadExternalLedgerEvents} from '../../services/externalLedgerRecords';
 
@@ -171,7 +172,7 @@ export const TaxLedger:React.FC=()=>{
         {external.state==='error'&&<button type="button" onClick={()=>setRevision(i=>i+1)}
           className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-dark">{t('Retry','আবার চেষ্টা করুন')}</button>}
       </div>}
-      <EventBasedTaxLedger events={events} language={language} onOpenPayment={openPayment} showExternalSources/>
+      <MuiEventBasedTaxLedger events={events} language={language} onOpenPayment={openPayment} showExternalSources/>
       <p className="text-xs text-taxpay-muted">{t('Sohojkor and imported external records are kept by their original source. An official liability, settlement or tax credit requires independently verified postings.',
         'সহজকর ও বহিরাগত রেকর্ড মূল উৎস অনুযায়ী পৃথক রাখা হয়। সরকারি দায়, নিষ্পত্তি বা কর ক্রেডিটের জন্য স্বতন্ত্রভাবে যাচাইকৃত পোস্টিং প্রয়োজন।')}</p>
     </>}

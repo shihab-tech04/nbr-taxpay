@@ -28,7 +28,8 @@ import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type Paym
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
 import {initialActivityYear, compareActivityNewestFirst, selectActivitySource, allowLocalActivityExamples} from '../../services/activityYearScope';
-import {EventBasedTaxLedger, PaymentLifecycleDetails, type TaxAccountEvent} from './EventBasedTaxLedger';
+import {PaymentLifecycleDetails, type TaxAccountEvent} from './EventBasedTaxLedger';
+const MuiEventBasedTaxLedger=React.lazy(()=>import('./MuiEventBasedTaxLedger').then(module=>({default:module.MuiEventBasedTaxLedger})));
 
 /**
  * Public synthetic storybook dataset for fictional "user1" only.
@@ -934,9 +935,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </section>}
     {sqlLoading&&<p role="status" className="text-sm text-taxpay-muted">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>}
     {sqlLoadError&&<div role="alert" className="text-sm text-taxpay-error">{tr('Recorded payments could not be verified.','সংরক্ষিত পেমেন্ট যাচাই করা যায়নি।')} <button type="button" className={action} onClick={retryRecordedPayments}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>}
-    <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear} showRecordedScenarioBalance={showIllustrativeRecords}
+    <React.Suspense fallback={<p role="status">{tr('Loading ledger…','লেজার লোড হচ্ছে…')}</p>}>
+    <MuiEventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear} showRecordedScenarioBalance={showIllustrativeRecords}
       onYearChange={nextYear=>nextYear==='all'?setLedgerYear('all'):changeYear(nextYear)}
       onOpenPayment={reference=>{const record=activityRecords.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
+    </React.Suspense>
   </>;
 
   // Records, exceptions and beneficiary entries use the same column-driven grid.
