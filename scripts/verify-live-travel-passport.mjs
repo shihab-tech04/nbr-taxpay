@@ -320,7 +320,10 @@ try {
     await modal.screenshot({path:`test-results/live-travel-passport-${name}-certificate.png`,animations:'disabled'});
     await modal.getByRole('button',{name:tr('Back to receipt','রসিদে ফিরুন'),exact:true}).click();
     await expect(modal.getByTestId('travel-family-challan')).toBeVisible();
-    await modal.getByRole('button',{name:tr('Back to confirmation','পেমেন্টের ফলাফলে ফিরুন'),exact:true}).click();
+    // Use the actual visible header control; the receipt also exposes a screen-reader return action.
+    const confirmationBack = modal.locator('.taxpay-modal__header').getByRole('button',{name:tr('Back to confirmation','পেমেন্টের ফলাফলে ফিরুন'),exact:true});
+    await expect(confirmationBack).toBeVisible();
+    await confirmationBack.click();
     await expect(confirmation).toBeVisible();
     expect(posts).toBe(1);
     await expect(modal.getByTestId('travel-office-sync-status')).toHaveCount(0);
