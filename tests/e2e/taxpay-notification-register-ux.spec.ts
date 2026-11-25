@@ -1,14 +1,14 @@
 import {expect,test,type Page} from '@playwright/test';
 
 /** All rows are synthetic, scope-limited test fixtures. No real taxpayer data. */
-async function mockNotificationRegisters(page:Page){
-  await page.addInitScript(()=>{
+async function mockNotificationRegisters(page:Page,language:'en'|'bn'){
+  await page.addInitScript(language=>{
     sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
     sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
       profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'00000000-0000-4000-8000-000000000099',
-      selectedListId:null,language:'en'
+      selectedListId:null,language
     }));
-  });
+  },language);
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
     const view=new URL(route.request().url()).searchParams.get('view');
     const rows=[{id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
@@ -28,7 +28,7 @@ async function mockNotificationRegisters(page:Page){
 
 for(const language of ['en','bn'] as const){
   test('notification registers preserve actions, filters, amounts and mobile containment in '+language,async({page},info)=>{
-    await mockNotificationRegisters(page);
+    await mockNotificationRegisters(page,language);
     await page.goto('/?action=notifications&lang='+language);
     const records=page.locator('table.taxpay-unified-table');
     await expect(records).toHaveCount(2);
@@ -42,8 +42,13 @@ for(const language of ['en','bn'] as const){
     await expect(records.last().locator('thead th')).toHaveText(
       language==='bn'?['পেমেন্ট','রেফারেন্স','পরিমাণ','অবস্থা']
         :['Payment','Reference','Amount','Status']);
-    await expect(page.getByText('৳2,345.67')).toBeVisible();
-    await expect(records.first().getByRole('button',{name:language==='bn'?'অনুমোদন দেখুন':'Review authorization'})).toBeVisible();
+    // The shared grid retains both desktop and mobile markup; assert the active
+    // representation and exact amount, without selecting a hidden duplicate.
+    const desktop=info.project.name==='desktop-1280';
+    const paymentRegion=desktop?records.last():page.locator('.taxpay-mobile-table-cards:visible').last();
+    const authorizationRegion=desktop?records.first():page.locator('.taxpay-mobile-table-cards:visible').first();
+    await expect(paymentRegion.getByText('৳2,345.67',{exact:true})).toBeVisible();
+    await expect(authorizationRegion.getByRole('button',{name:language==='bn'?'অনুমোদন দেখুন':'Review authorization'})).toBeVisible();
 
     const authSearch=page.getByRole('searchbox',{name:language==='bn'?'অনুমোদন খুঁজুন':'Search authorizations'});
     await expect(authSearch).toHaveClass(/MuiInputBase-input/);
@@ -65,7 +70,6 @@ for(const language of ['en','bn'] as const){
     await expect(records).toHaveCount(2);
 
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
-    const desktop=info.project.name==='desktop-1280';
     if(desktop){
       await expect(records.first()).toBeVisible();
       await expect(records.first().locator('tbody tr td')).toHaveCount(4);
