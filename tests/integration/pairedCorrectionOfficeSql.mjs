@@ -89,6 +89,7 @@ function sqlRpc(origin,name,args){
    taxpay_correction_internal_ack:()=> 'public.taxpay_correction_internal_ack('+sqlText(args.p_event_id)+'::uuid,'+
     sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+(args.p_error===null?'NULL':sqlText(args.p_error))+')',
    taxpay_correction_record_office_decision:()=> 'public.taxpay_correction_record_office_decision('+pgJSON(args.p_command)+')',
+   taxpay_correction_receive_office_initiation:()=> 'public.taxpay_correction_receive_office_initiation('+pgJSON(args.p_command)+')',
   },
   OFFICE_SQL:{
    payment_v1_internal_bridge_config:()=> 'public.payment_v1_internal_bridge_config()',
@@ -97,9 +98,13 @@ function sqlRpc(origin,name,args){
    // Office Main #298 queries persisted source provenance even for legacy corrections.
    // Run the real guarded SQL route (NULL means original Taxpayer), never a mock success.
    payment_v1_demo_correction_route:()=> 'coalesce(to_jsonb(public.payment_v1_demo_correction_route('+sqlText(args.p_id)+'::uuid)),\'null\'::jsonb)',
+   payment_v1_demo_correction_key:()=> "coalesce(to_jsonb(public.payment_v1_demo_correction_key()),'null'::jsonb)",
    payment_v1_internal_ack_correction_command:()=> 'public.payment_v1_internal_ack_correction_command('+
     sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
     (args.p_review_state===null?'NULL':sqlText(args.p_review_state))+','+
+    (args.p_error===null?'NULL':sqlText(args.p_error))+')',
+   payment_v1_internal_ack_command:()=> 'public.payment_v1_internal_ack_command('+
+    sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
     (args.p_error===null?'NULL':sqlText(args.p_error))+')',
   },
  };
@@ -194,9 +199,15 @@ function installOfficeCommandClaim(){
  const start=hosted.indexOf(marker);
  const end=start<0?-1:hosted.indexOf('$function$;',start)+'$function$;'.length;
  assert.ok(start>=0&&end>start,'Existing Office command claim contract is unavailable');
- db(office,'BEGIN;'+hosted.slice(start,end)+
+ const ackMarker='create or replace function public.payment_v1_internal_ack_command(';
+ const ackStart=hosted.indexOf(ackMarker);
+ const ackEnd=ackStart<0?-1:hosted.indexOf('$function$;',ackStart)+'$function$;'.length;
+ assert.ok(ackStart>=0&&ackEnd>ackStart,'Existing Office command acknowledgment contract is unavailable');
+ db(office,'BEGIN;'+hosted.slice(start,end)+hosted.slice(ackStart,ackEnd)+
   'REVOKE ALL ON FUNCTION public.payment_v1_internal_claim_commands(integer) FROM PUBLIC,anon,authenticated;'+
   'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_claim_commands(integer) TO service_role;'+
+  'REVOKE ALL ON FUNCTION public.payment_v1_internal_ack_command(uuid,uuid,boolean,text) FROM PUBLIC,anon,authenticated;'+
+  'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_ack_command(uuid,uuid,boolean,text) TO service_role;'+
   "SELECT 'true'::jsonb;COMMIT;");
 }
 const owner='80000000-0000-4000-8000-000000000001';
@@ -205,12 +216,12 @@ const outsider='80000000-0000-4000-8000-000000000002';
 // classification; the underlying base SQL acceptance still tests the legacy
 // correction default separately. No hosted SQL data is used.
 const originalCorrectionFixture=readFileSync('tests/integration/correctionOfficeReadback.sql','utf8');
-const fixtureColumns='(requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)';
+const fixtureColumns='(requester_uid,original_reference,reason,requested_outcome,evidence_note,change_kind,old_value,new_value)';
 const fixtureValues="'CIRCLE','Circle A','Circle B')";
 assert.equal(originalCorrectionFixture.split(fixtureColumns).length,2);
 assert.equal(originalCorrectionFixture.split(fixtureValues).length,2);
 const correctionFixture=originalCorrectionFixture
- .replace(fixtureColumns,'(requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value,case_kind)')
+ .replace(fixtureColumns,'(requester_uid,original_reference,reason,requested_outcome,evidence_note,change_kind,old_value,new_value,case_kind)')
  .replace(fixtureValues,"'CIRCLE','Circle A','Circle B','UNSOLICITED_PAYMENT_REPORT')");
 const cut=correctionFixture.indexOf('DO $owner_initial$\n');
 assert.ok(cut>0,'Passing correction fixture anchor missing');
@@ -429,6 +440,123 @@ assert.equal(readResult.isRead,true);
 const readAgain=db(source,auth(owner,
  "SELECT jsonb_build_object('count',count(*),'read',count(*) FILTER(WHERE is_read)) FROM public.taxpay_in_app_notifications WHERE correction_inquiry_id='"+started.inquiryId+"'::uuid;"));
 assert.deepEqual(readAgain,{count:3,read:1});
+// P6 full reverse direction: Office creates an immutable review request, the
+// signed command bridge persists it to the distinct original Taxpayer SQL,
+// the verified recipient claims it, then the signed event and decision
+// channels carry it back and forth. All records live in disposable DBs.
+db(office,
+ 'INSERT INTO demo_payment.story_payments(id,session_id,service_code,amount_minor,data,status,created_at) '+
+ 'VALUES ('+sqlText(started.sourcePaymentId)+'::uuid,'+
+ sqlText('80000000-0000-4000-8000-000000000043')+'::uuid,'+
+ sqlText('OTHER_TAX_PAYMENT')+',100,'+pgJSON(started.originalPayment)+','+
+ sqlText('SIMULATED_SUCCESS')+',now()) ON CONFLICT(id) DO NOTHING;SELECT pg_catalog.to_jsonb(true);');
+const officeInitiationKey='80000000-0000-4000-8000-000000000091';
+const officeInitSql="SELECT public.payment_v1_office_initiate_correction("+
+ sqlText(started.sourcePaymentId)+"::uuid,'444444444444','SYN-REF-003',"+
+ sqlText('Office requests a review of the verified recipient assessment year')+','+
+ sqlText('Review the allocated assessment year without changing payments or credit')+','+
+ sqlText('বাংলা সহায়ক বিবরণ and linked original receipt evidence')+','+
+ sqlText(officeInitiationKey)+"::uuid);";
+const initiation=db(office,auth(maker,officeInitSql));
+assert.equal(initiation.queued,true);
+assert.equal(initiation.replayed,false);
+const initiatedAgain=db(office,auth(maker,officeInitSql));
+assert.equal(initiatedAgain.caseId,initiation.caseId);
+assert.equal(initiatedAgain.replayed,true);
+const officeCaseId=initiation.caseId;
+assert.equal(db(source,"SELECT count(*) FROM payment_sync.office_initiated_correction_inbox WHERE case_id="+
+ sqlText(officeCaseId)+"::uuid;"),0,'Unsynced Office case must not appear as Taxpayer data');
+
+const outgoingOffice=db(office,
+ "SELECT payload FROM payment_sync.control_outbox WHERE message_id="+sqlText(officeCaseId)+"::uuid;");
+assert.equal(outgoingOffice.commandType,'OFFICE_CORRECTION_INITIATED');
+assert.equal(outgoingOffice.taxpayerTin,'444444444444');
+assert.equal(outgoingOffice.sourcePaymentId,started.sourcePaymentId);
+const sentInitiation=await postBridge('OFFICE_SQL','/payment-command-bridge',
+ {mode:'dispatch',token:dispatchTokens.OFFICE_SQL});
+assert.equal(sentInitiation.status,200);
+assert.deepEqual(sentInitiation.data,{claimed:1,acknowledged:1,failed:0});
+assert.equal(db(office,"SELECT to_jsonb(delivery_state) FROM payment_sync.control_outbox WHERE message_id="+
+ sqlText(officeCaseId)+"::uuid;"),'ACKNOWLEDGED');
+const officeText=JSON.stringify(outgoingOffice);
+const replayOffice=await postBridge('TAXPAY_SQL','/payment-command-bridge',
+ {mode:'ingest',commandText:officeText,signature:await signBridgePayload(officeText)});
+assert.equal(replayOffice.status,200);
+assert.equal(replayOffice.data.stored,true);
+const forgedOffice=await postBridge('TAXPAY_SQL','/payment-command-bridge',
+ {mode:'ingest',commandText:JSON.stringify({...outgoingOffice,reason:'Forged Office reason'}),
+  signature:await signBridgePayload(officeText)});
+assert.equal(forgedOffice.status,401,'A modified Office payload must fail its signed HMAC');
+
+const officeInbox=db(source,"SELECT jsonb_build_object('caseId',case_id,'owner',claimed_by) "+
+ "FROM payment_sync.office_initiated_correction_inbox WHERE case_id="+sqlText(officeCaseId)+"::uuid;");
+assert.equal(officeInbox.caseId,officeCaseId);
+assert.equal(officeInbox.owner,null);
+assert.equal(db(source,auth(owner,'SELECT public.taxpay_claim_office_initiated_corrections(20);')),0,
+ 'The payer may not claim an Office case explicitly addressed to a distinct recipient');
+assert.equal(db(source,auth(outsider,'SELECT public.taxpay_claim_office_initiated_corrections(20);')),1);
+assert.equal(db(source,auth(outsider,'SELECT public.taxpay_claim_office_initiated_corrections(20);')),0);
+const claimedOffice=db(source,"SELECT jsonb_build_object('origin',origin_system,'parent',original_payment_id,"+
+ "'owner',requester_uid) FROM public.taxpay_correction_inquiries WHERE inquiry_id="+sqlText(officeCaseId)+"::uuid;");
+assert.deepEqual(claimedOffice,{origin:'OFFICE_SQL',parent:started.sourcePaymentId,owner:outsider});
+const initialNotice=db(source,"SELECT count(*) FROM public.taxpay_in_app_notifications WHERE "+
+ "correction_inquiry_id="+sqlText(officeCaseId)+"::uuid AND recipient_uid="+sqlText(outsider)+
+ "::uuid AND message_code='CORRECTION_OFFICE_INITIATED';");
+assert.equal(initialNotice,1,'An Office initiation must notify the verified taxpayer once');
+
+const sourceMirrorDispatch=await postBridge('TAXPAY_SQL','/payment-sync-bridge',
+ {mode:'dispatch',token:dispatchTokens.TAXPAY_SQL});
+assert.equal(sourceMirrorDispatch.status,200);
+assert.deepEqual(sourceMirrorDispatch.data,{claimed:1,acknowledged:1,failed:0},
+ 'The claimed Office case must return to Office via the signed Taxpayer event bridge');
+const newCaseQueue=db(office,auth(maker,'SELECT public.payment_v1_correction_queue_page(200,NULL,NULL);'));
+const officeMirror=newCaseQueue.items.find(row=>row.requestId===officeCaseId);
+assert.ok(officeMirror,'Office must read back the original Office-initiated case from Taxpayer SQL');
+assert.equal(officeMirror.reviewState,'PENDING_OFFICER');
+assert.equal(officeMirror.sourcePaymentId,started.sourcePaymentId);
+assert.deepEqual(officeMirror.availableActions,['MAKER_ACKNOWLEDGE']);
+for(const stage of stages){
+ const decision=db(office,auth(stage.actor,
+  "SELECT public.payment_v1_correction_officer_action("+sqlText(officeCaseId)+
+  "::uuid,"+sqlText(stage.action)+","+
+  sqlText('Authorized Office decision for the original signed initiation')+","+
+  sqlText(randomUUID())+"::uuid);"));
+ assert.equal(decision.queued,true);
+ const deliveredDecision=await postBridge('OFFICE_SQL','/payment-command-bridge',
+  {mode:'dispatch',token:dispatchTokens.OFFICE_SQL});
+ assert.equal(deliveredDecision.status,200);
+ assert.deepEqual(deliveredDecision.data,{claimed:1,acknowledged:1,failed:0});
+ const state=db(source,"SELECT to_jsonb(office_review_state) FROM "+
+  "public.taxpay_correction_inquiries WHERE inquiry_id="+sqlText(officeCaseId)+"::uuid;");
+ assert.equal(state,stage.state);
+}
+const allOfficeEvents=db(source,auth(outsider,
+ "SELECT coalesce(jsonb_agg(jsonb_build_object('eventKind',event_kind,'source',source_system,"+
+ "'actor',actor_role) ORDER BY revision),'[]'::jsonb) FROM "+
+ "public.taxpay_correction_my_history(50) WHERE inquiry_id="+sqlText(officeCaseId)+"::uuid;"));
+assert.equal(allOfficeEvents.length,4);
+assert.equal(allOfficeEvents[0].eventKind,'OFFICE_INITIATED');
+assert.equal(allOfficeEvents[0].source,'OFFICE_SQL');
+assert.deepEqual(allOfficeEvents.slice(1).map(x=>x.source),
+ ['OFFICE_SQL','OFFICE_SQL','OFFICE_SQL']);
+const otherCaseHistory=db(source,auth(owner,
+ "SELECT count(*) FROM public.taxpay_correction_my_history(50) WHERE inquiry_id="+
+ sqlText(officeCaseId)+"::uuid;"));
+assert.equal(otherCaseHistory,0,'The wrong taxpayer cannot access Office-originated case history');
+const notices=db(source,"SELECT count(*) FROM public.taxpay_in_app_notifications "+
+ "WHERE correction_inquiry_id="+sqlText(officeCaseId)+"::uuid AND recipient_uid="+
+ sqlText(outsider)+"::uuid;");
+assert.equal(notices,4,'One initiation and three decisions must each create an owner notification');
+const newOfficeHistory=db(office,auth(maker,
+ 'SELECT public.payment_v1_office_initiated_correction_history(100);'));
+const officeStatus=newOfficeHistory.items.find(x=>x.caseId===officeCaseId);
+assert.ok(officeStatus);
+assert.equal(officeStatus.sourceConfirmed,true);
+assert.equal(officeStatus.sourceReviewState,'APPROVER_CLOSED');
+assert.deepEqual(db(source,"SELECT data FROM demo_payment.story_payments WHERE id="+
+ sqlText(started.sourcePaymentId)+"::uuid;"),started.originalPayment,
+ 'Office initiation and all follow-up decisions must never rewrite the original payment');
+console.log('PASS: signed Office initiation -> original Taxpayer SQL -> verified recipient claim -> notice -> signed return event -> all three Office approvals -> immutable owner-scoped history; no financial mutation');
 console.log('PASS: original Taxpayer correction SQL -> signed payment-sync Edge -> separate Office correction SQL and authorized officer queue -> signed command Edge -> Taxpayer status/history/recipient notifications; Office outage retry, signed event/command replay, source parent immutability and outsider isolation');
 }finally{
  for(const event of deferredCorrectionEvents){

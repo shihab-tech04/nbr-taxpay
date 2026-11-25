@@ -198,6 +198,9 @@ export interface CorrectionRequest {
   id: string;
   ticketNo: string;
   challanNo: string;
+  /** Exact original allocation for a local simulated correction draft. */
+  targetAllocationId?: string;
+  targetAllocationIndex?: number;
   taxpayerTin: string;
   taxpayerName: string;
   requestedBy: string;
