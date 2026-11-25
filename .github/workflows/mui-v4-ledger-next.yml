@@ -13,7 +13,7 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 6189ee583926ee42e2ab6e909c571603bb57a886
+      BASE_SHA: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,7 +66,15 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+          VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'
         run: npx playwright test tests/e2e/authenticated-received-notice-mount.spec.ts --workers=2
+      - name: Preserve recipient report lifecycle and MUI notification re-entry
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+          VITE_RECIPIENT_NOTICE_FEED_ENABLED: 'true'
+        run: npx playwright test tests/e2e/preview-recipient-report.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --workers=1
       - name: Compare unchanged Main and combined candidate across full home matrix
         run: |
           set -euo pipefail
