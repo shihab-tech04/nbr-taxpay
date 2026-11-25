@@ -85,7 +85,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language,c
     if(state.owner!==owner||!enabled)return;
     try{
       queueReceivedPaymentCaseIntent(notice,caseKind);
-      if(authenticatedUser)navigate('corrections');
+      if(authenticatedUser||caseKind==='UNSOLICITED_PAYMENT_REPORT')navigate('corrections');
       else navigate('secure_workspace',{returnTo:'corrections'});
     }catch{
       setAckError(tr('Could not prepare the request. Please retry.',

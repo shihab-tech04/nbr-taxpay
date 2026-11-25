@@ -99,7 +99,7 @@ export function AuthorizationRequestPopup(){
     try{
       queueReceivedPaymentCaseIntent(visibleReceived,caseKind);
       setReceivedError('');
-      if(authenticatedUser)navigate('corrections');
+      if(authenticatedUser||caseKind==='UNSOLICITED_PAYMENT_REPORT')navigate('corrections');
       else navigate('secure_workspace',{returnTo:'corrections'});
     }catch{
       setReceivedError(bn?'অনুরোধের তথ্য প্রস্তুত করা যায়নি। আবার চেষ্টা করুন।':'Could not prepare the request. Please retry.');
@@ -166,7 +166,7 @@ export function AuthorizationRequestPopup(){
         <p className="text-sm text-taxpay-text">{bn?'পেমেন্টের বিবরণ যাচাই করুন। পেমেন্টটি অপরিচিত বা আপনার অনুমতি ছাড়া করা হয়েছে বলে মনে হলে রিপোর্ট করতে পারেন।':'Please review the payment details below. If you do not recognize this payment or believe it was initiated without your authorization, you can report it.'}</p>
         <ReceivedPaymentNoticeDetails notice={visibleReceived} language={language}/>
         <p className="text-xs text-taxpay-muted">{bn?'এটি নথিভুক্ত পেমেন্টের তথ্য; সরকারি নিষ্পত্তির প্রমাণ নয়।':'This is a recorded payment, not confirmation of government settlement.'}</p>
-        <p className="text-xs text-taxpay-muted">{bn?'সংশোধন বা রিপোর্ট জমা দিতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন করতে হবে।':'Submitting a correction or report requires a verified account sign-in.'}</p>
+        <p className="text-xs text-taxpay-muted">{bn?'এই সিমুলেটেড পেমেন্টের রিপোর্ট আপনার বর্তমান অ্যাকাউন্ট থেকেই জমা দিন।':'Report this simulated payment from your current account.'}</p>
         {receivedError&&<p role="alert" className="text-sm text-taxpay-error">{receivedError}</p>}
       </div>
     </TaxPayModal>;

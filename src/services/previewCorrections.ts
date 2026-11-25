@@ -6,7 +6,9 @@ export type PreviewCorrectionInput = {
   paymentId:string|null; historicalReference?:string; requestKey:string; allocationIndex:number|null; allocationId:string|null;
   proposedAY:string; proposedCircle:string; proposedHeadCode:string; reason:string;
 };
+export type PreviewReportInput={caseKind:'UNSOLICITED_PAYMENT_REPORT';eventId:string;requestKey:string;reason:string};
 export type PreviewCorrectionRecord = {
+  caseKind?:'CORRECTION_REVIEW'|'UNSOLICITED_PAYMENT_REPORT';recipientEventId?:string|null;
   id:string; paymentId:string|null; originalReference:string; allocationIndex:number|null; allocationId:string|null;
   currentAY:string; proposedAY:string; currentCircle:string; proposedCircle:string;
   currentHeadCode:string; proposedHeadCode:string; reason:string; createdAt:string; status:'RECORDED';
@@ -47,7 +49,7 @@ function checked(raw:unknown):PreviewCorrectionRecord{
   if(row.reviewReason!==undefined&&row.reviewReason!==null&&typeof row.reviewReason!=='string')throw Error('Invalid Office review reason');
   return row as unknown as PreviewCorrectionRecord;
 }
-async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|{eventId:string}):Promise<unknown>{
+async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|PreviewReportInput|{eventId:string}):Promise<unknown>{
   const session=activePreviewSession();
   const {url,publishableKey}=TAXPAY_PUBLIC_ENDPOINT;
   if(!session||!url||!publishableKey)throw Error('Correction session unavailable');
@@ -77,6 +79,12 @@ export async function listPreviewCorrections():Promise<PreviewCorrectionRecord[]
     }
   }
   throw Error('Correction history limit reached');
+}
+export async function submitPreviewReceivedPaymentReport(input:PreviewReportInput):Promise<PreviewCorrectionRecord>{
+ const row=checked(await request('','POST',input));
+ if(row.caseKind!=='UNSOLICITED_PAYMENT_REPORT'||row.recipientEventId!==input.eventId)throw Error('Report acknowledgement mismatch');
+ window.dispatchEvent(new Event('taxpay:preview-corrections-changed'));
+ return row;
 }
 export async function submitPreviewCorrection(input:PreviewCorrectionInput):Promise<PreviewCorrectionRecord>{
   const row=checked(await request('','POST',input));

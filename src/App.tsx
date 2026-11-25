@@ -15,6 +15,7 @@ import { IncidentReporting } from './components/screens/IncidentReporting';
 import { user1DemoRoutes } from './config/user1DemoRoutes';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/transactionId';
+import {readReceivedPaymentCaseIntent} from './services/receivedPaymentCaseIntent';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 // Keep modal-only and preview-only code out of the initial public JavaScript.
@@ -42,6 +43,7 @@ const PaymentHistory = React.lazy(() => import('./components/screens/PaymentHist
 const TaxLedger = React.lazy(() => import('./components/screens/TaxLedger').then(module => ({ default: module.TaxLedger })));
 const TaxJourney = React.lazy(() => import('./components/screens/TaxJourney').then(module => ({ default: module.TaxJourney })));
 const CertificatesView = React.lazy(() => import('./components/screens/CertificatesView').then(module => ({ default: module.CertificatesView })));
+const PreviewReceivedPaymentReport=React.lazy(()=>import('./components/screens/PreviewReceivedPaymentReport').then(m=>({default:m.PreviewReceivedPaymentReport})));
 const CorrectionRequests = React.lazy(() => import('./components/screens/CorrectionRequests').then(module => ({ default: module.CorrectionRequests })));
 const CorrectionInquiries = React.lazy(() => import('./components/screens/CorrectionInquiries').then(module => ({ default: module.CorrectionInquiries })));
 const NotificationsView = React.lazy(() => import('./components/screens/NotificationsView').then(module => ({ default: module.NotificationsView })));
@@ -164,6 +166,8 @@ const MainRouter: React.FC = () => {
   }, [currentRoute]);
 
   const renderActiveScreen = () => {
+    const reportIntent=previewAccount&&currentRoute==='corrections'&&!verifiedApplicationUser?readReceivedPaymentCaseIntent():null;
+    if(reportIntent?.caseKind==='UNSOLICITED_PAYMENT_REPORT'&&previewAccount)return <PreviewReceivedPaymentReport key={previewAccount.id+reportIntent.eventId} profileId={previewAccount.id} intent={reportIntent} language={language} onExit={()=>navigate('account_notifications')}/>;
     // Demo account notifications share the SQL authorization inbox used by the popup.
     if(previewAccount&&currentRoute==='account_notifications'&&!verifiedApplicationUser){
       return <NotificationsView />;
