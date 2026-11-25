@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, ShieldAlert } from 'lucide-react';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
+import {claimPendingOfficeCorrections} from '../../services/officeCorrectionClaim';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
 import { useTaxState } from '../../services/taxState';
@@ -80,6 +81,7 @@ const I18N = {
     reviewTitle: 'Officer review updates', reviewLabel: 'Non-financial review',
     reviewReceived: 'Review request submitted', reviewAcknowledged: 'Officer acknowledged your request',
     reviewInfo: 'Officer requested additional information', reviewClosed: 'Officer completed the review',
+    correctionOfficeInitiated: 'Office initiated correction review',
     correctionMakerAcknowledged: 'Correction request acknowledged', correctionReviewerVerified: 'Correction review verified',
     correctionApproverClosed: 'Correction review closed', correctionRejected: 'Correction request rejected',
     noNotices: 'No stored draft activity for this account.', noDemoNotices: 'No notifications yet.',
@@ -106,6 +108,7 @@ const I18N = {
     reviewTitle: 'কর্মকর্তার পর্যালোচনার হালনাগাদ', reviewLabel: 'অ-আর্থিক পর্যালোচনা',
     reviewReceived: 'রিভিউ অনুরোধ জমা হয়েছে', reviewAcknowledged: 'কর্মকর্তা অনুরোধ গ্রহণ করেছেন',
     reviewInfo: 'কর্মকর্তা অতিরিক্ত তথ্য চেয়েছেন', reviewClosed: 'কর্মকর্তা পর্যালোচনা শেষ করেছেন',
+    correctionOfficeInitiated: 'অফিস থেকে সংশোধন পর্যালোচনা শুরু হয়েছে',
     correctionMakerAcknowledged: 'সংশোধনের অনুরোধ গ্রহণ করা হয়েছে', correctionReviewerVerified: 'সংশোধন পর্যালোচনা যাচাই হয়েছে',
     correctionApproverClosed: 'সংশোধন পর্যালোচনা শেষ হয়েছে', correctionRejected: 'সংশোধনের অনুরোধ প্রত্যাখ্যান করা হয়েছে',
     noNotices: 'এই অ্যাকাউন্টে সংরক্ষিত ড্রাফটের কার্যক্রম নেই।', noDemoNotices: 'এখনো কোনো বিজ্ঞপ্তি নেই।',
@@ -203,6 +206,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     const refreshNotices = () => (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || auth.user?.id !== uid) throw new Error('Account session expired');
+      await claimPendingOfficeCorrections(client);
       const [draftResult, reviewResult] = await Promise.all([
         client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
           .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
@@ -465,6 +469,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                               REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
                               REQUEST_INFO_REQUESTED:t.reviewInfo,
                               REQUEST_REVIEW_CLOSED:t.reviewClosed,
+                              CORRECTION_OFFICE_INITIATED:t.correctionOfficeInitiated,
                               CORRECTION_MAKER_ACKNOWLEDGED:t.correctionMakerAcknowledged,
                               CORRECTION_REVIEWER_VERIFIED:t.correctionReviewerVerified,
                               CORRECTION_APPROVER_CLOSED:t.correctionApproverClosed,

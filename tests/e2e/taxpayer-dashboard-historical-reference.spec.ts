@@ -205,6 +205,10 @@ test('authorized User1 with empty SQL reads never displays hardcoded payments or
   const overview=page.getByTestId('taxpayer-overview-bento');
   await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('Payments linked to this session');
   await expect(overview.getByTestId('dashboard-payment-analytics')).toHaveAttribute('data-chart-source','recorded');
+  await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('—');
+  await overview.locator('.taxpay-summary-metric--requests').click();
+  await expect(overview.getByRole('alert').filter({hasText:'Correction request history unavailable.'})).toBeVisible();
+  await expect(overview.getByTestId('dashboard-recorded-corrections')).toHaveCount(0);
   await expect(overview.getByTestId('dashboard-chart-source')).toHaveCount(0);
   await expect(overview).not.toContainText('113,500');
   await expect(overview).not.toContainText('Tax with return — part 2');

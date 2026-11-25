@@ -114,6 +114,10 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
       success:true,simulationOnly:true,data:rows
     })});
   });
+  await page.route('**/functions/v1/demo-story1-taxpay/corrections**',route=>{
+    if(route.request().method()!=='GET')throw Error('The geometry check must not submit a correction');
+    return route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"simulationOnly":true,"data":[]}'});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?*',route=>
     route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[],"simulationOnly":true}'}));
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
@@ -286,6 +290,21 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(receiptFooter.getByRole('button')).toHaveCount(3);
   await expect(receiptFooter.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(receiptFooter.getByRole('button',{name:'Apply for Correction'})).toBeEnabled();
+  // Contextual correction is a form-only shared modal; the register belongs
+  // to the correction page. No save or payment write in this geometry check.
+  await receiptFooter.getByRole('button',{name:'Apply for Correction'}).click();
+  const correction=page.getByRole('dialog',{name:'Apply for Correction'});
+  await expect(correction.getByTestId('correction-request-form')).toBeVisible();
+  await expect(correction.getByTestId('preview-correction-register')).toHaveCount(0);
+  const save=correction.locator('.taxpay-modal__footer').getByRole('button',{name:'Submit correction request'});
+  await expect(save).toBeVisible();
+  await expect(save).toHaveCSS('color','rgb(255, 255, 255)');
+  expect(await save.evaluate((el:HTMLButtonElement)=>el.form?.getAttribute('data-testid'))).toBe('correction-request-form');
+  await expect(correction.locator('.taxpay-modal__body').getByRole('button',{name:'Submit correction request'})).toHaveCount(0);
+  await correction.getByRole('button',{name:'Close correction form'}).click();
+  await expect(correction).toHaveCount(0);
+  await paid.getByRole('button',{name:/^Details for /}).click();
+  await expect(detail).toBeVisible();
   await expect(detail.getByTestId('recorded-pay-again-detail')).toBeEnabled();
   await detail.getByTestId('recorded-pay-again-detail').click();
   const cloned=page.getByRole('dialog',{name:'Pay Tax'});
