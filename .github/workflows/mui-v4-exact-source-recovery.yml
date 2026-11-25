@@ -1,60 +1,44 @@
-name: MUI v4 exact-source independent recovery
+name: MUI exact archived-source recovery and build
 on:
   push:
     branches: [ops/mui-recovery-verify-fd1dc671]
 permissions:
   contents: read
+  actions: read
 jobs:
   restore-and-build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      BASE_SHA: fd1dc671d81ae03132423154354c94f2c9071cd1
+      BASE_SHA: 594fcca473e3349923c32783aff6817baa98f9e1
       VITE_SUPABASE_DISABLED: 'true'
+      VITE_SUPABASE_URL: ''
+      VITE_SUPABASE_PUBLISHABLE_KEY: ''
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: fd1dc671d81ae03132423154354c94f2c9071cd1
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Bundle exact source and all fetched refs
-        shell: bash
+      - name: Download exact existing recovery artifact (same bytes as independently verified Library)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$BASE_SHA"
-          git update-ref refs/heads/mui-recovery-exact "$BASE_SHA"
-          git tag mui-v4-local-recovery-fd1dc671 "$BASE_SHA"
           mkdir -p "$RUNNER_TEMP/recovery"
-          git bundle create "$RUNNER_TEMP/recovery/history.bundle" --all
-          git bundle verify "$RUNNER_TEMP/recovery/history.bundle"
-          git archive "$BASE_SHA" | gzip -n > "$RUNNER_TEMP/recovery/source.tar.gz"
-          git for-each-ref --format='%(objectname) %(refname)' > "$RUNNER_TEMP/recovery/REFS.txt"
-          printf '%s\n' "$BASE_SHA" > "$RUNNER_TEMP/recovery/BASE_SHA"
-          (cd "$RUNNER_TEMP/recovery" && sha256sum history.bundle source.tar.gz REFS.txt BASE_SHA > SHA256SUMS && sha256sum -c SHA256SUMS)
-      - name: Restore in independent repository and compare source
-        shell: bash
-        run: |
-          set -euo pipefail
-          git clone --mirror "$RUNNER_TEMP/recovery/history.bundle" "$RUNNER_TEMP/restored.git"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/15051516252/zip" -o "$RUNNER_TEMP/recovery.zip"
+          printf '%s  %s\n' '400dec05eab71c0729f3709c019e856ffd15fcdc63fc1fa45abdf11b0d14e8ea' "$RUNNER_TEMP/recovery.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/recovery.zip" -d "$RUNNER_TEMP/recovery"
+          cd "$RUNNER_TEMP/recovery"
+          sha256sum -c SHA256SUMS
+          test "$(cat BASE_SHA)" = "$BASE_SHA"
+          git clone --mirror pre-release-history.bundle "$RUNNER_TEMP/restored.git"
           git -C "$RUNNER_TEMP/restored.git" fsck --full --strict
-          test "$(git -C "$RUNNER_TEMP/restored.git" rev-parse refs/heads/mui-recovery-exact)" = "$BASE_SHA"
+          test "$(git -C "$RUNNER_TEMP/restored.git" rev-parse refs/heads/main)" = "$BASE_SHA"
           git clone --no-local "$RUNNER_TEMP/restored.git" "$RUNNER_TEMP/restored-source"
           git -C "$RUNNER_TEMP/restored-source" checkout --detach "$BASE_SHA"
           mkdir "$RUNNER_TEMP/archive-source"
-          tar -xzf "$RUNNER_TEMP/recovery/source.tar.gz" -C "$RUNNER_TEMP/archive-source"
+          tar -xzf pre-release-source.tar.gz -C "$RUNNER_TEMP/archive-source"
           diff -qr --exclude=.git "$RUNNER_TEMP/archive-source" "$RUNNER_TEMP/restored-source"
-          echo "EXACT_RESTORE_PASS_SHA=$BASE_SHA"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mui-v4-exact-recovery-fd1dc671
-          path: ${{ runner.temp }}/recovery
-          if-no-files-found: error
-          retention-days: 7
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
-      - name: Build restored checkout without hosted credentials
-        shell: bash
+          node-version-file: ${{ runner.temp }}/restored-source/.node-version
+      - name: Build the restored exact archived source
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/restored-source"
@@ -75,18 +59,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fd1dc671d81ae03132423154354c94f2c9071cd1
+          ref: 594fcca473e3349923c32783aff6817baa98f9e1
           fetch-depth: 0
-      - name: Create exact recovery tag without replacing an existing tag
+      - name: Create exact recovery tag without replacing a tag
         run: |
           set -euo pipefail
-          expected=fd1dc671d81ae03132423154354c94f2c9071cd1
-          tag=recovery/mui-v4-fd1dc671
+          expected=594fcca473e3349923c32783aff6817baa98f9e1
+          tag=recovery/mui-v4-594fcca4
           current="$(git ls-remote origin "refs/tags/$tag" | cut -f1)"
-          if [ -z "$current" ]; then
-            git push origin "$expected:refs/tags/$tag"
-          else
-            test "$current" = "$expected"
-          fi
+          if [ -z "$current" ]; then git push origin "$expected:refs/tags/$tag"; else test "$current" = "$expected"; fi
           test "$(git ls-remote origin "refs/tags/$tag" | cut -f1)" = "$expected"
-          echo "REMOTE_RECOVERY_TAG_PASS=$tag:$expected"
