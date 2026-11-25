@@ -542,3 +542,49 @@ test('Slider 2 protects complete bilingual description lines and removes the All
     }
   }
 });
+
+test('Slider 2 mobile fills artwork region without letterboxing on all five banners',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','Mobile artwork regression across phone and compact widths');
+  test.setTimeout(90000);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const width of [320,375,390,430,768,959]){
+    await page.setViewportSize({width,height:900});
+    for(const lang of ['en','bn']){
+      await page.goto('/?action=home-2&lang='+lang);
+      const slider=page.getByTestId('slider2');
+      const frame=slider.getByRole('region');
+      const art=frame.locator('[data-testid="slider2-artwork"][data-active="true"] img');
+      const pay=frame.getByTestId('home2-pay'),other=frame.getByTestId('home2-other');
+      const before=await pay.boundingBox();
+      for(let i=1;i<=5;i++){
+        await slider.getByRole('button',{name:lang==='en'?'Go to slide '+i:'স্লাইড '+i,exact:true}).click();
+        await expect(frame).toHaveAttribute('data-active-slide',String(i-1));
+        await expect.poll(()=>art.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0&&img.naturalHeight>0)).toBe(true);
+        const geom=await art.evaluate((img:HTMLImageElement)=>{
+          const f=img.closest('.home2-slider2__frame')!.getBoundingClientRect();
+          const b=img.getBoundingClientRect(),css=getComputedStyle(img);
+          const scale=css.objectFit==='cover'?Math.max(b.width/img.naturalWidth,b.height/img.naturalHeight):Math.min(b.width/img.naturalWidth,b.height/img.naturalHeight);
+          const p=img.closest('.home2-slider2__frame')!.querySelector('.home2-slider2__copy p')!.getBoundingClientRect();
+          const actions=img.closest('.home2-slider2__frame')!.querySelector('.home2-slider2__actions')!.getBoundingClientRect();
+          return {fit:css.objectFit,position:css.objectPosition,fillWidth:img.naturalWidth*scale>=b.width-.5,fillHeight:img.naturalHeight*scale>=b.height-.5,
+            regionHeight:b.height/f.height,topFraction:(b.top-f.top)/f.height,bottomGap:f.bottom-b.bottom,
+            copyInside:p.top>=f.top&&p.bottom<actions.top,actionsInside:actions.bottom<=f.bottom+1,
+            visibleArtBand:actions.top-Math.max(b.top,f.top+f.height*.53)};
+        });
+        expect(geom.fit).toBe('cover');expect(geom.position).toBe('100% 50%');
+        expect(geom.fillWidth&&geom.fillHeight).toBe(true);
+        expect(geom.regionHeight).toBeGreaterThan(.73);
+        expect(geom.topFraction).toBeLessThan(.27);
+        expect(Math.abs(geom.bottomGap)).toBeLessThanOrEqual(2);
+        expect(geom.visibleArtBand).toBeGreaterThan(75);
+        expect(geom.copyInside&&geom.actionsInside).toBe(true);
+        const pos=await pay.boundingBox();
+        expect(Math.abs(pos!.x-before!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(pos!.y-before!.y)).toBeLessThanOrEqual(1);
+        await expect(other).toBeVisible();
+        if(width===390)await frame.screenshot({path:'test-results/screenshots/slider2-mobile-'+lang+'-'+i+'.png',animations:'disabled'});
+      }
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
+  }
+});

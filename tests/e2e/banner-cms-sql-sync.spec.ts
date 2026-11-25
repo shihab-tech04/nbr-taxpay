@@ -387,8 +387,8 @@ test('Slider 2 shares published CMS images, ordering, dynamic colors and fixed b
   await expect(frame).toHaveCSS('background-color','rgb(248, 247, 235)');
   await expect(layers.first().locator('img')).toHaveAttribute('src',/slider2-desktop.png/);
   await expect(layers.first().locator('source')).toHaveAttribute('srcset',/slider2-mobile.png/);
-  // Desktop fills the frame; dedicated mobile artwork keeps its approved contain fit.
-  await expect(layers.first().locator('img')).toHaveCSS('object-fit',desktop?'cover':'contain');
+  // Both layouts fill their own artwork region, including wide mobile/fallback assets.
+  await expect(layers.first().locator('img')).toHaveCSS('object-fit','cover');
   const pay=frame.getByTestId('home2-pay'),other=frame.getByTestId('home2-other');
   await expect(pay).toHaveText('Start tax payment');
   await expect(other).toHaveText('Other Tax');

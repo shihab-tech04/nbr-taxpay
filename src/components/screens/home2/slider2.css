@@ -114,12 +114,15 @@
   .home2-import-root .home2-slider2__copy p {max-width:none;font-size:13px;margin:8px 8px 0;line-height:1.55;}
   .home2-import-root .home2-slider2__desktop-copy {display:none;}
   .home2-import-root .home2-slider2__mobile-copy {display:inline;}
-  .home2-import-root .home2-slider2__layer > picture {inset:auto 0 0;width:100%;height:74%;}
-  .home2-import-root .home2-slider2__layer img {object-fit:contain;object-position:center bottom;}
+  /* Wide CMS images must fill the mobile artwork region, rather than shrink
+   * into a short strip at the bottom. Keep the illustration's right-hand
+   * focal point, with the existing palette fade protecting the copy. */
+  .home2-import-root .home2-slider2__layer > picture {inset:25% 0 0;width:100%;height:75%;}
+  .home2-import-root .home2-slider2__layer img {object-fit:cover;object-position:right center;}
   .home2-import-root .home2-slider2__layer::after {
-    background:linear-gradient(to bottom,var(--slider2-bg) 0%,var(--slider2-bg) 34%,
-      color-mix(in srgb,var(--slider2-bg) 92%,transparent) 42%,
-      color-mix(in srgb,var(--slider2-bg) 62%,transparent) 50%,transparent 65%);
+    background:linear-gradient(to bottom,var(--slider2-bg) 0%,var(--slider2-bg) 30%,
+      color-mix(in srgb,var(--slider2-bg) 92%,transparent) 35%,
+      color-mix(in srgb,var(--slider2-bg) 50%,transparent) 43%,transparent 53%);
   }
   .home2-import-root .home2-slider2__actions {
     display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
