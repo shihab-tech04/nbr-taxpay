@@ -10,6 +10,8 @@ for(const lang of ['en','bn'] as const)
 for(const theme of ['light','dark'] as const)
 for(const signedIn of [false,true])
 test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),async({page})=>{
+ // Fixed time and software rendering inputs are identical for Main, unchanged control and MUI candidate.
+ await page.clock.setFixedTime(new Date('2026-11-25T10:00:00+06:00'));
  await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});
  await page.route('**/*.supabase.co/**',route=>route.abort());
  await mockPublishedBannerCms(page);
@@ -27,7 +29,11 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   await expect(page.locator(h.root)).toBeVisible();
   await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',lang);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe(signedIn?'user1':null);
-  await page.evaluate(()=>document.fonts.ready);
+  await page.evaluate(async()=>{
+    await document.fonts.ready;
+    await Promise.all([...document.images].map(image=>image.decode().catch(()=>undefined)));
+    await document.fonts.ready;
+  });
   await expect(page.locator('[data-mui-citizen-region]')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await expect(page).toHaveScreenshot(h.name+'-'+lang+'-'+theme+'-'+(signedIn?'local-account':'guest')+'.png',{fullPage:true,animations:'disabled',caret:'hide',maxDiffPixels:0,threshold:0});

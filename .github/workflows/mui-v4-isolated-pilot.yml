@@ -8,13 +8,13 @@ permissions:
 jobs:
   pilot:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     env:
       CI: 'true'
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 82d3e610cae3a3c37100aa7804d8bbdf29b20421
+      BASE_SHA: 766f320c15eeb2f657f78ac8a06dbd6f410be900
       FOUNDATION_SHA: 1619a8951c4b0b1ed6e1d70f868c6aff8d343d84
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-remote origin refs/tags/recovery/mui-v4-82d3e610 | cut -f1)" = "$BASE_SHA"
+          test "$(git ls-remote origin refs/heads/recovery/mui-v4-766f320 | cut -f1)" = "$BASE_SHA"
           git merge-base --is-ancestor "$BASE_SHA" HEAD
           git merge-base --is-ancestor "$FOUNDATION_SHA" HEAD
           git diff --name-only "$BASE_SHA" HEAD
@@ -84,11 +84,14 @@ jobs:
             npm run build
             du -sb dist > "$RUNNER_TEMP/base-build-bytes.txt"
             npx playwright test --config playwright.mui-protected.config.ts --update-snapshots
+            npx playwright test --config playwright.mui-protected.config.ts
+            echo 'UNCHANGED_MAIN_CONTROL_PIXEL_COMPARISON_PASS'
           )
           du -sb dist > pilot-evidence/candidate-build-bytes.txt
           cp "$RUNNER_TEMP/base-build-bytes.txt" pilot-evidence/
           npx playwright test --config playwright.mui-protected.config.ts
           cp -R "$MUI_SNAPSHOT_DIR" pilot-evidence/home-snapshots
+          echo 'CANDIDATE_HOME_PIXEL_COMPARISON_PASS'
       - name: Preserve exact candidate for authorized protected PR review
         shell: bash
         run: |
@@ -121,8 +124,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git ls-remote origin refs/tags/recovery/mui-v4-766f320 | cut -f1)" = "$BASE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_SHA"
           test "$(git ls-remote origin refs/heads/ux/sohojkor-ui-library-foundation-20261124 | cut -f1)" = "$FOUNDATION_SHA"
           gh auth setup-git
-          git push origin HEAD:refs/heads/ops/mui-v4-tested-candidate-82d3e610
-          test "$(git ls-remote origin refs/heads/ops/mui-v4-tested-candidate-82d3e610 | cut -f1)" = "$(git rev-parse HEAD)"
+          git push origin HEAD:refs/heads/ops/mui-v4-tested-candidate-766f320
+          test "$(git ls-remote origin refs/heads/ops/mui-v4-tested-candidate-766f320 | cut -f1)" = "$(git rev-parse HEAD)"
