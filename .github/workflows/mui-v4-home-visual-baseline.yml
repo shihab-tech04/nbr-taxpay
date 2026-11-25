@@ -1,29 +1,53 @@
-name: MUI strict homepage previous-run pixel diagnosis
+name: MUI v5.4 focused unchanged-Main rendering reproducibility
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
 permissions:
-  actions: read
   contents: read
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      VITE_SUPABASE_DISABLED: 'true'
+      VITE_SUPABASE_URL: ''
+      VITE_SUPABASE_PUBLISHABLE_KEY: ''
+      BASE_SHA: 1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 380309175397800da4353d5c5d390b82050a5f9a
+          fetch-depth: 0
           persist-credentials: false
-      - name: Fetch exact failed visual evidence without rerunning screenshots
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Build unchanged exact Main and prepare diagnostic only
         run: |
           set -euo pipefail
-          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/15054482971/zip" -o "$RUNNER_TEMP/visual.zip"
-          printf '%s  %s\n' 'bf67a73498df5678c2baf4fd87e6e578b680d37f9d73f1239e5fb8682c186739' "$RUNNER_TEMP/visual.zip" | sha256sum -c -
-          node scripts/ci/mui-v53-visual-diagnose.mjs "$RUNNER_TEMP/visual.zip" > pixel-diagnosis.json
-          cat pixel-diagnosis.json
+          npm ci --no-audit --no-fund
+          git show "${{ github.sha }}:tests/visual/mui-v54-aa-diagnostic.spec.ts" > tests/visual/mui-v4-protected-home.spec.ts
+          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
+          mkdir -p "$MUI_BASELINE_DIR"
+          git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
+          (cd "$MUI_BASELINE_DIR" && npm ci --no-audit --no-fund && npm run build)
+          cp -a "$MUI_BASELINE_DIR/dist" ./dist
+          npx playwright install chromium
+      - name: Measure original and alternative full-page capture, no masks or tolerance
+        run: |
+          set -euo pipefail
+          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
+          export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
+          mkdir -p "$MUI_SNAPSHOT_DIR"
+          npx playwright test --config playwright.mui-protected.config.ts --project=width-320
+          npx playwright test --config playwright.mui-protected.config.ts --project=width-768 --grep "bn light guest"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: mui-v53-pixel-diagnosis-45680680337
-          path: pixel-diagnosis.json
+          name: mui-v54-focused-aa-evidence
+          path: |
+            ${{ runner.temp }}/mui-snapshots
+            test-results/
+          if-no-files-found: error
           retention-days: 30
