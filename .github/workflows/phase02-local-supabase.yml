@@ -2,7 +2,7 @@ name: TaxPay Phase 02 - disposable Auth, RLS and draft persistence
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
   push:
     branches: [main]
@@ -14,7 +14,7 @@ permissions:
 concurrency:
   # Superseded PR checks may be replaced; never interrupt an in-progress
   # production-branch security check when another commit lands on main.
-  group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}
+  group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -90,9 +90,11 @@ jobs:
         with:
           version: latest
 
-      - name: Isolate disposable Supabase project identity and mail HTTP port
+      - name: Isolate disposable Supabase project identity and host ports
         run: |
           python3 scripts/ci/isolate-local-supabase.test.py
+          node --test tests/integration/localSupabaseEndpoints.test.mjs
+          cp supabase/config.toml "$RUNNER_TEMP/taxpay-original-supabase.toml"
           python3 scripts/ci/isolate-local-supabase.py
 
       - name: Remove stale local TaxPay containers before starting
@@ -101,7 +103,20 @@ jobs:
       - name: Start isolated disposable Supabase (no cloud link)
         run: |
           # Intentionally no `supabase link`, project reference, hosted credentials or db push.
-          supabase start -x studio,imgproxy,realtime,storage-api,logflare,vector,supavisor,postgres-meta
+          # A listener can appear after ephemeral port selection. Retry only a
+          # confirmed bind collision, with fresh ports and this project's own cleanup.
+          for attempt in 1 2 3; do
+            if supabase start -x studio,imgproxy,realtime,storage-api,logflare,vector,supavisor,postgres-meta > "$RUNNER_TEMP/taxpay-supabase-start.log" 2>&1; then
+              cat "$RUNNER_TEMP/taxpay-supabase-start.log"
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/taxpay-supabase-start.log"
+            if [ "$attempt" = 3 ] || ! grep -Eiq 'address already in use|port is already allocated|failed to bind' "$RUNNER_TEMP/taxpay-supabase-start.log"; then exit 1; fi
+            supabase stop --no-backup
+            cp "$RUNNER_TEMP/taxpay-original-supabase.toml" supabase/config.toml
+            python3 scripts/ci/isolate-local-supabase.py
+          done
+          exit 1
 
       - name: Export only local synthetic API and SQL endpoints
         shell: bash
@@ -116,6 +131,9 @@ jobs:
           grep -q '^TAXPAY_LOCAL_SUPABASE_ANON_KEY=' "$GITHUB_ENV"
           grep -q '^TAXPAY_LOCAL_PG_DSN=' "$GITHUB_ENV"
           echo "TAXPAY_LOCAL_RECOVERY_FILE=$RUNNER_TEMP/taxpay-restart-$GITHUB_RUN_ID.json" >> "$GITHUB_ENV"
+
+      - name: Verify disposable status matches allocated loopback ports
+        run: node --input-type=module -e "import {localSupabaseEndpoints} from './tests/integration/localSupabaseEndpoints.mjs'; localSupabaseEndpoints()"
 
       - name: Serve local Edge Functions for real-browser acceptance
         shell: bash
@@ -132,7 +150,7 @@ jobs:
               --header 'Content-Type: application/json' \
               --header 'Origin: http://127.0.0.1:4173' \
               --data '{"action":"open"}' \
-              http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries 2>/dev/null || true)
+              "${TAXPAY_LOCAL_SUPABASE_URL%/}/functions/v1/taxpay-guest-beneficiaries" 2>/dev/null || true)
             if [ "$code" = 400 ] && grep -q '"code":"INVALID_CAPABILITY"' "$RUNNER_TEMP/guest-beneficiaries-probe.json"; then
               echo "PASS: local guest beneficiary Edge Function rejects missing capabilities before database access"
               exit 0
@@ -145,7 +163,7 @@ jobs:
             --header 'Content-Type: application/json' \
             --header 'Origin: http://127.0.0.1:4173' \
             --data '{"action":"open"}' \
-            http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries 2>&1 || true)
+            "${TAXPAY_LOCAL_SUPABASE_URL%/}/functions/v1/taxpay-guest-beneficiaries" 2>&1 || true)
           echo "Final guest-function response:"
           echo "$code"
           echo "Guest Edge Function startup log:"
@@ -158,7 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           expected_migrations="$(find supabase/migrations -maxdepth 1 -name '*.sql' | wc -l | tr -d '[:space:]')"
           applied_migrations="$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')"
           test "$applied_migrations" = "$expected_migrations"
@@ -179,26 +197,26 @@ jobs:
 
       - name: Verify capability-scoped guest beneficiary storage and owner isolation
         run: |
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestBeneficiaryIsolation.sql
 
       - name: Verify nonempty per-User-ID profile persistence, saved list, language and isolation
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/previewProfileNonemptyPersistence.sql
 
       - name: Verify account-scoped payment form drafts, readback, optimistic conflicts and cross-account isolation
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/accountPaymentFormDraftIsolation.sql
 
       - name: Verify unsigned guest form drafts using disposable SQL and real local Edge
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestPaymentFormDraftIsolation.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoRecipientNotices.sql
           node tests/integration/guestPaymentFormDraftEdge.mjs
@@ -208,14 +226,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/legacyStoryPaymentRecovery.sql
 
       - name: Verify capability-scoped demo payment read and write paths
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoProfilePaymentScope.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/combinedOtherTaxSqlAcceptance.sql
           # F-178 exact multilingual remarks + non-text rejection, transaction-rolled back.
@@ -234,33 +252,33 @@ jobs:
           node tests/integration/demoAuthorizationEdgeCapability.mjs
       - name: Verify TaxPay correction intake, Office review state transitions and owner readback
         run: |
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/correctionOfficeReadback.sql
 
       - name: Verify atomic mirror outbox, service-only claims, ACK and outage retry
         run: |
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/story1MirrorOutbox.sql
 
       - name: Verify all ten SQL personas and eight publicly read-only simulated tax services
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/verifySyntheticServiceProfiles.sql
 
       - name: Verify primary administrator identity requires email confirmation (rollback only)
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/verifiedPrimaryAdmin.sql
 
       - name: Rehearse verified-admin-only CMS policies on isolated PostgreSQL
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f docs/security/taxpay-cms-anonymous-write-lockdown-20261024.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/cmsVerifiedAdminAccess.sql
 
@@ -268,19 +286,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/localSyntheticSeedGraph.sql
 
       - name: Verify atomic multi-beneficiary synthetic payment API, RLS and rollback
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/simulatedPaymentAcceptance.sql
 
       - name: Verify new synthetic officer review DDL is installed
         run: |
-          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_officer_decisions') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='sim_payment_officer_action'")" = 1
 
@@ -515,18 +533,21 @@ jobs:
           export WS3_F137_MATRIX_FIXTURE="$WS3_F137_MATRIX_FIXTURE_OUT"
           export WS3_OFFICE_UI_FIXTURE_OUT="$RUNNER_TEMP/ws3-office-ui-paired-payment.json"
           node tests/integration/f137CombinationMatrix.mjs
-          docker run --rm -d --name ws3-office-sql-pg17 \
+          OFFICE_CONTAINER="ws3-office-sql-pg17-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker run --rm -d --name "$OFFICE_CONTAINER" \
             -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres \
-            -p 127.0.0.1:55433:5432 postgres:17
-          trap 'docker stop ws3-office-sql-pg17 >/dev/null 2>&1 || true' EXIT
-          export WS3_TAXPAYER_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          export WS3_OFFICE_DB_URL="postgresql://postgres:postgres@127.0.0.1:55433/postgres"
+            -p 127.0.0.1::5432 postgres:17
+          trap 'docker stop "$OFFICE_CONTAINER" >/dev/null 2>&1 || true' EXIT
+          OFFICE_PORT="$(docker port "$OFFICE_CONTAINER" 5432/tcp | sed -n 's/^127\.0\.0\.1://p')"
+          [[ "$OFFICE_PORT" =~ ^[0-9]+$ ]] && test "$OFFICE_PORT" -ne "$TAXPAY_LOCAL_DB_PORT"
+          export WS3_TAXPAYER_DB_URL="$TAXPAY_LOCAL_PG_DSN"
+          export WS3_OFFICE_DB_URL="postgresql://postgres:postgres@127.0.0.1:${OFFICE_PORT}/postgres"
           export WS3_OFFICE_SOURCE="$OFFICE_DIR"
           for attempt in $(seq 1 35); do
-            if pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres; then break; fi
+            if pg_isready -h 127.0.0.1 -p "$OFFICE_PORT" -U postgres -d postgres; then break; fi
             sleep 2
           done
-          pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres
+          pg_isready -h 127.0.0.1 -p "$OFFICE_PORT" -U postgres -d postgres
           psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -c \
             "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;"
           psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f \
@@ -556,7 +577,7 @@ jobs:
           set -euo pipefail
           # Prior database restart can stop the disposable Edge worker. Reuse
           # the live local worker when possible, otherwise restart it locally.
-          endpoint="http://127.0.0.1:54321/functions/v1/demo-story1-taxpay/payments/reference?reference=WS3-PROBE"
+          endpoint="${TAXPAY_LOCAL_SUPABASE_URL%/}/functions/v1/demo-story1-taxpay/payments/reference?reference=WS3-PROBE"
           code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
             --header "apikey: $TAXPAY_LOCAL_SUPABASE_ANON_KEY" "$endpoint" || true)"
           if [ "$code" != "401" ]; then
