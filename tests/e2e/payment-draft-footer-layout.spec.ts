@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { assertAccountDraftFooter } from './account-draft-footer-assertion';
 
 // Layout-only regression: never save data or submit a payment to hosted SQL.
 for (const width of [320, 375, 1280]) {
@@ -49,6 +50,7 @@ for (const width of [320, 375, 1280]) {
       expect(right.width).toBeLessThan(bar.width * .7);
     };
     await geometry();
+    await assertAccountDraftFooter(modal);
     await next.click();
     await expect(modal.locator('.taxpay-modal__step-count')).toContainText('2/4');
     await expect(footer.getByRole('button', { name: 'Save Draft' })).toBeVisible();
@@ -64,6 +66,7 @@ for (const width of [320, 375, 1280]) {
       expect(step2Save.x + step2Save.width).toBeLessThan(step2Next.x);
       expect(step2Next.width).toBeLessThan(step2Footer.width * .7);
     }
+    await assertAccountDraftFooter(modal);
     await page.screenshot({ path: 'test-results/payment-footer-drafts-' + width + '.png' });
   });
 }
