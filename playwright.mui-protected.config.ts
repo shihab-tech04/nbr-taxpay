@@ -8,7 +8,7 @@ const storageState={...demoLoginOtpCompletedState,origins:[
  ...demoLoginOtpCompletedState.origins.map(origin=>({...origin,origin:'http://127.0.0.1:4174'}))
 ]};
 export default defineConfig({
- testDir:'./tests/e2e',testMatch:'mui-v4-protected-home.spec.ts',
+ testDir:'./tests/visual',testMatch:'mui-v4-protected-home.spec.ts',
  timeout:240000,expect:{timeout:20000},workers:2,retries:0,reporter:'list',
  snapshotPathTemplate:snapshots+'/{projectName}/{arg}{ext}',
  use:{baseURL:'http://127.0.0.1:4173',browserName:'chromium',

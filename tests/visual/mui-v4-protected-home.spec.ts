@@ -2,7 +2,7 @@ import {expect,test,type Route} from '@playwright/test';
 import {createHash} from 'node:crypto';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
-import {mockPublishedBannerCms} from './mock-published-banners';
+import {mockPublishedBannerCms} from '../e2e/mock-published-banners';
 const homes=[
  {name:'default',query:'',root:'.public-record-discovery'},
  {name:'landing',query:'action=landing&',root:'.public-record-discovery'},
