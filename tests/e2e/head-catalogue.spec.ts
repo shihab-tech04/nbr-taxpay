@@ -131,11 +131,34 @@ test('when source backend is unreachable, read-only offline fallback is explicit
 test('public footer accurately describes service and does not promise challan issuance',async({page})=>{
  await page.goto('/?action=landing');
  const footer=page.locator('footer');
- // Frozen homepage: retain exact Main's visible bilingual service identity contract.
- await expect(footer.getByText('Income tax payment information')).toBeVisible();
+ // Frozen Main taxpay-citizen.css: at <=900px the identity paragraph
+ // (not its logo/container) and desktop navigation are intentionally hidden.
+ const mobile=(page.viewportSize()?.width??1280)<=900;
+ const identity=footer.locator('.public-footer__identity');
+ const caption=identity.locator('p');
+ const more=footer.locator('.public-footer__mobile-more');
+ await expect(identity.locator('img')).toBeVisible();
+ await expect(caption).toHaveText('Income tax payment information');
+ if(mobile){
+   await expect(caption).toBeHidden();
+   await expect(footer.locator('.public-footer__navs')).toBeHidden();
+   await expect(more.locator('summary')).toBeVisible();
+   await more.locator('summary').click();
+   await expect(more.getByRole('button',{name:'Payment status & receipt'})).toBeVisible();
+   await more.locator('summary').click();
+ }else{
+   await expect(caption).toBeVisible();
+   await expect(footer.locator('.public-footer__navs')).toBeVisible();
+ }
  await expect(footer.getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await switchToBengali(page);
- await expect(footer.getByText('আয়কর পরিশোধের তথ্য')).toBeVisible();
+ await expect(caption).toHaveText('আয়কর পরিশোধের তথ্য');
+ if(mobile){
+   await expect(caption).toBeHidden();
+   await expect(more.locator('summary')).toHaveText(/আরও/);
+   await more.locator('summary').click();
+   await expect(more.getByRole('button',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toBeVisible();
+ }else await expect(caption).toBeVisible();
  await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 
