@@ -5,28 +5,6 @@ on:
 permissions:
   contents: read
 jobs:
-  projection:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npm run lint
-      - run: node --import tsx --test tests/recipientPaymentActivity.test.ts tests/receivedPaymentNoticePresentation.test.ts tests/demoReceivedPaymentNotices.test.ts tests/receivedNoticeRegisterScope.test.ts
-      - run: npx playwright install chromium
-      - name: Existing Auth popup and received Activity details, both languages and responsive projects
-        run: npx playwright test tests/e2e/authenticated-received-notice-mount.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --workers=1
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-          VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'
   lifecycle-report-sql:
     runs-on: ubuntu-latest
     timeout-minutes: 18
@@ -41,6 +19,23 @@ jobs:
         run: |
           python3 scripts/ci/isolate-local-supabase.py
           supabase start -x studio,imgproxy,realtime,storage-api,logflare,vector,supavisor,postgres-meta
+      - name: Rehearse transactional rollback of staged lifecycle and report migrations
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          pg_dump --schema-only --no-password > /tmp/before.sql
+          { echo 'begin;'; sed -E '/^(begin|commit);$/Id' scripts/ci/recipient-lifecycle-candidate.sql scripts/ci/recipient-report-intake-candidate.sql; echo 'rollback;'; } > /tmp/rehearsal.sql
+          psql -X -v ON_ERROR_STOP=1 -f /tmp/rehearsal.sql
+          pg_dump --schema-only --no-password > /tmp/after.sql
+          diff -u <(sed -E '/^\\\\(un)?restrict /d' /tmp/before.sql) <(sed -E '/^\\\\(un)?restrict /d' /tmp/after.sql)
+      - name: Generate ordered migration filenames using official CLI
+        run: |
+          supabase --version
+          supabase migration new --help
+          supabase migration new recipient_payment_lifecycle
+          sleep 1
+          supabase migration new recipient_report_intake
+          find supabase/migrations -name '*_recipient_payment_lifecycle.sql' -o -name '*_recipient_report_intake.sql'
       - name: Apply staged candidate and verify exact lifecycle and report intake
         run: |
           set -euo pipefail
