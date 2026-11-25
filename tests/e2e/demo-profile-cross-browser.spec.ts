@@ -89,7 +89,17 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
   try{
     await Promise.all([setup(first),setup(second),setup(third)]);
     const a=await first.newPage();
+    // Reproduce a browser that retains its original guest address book.
+    // Signed-in profile must show only owner-scoped records, without exposing
+    // the old Restore button, claiming the guest data, or clearing its key.
+    await a.addInitScript(()=>{
+      localStorage.setItem('korbritto.guest-beneficiaries.capability.v1','G'.repeat(43));
+      localStorage.setItem('korbritto.guest-beneficiaries.initialized.v1','1');
+    });
     await login(a,'user1');
+    await expect(a.getByTestId('guest-beneficiary-recovery')).toHaveCount(0);
+    await expect(a.getByRole('button',{name:/Restore to my profile|আমার প্রোফাইলে ফিরিয়ে আনুন/})).toHaveCount(0);
+    expect(await a.evaluate(()=>localStorage.getItem('korbritto.guest-beneficiaries.capability.v1'))).toBe('G'.repeat(43));
     await expect(a.locator('#beneficiary-list')).toContainText('Family');
     await expect(a.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
     await a.locator('#beneficiary-list').click();

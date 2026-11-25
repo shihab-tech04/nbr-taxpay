@@ -21,11 +21,10 @@ import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {UiButton,UiInput} from '../ui/Controls';
 import {SearchableSelect} from '../ui/SearchableSelect';
 import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
-import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {BeneficiaryProfile} from './BeneficiaryProfile';
-import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,matchesBeneficiaryClassification,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 type Flow='single'|'bulk';
@@ -87,9 +86,6 @@ export function Beneficiaries(){
   const [filename,setFilename]=useState('');
   const [rows,setRows]=useState<ImportRow[]>([]);
   const [busy,setBusy]=useState(false);
-  const [restoring,setRestoring]=useState(false);
-  const [recoveryError,setRecoveryError]=useState('');
-  const [guestRecoveryDone,setGuestRecoveryDone]=useState(false);
   const [modalError,setModalError]=useState('');
   const [search,setSearch]=useState('');
   // The Overview can focus the existing table on precisely those TINs whose
@@ -708,18 +704,6 @@ export function Beneficiaries(){
     link.href=url;link.download='Korbritto_Beneficiaries_Template.xlsx';document.body.append(link);link.click();link.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
-  const restoreFromThisBrowser=async()=>{
-    if((!owner&&!previewAccount)||restoring)return;
-    setRestoring(true);setRecoveryError('');
-    try {
-      const result=owner?await recoverGuestBeneficiariesToProfile(owner)
-        :await recoverLegacyGuestBeneficiariesToPreview();
-      await reload();
-      setGuestRecoveryDone(true);
-      setNotice({en:result.people?`Restored ${result.people} beneficiaries to your profile.`:'Your saved beneficiaries are already available in your profile.',bn:result.people?`আপনার প্রোফাইলে ${result.people} জন উপকারভোগী ফিরিয়ে আনা হয়েছে।`:'সংরক্ষিত উপকারভোগীরা ইতিমধ্যে আপনার প্রোফাইলে আছেন।'});
-    }catch(e){setRecoveryError(e instanceof Error?e.message:String(e));}
-    finally{setRestoring(false);}
-  };
   const reloadData=async()=>{
     setLoading(true);setError('');
     try{await reload();}catch(e){setError(e instanceof Error?e.message:String(e));}
@@ -749,17 +733,6 @@ export function Beneficiaries(){
         </UiButton>
       </div>}/>
 
-    {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
-      <p className="text-sm text-taxpay-text">{tr("Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.",'এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
-      <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
-    </div>}
-    {recoveryError&&<div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-      <p className="font-medium">{recoveryError}</p>
-      {/expired|unavailable|access key/i.test(recoveryError)&&<p className="mt-2">{tr(
-        'The original guest session has expired or is unavailable. Its access key is preserved; no records were deleted. Recovery needs a still-authorized original session or verified backup. You can continue managing your existing profile beneficiaries.',
-        'আগের অতিথি সেশনের মেয়াদ শেষ বা সেটি অনুপলব্ধ। অ্যাক্সেস কী সংরক্ষিত আছে; কোনো রেকর্ড মুছে ফেলা হয়নি। পুনরুদ্ধারে আগের বৈধ সেশন অথবা যাচাইকৃত ব্যাকআপ প্রয়োজন। বর্তমান প্রোফাইলের উপকারভোগী পরিচালনা চালিয়ে যেতে পারেন।'
-      )}</p>}
-    </div>}
     {preferenceError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{preferenceError[bn?'bn':'en']}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 

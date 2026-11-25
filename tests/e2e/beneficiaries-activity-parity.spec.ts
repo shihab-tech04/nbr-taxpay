@@ -75,9 +75,14 @@ for(const language of ['en','bn'] as const){
     expect(geometry.label.height).toBeLessThanOrEqual(1);
     expect(geometry.field.height).toBeCloseTo(44,0);
     expect(geometry.filter.height).toBeCloseTo(44,0);
-    expect(Math.abs(geometry.field.y-geometry.filter.y)).toBeLessThanOrEqual(2);
-    expect(geometry.field.right).toBeLessThanOrEqual(geometry.filter.x-6);
-    expect(geometry.field.width).toBeGreaterThanOrEqual(page.viewportSize()!.width>=1180?240:120);
+    if(page.viewportSize()!.width>=768){
+      expect(Math.abs(geometry.field.y-geometry.filter.y)).toBeLessThanOrEqual(2);
+      expect(geometry.field.right).toBeLessThanOrEqual(geometry.filter.x-6);
+    }else{
+      expect(geometry.filter.y).toBeGreaterThanOrEqual(geometry.field.y+geometry.field.height+6);
+      expect(Math.abs(geometry.field.x-geometry.filter.x)).toBeLessThanOrEqual(2);
+    }
+    expect(geometry.field.width).toBeGreaterThanOrEqual(page.viewportSize()!.width>=1180?240:200);
     expect(Math.abs(geometry.icon.y+geometry.icon.height/2-(geometry.input.y+geometry.input.height/2))).toBeLessThanOrEqual(2);
     expect(geometry.inputFont).toBe('16px');
     expect(geometry.inputBorder).toBe('0px');

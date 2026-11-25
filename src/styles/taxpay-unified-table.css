@@ -1319,7 +1319,7 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpay-office-register__identity,
   .taxpay-taxpayer-reference .taxpay-office-register__actions {width:100%;flex-basis:100%;justify-content:flex-start;}
   .taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-office-register__search {
-    width:auto;min-width:120px;max-width:none;flex:1 1 120px;
+    width:100%;min-width:0;max-width:none;flex:1 1 100%;
   }
   .taxpay-taxpayer-reference .taxpay-office-register__filters {
     grid-template-columns:minmax(0,1fr);
@@ -1556,7 +1556,7 @@ table.taxpay-unified-table {
     flex:1 1 100%;width:100%;justify-content:flex-start;
   }
   .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__actions .taxpay-office-register__search {
-    flex:1 1 120px;width:auto;min-width:120px;max-width:none;
+    flex:1 1 100%;width:100%;min-width:0;max-width:none;
   }
   .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__filters {
     padding:12px;
