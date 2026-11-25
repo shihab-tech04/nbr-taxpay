@@ -1113,3 +1113,37 @@ test('F-039 unified frequent head is owner-scoped and opens the original editor 
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
   expect(writes).toEqual([]);
 });
+
+
+test('F-039 signed-in calculation restores independent taxpayer head disclosure without writes',async({page})=>{
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Saved Taxpayer Two'}).check();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const batch=dialog.getByTestId('other-tax-batch');
+  const group=batch.locator('[data-head-group="Advance Tax"]');
+  await group.locator('summary').click();
+  await batch.getByRole('checkbox',{name:/Select 68A/}).check();
+  await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount-"]').fill('125');
+  const tabs=batch.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
+  await tabs.nth(1).click();
+  if(await group.getAttribute('open')===null)await group.locator('summary').click();
+  await batch.getByRole('checkbox',{name:/Select 68A/}).check();
+  await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount-"]').fill('75');
+  const mobile=dialog.getByTestId('mobile-payment-calculation');
+  if(await mobile.count()&&await mobile.getAttribute('open')===null)await mobile.getByTestId('mobile-payment-calculation-toggle').click();
+  const calculation=dialog.getByTestId('v5-compact-taxpayer-summary');
+  const cards=calculation.locator('details.payment-form-summary__compact-owner');
+  await expect(cards).toHaveCount(2);
+  await cards.nth(0).locator('summary').click();
+  await cards.nth(1).locator('summary').click();
+  await expect(cards.nth(0).getByTestId('selected-taxpayer-head-list')).toContainText('125');
+  await expect(cards.nth(1).getByTestId('selected-taxpayer-head-list')).toContainText('75');
+  await cards.nth(0).locator('summary').click();
+  await expect(cards.nth(0)).not.toHaveAttribute('open','');
+  await expect(cards.nth(1)).toHaveAttribute('open','');
+  await expect(dialog.locator('.payment-form-summary__total')).toContainText('200');
+  await expect(dialog.getByRole('button',{name:'Copy TIN'})).toHaveCount(0);
+  expect(writes).toEqual([]);
+});
