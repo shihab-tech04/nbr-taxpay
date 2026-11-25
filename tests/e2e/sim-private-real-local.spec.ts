@@ -389,9 +389,17 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await preservedCard.getByText('View allocations',{exact:false}).click();
  await expect(preservedCard).toContainText('user7');
  await expect(preservedCard).toContainText('৳23.50');
+ // The recipient was left on Notifications above; exercise the actual
+ // recipient-owned History perspective before inspecting its row actions.
+ await two.page.goto('/?action=history');
+ await expect(two.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
+ await two.page.getByRole('button',{name:'Payments allocated to me'}).click();
+ await expect(two.page.getByRole('button',{name:'Payments allocated to me'})).toHaveAttribute('aria-pressed','true');
  await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  const recipientCard=two.page.getByTestId('signed-in-payment-activity-cards')
    .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(recipientCard.getByText(tx!.id)).toBeVisible({timeout:15000});
+ await expect(recipientCard.locator('.taxpay-mobile-table-card__actions button')).toHaveCount(1);
  await expect(recipientCard.getByRole('button',{name:'View details',exact:true})).toBeVisible();
  await recipientCard.getByRole('button',{name:'View details',exact:true}).click();
  await expect(two.page.getByRole('dialog').getByTestId('pay-again-details')).toHaveCount(0);
