@@ -41,7 +41,10 @@ export function MuiReadOnlyLedgerDialog({title,onClose,onBackdropClose,children,
     className="taxpay-modal__overlay public-service-overlay"
     aria-label={ariaLabel} aria-labelledby={ariaLabel?undefined:id}
     onClose={(_,reason)=>reason==='backdropClick'?(onBackdropClose??onClose)():onClose()}
-    sx={{'&&':{display:'block',padding:0,zIndex:120}}}
+    // Keep padding on the MUI container only. The original mobile overlay
+    // :has() rule otherwise adds another 2px and lifts the bottom sheet.
+    style={{padding:0}}
+    sx={{'&&':{display:'block',zIndex:120}}}
     slotProps={{
       container:{sx:{display:'flex',height:'100%',width:'100%',alignItems:'center',justifyContent:'center',
         padding:'clamp(.6rem, 2.5vw, 1.5rem)',
