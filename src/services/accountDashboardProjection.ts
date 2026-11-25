@@ -143,3 +143,46 @@ export function filterPrivateDashboardTransactionsByYear(
     return [{ ...transaction, allocations, amountMinor }];
   });
 }
+
+
+/** A payment made for this account by a third party is activity received,
+ * never spending initiated by this account or part of its payer totals. */
+export function selectCompletedPayerDashboardTransactions(
+  transactions:readonly DashboardSimulationTransaction[]
+):DashboardSimulationTransaction[]{
+  return transactions.filter(row=>row.state==='SIMULATED'&&row.participantView!=='beneficiary');
+}
+
+export type PrivateDashboardPaymentTotals = {
+  payerTotalMinor:bigint;
+  selfAllocationMinor:bigint;
+  paidForOthersMinor:bigint;
+  receivedTotalMinor:bigint;
+};
+
+/**
+ * Summarizes one already-projected, already-filtered account view.
+ * Payer totals count each parent once; the self/other split uses that parent's
+ * allocations. Received totals include only completed lines paid by another
+ * payer, never the same parent's payer-and-recipient view.
+ */
+export function summarizePrivateDashboardPaymentTotals(
+  transactions:readonly DashboardSimulationTransaction[],
+  profileId:SimulationUser
+):PrivateDashboardPaymentTotals{
+  const payerRows=selectCompletedPayerDashboardTransactions(transactions);
+  const receivedRows=transactions.filter(row=>row.state==='SIMULATED'&&row.participantView==='beneficiary');
+  const sumRows=(rows:readonly DashboardSimulationTransaction[])=>
+    rows.reduce((sum,row)=>sum+BigInt(row.amountMinor),0n);
+  const payerAllocations=payerRows.flatMap(row=>row.allocations);
+  return {
+    payerTotalMinor:sumRows(payerRows),
+    selfAllocationMinor:payerAllocations
+      .filter(allocation=>allocation.beneficiary===profileId)
+      .reduce((sum,allocation)=>sum+BigInt(allocation.amountMinor),0n),
+    paidForOthersMinor:payerAllocations
+      .filter(allocation=>allocation.beneficiary!==profileId)
+      .reduce((sum,allocation)=>sum+BigInt(allocation.amountMinor),0n),
+    receivedTotalMinor:sumRows(receivedRows),
+  };
+}

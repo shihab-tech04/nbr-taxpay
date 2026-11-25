@@ -1,17 +1,48 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 const paymentId = '10000000-0000-4000-8000-000000000002';
-type PaymentInput = { idempotencyKey: string; service: string; details: { receiptReference: string; receiptSnapshot: Record<string, unknown> } };
+type PaymentInput = { idempotencyKey: string; sessionId: string; service: string; amountMinor: number; details: Record<string, unknown> & { receiptReference: string; receiptSnapshot: Record<string, unknown> } };
 async function mockStoryPayments(page: Page) {
   const submissions: PaymentInput[] = [];
   // No test makes a hosted write, even if another backend call is introduced.
   await page.route('**/*.supabase.co/**', route => route.abort());
-  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
-    if (route.request().method() !== 'POST') return route.abort();
-    submissions.push(route.request().postDataJSON() as PaymentInput);
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-      success: true, id: paymentId, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+  await page.route('**/functions/v1/demo-story1-taxpay/payments**', async route => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, POST, OPTIONS',
+        'access-control-allow-headers': '*',
+      } });
+      return;
+    }
+    if (request.method() === 'POST') {
+      submissions.push(request.postDataJSON() as PaymentInput);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        success: true, id: paymentId, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+      }) });
+      return;
+    }
+    if (request.method() !== 'GET') return route.abort();
+    const url = new URL(request.url());
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': '*',
+    };
+    if (url.pathname.endsWith('/' + paymentId) && submissions.length) {
+      const saved = submissions[submissions.length - 1];
+      await route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({
+        success: true, simulationOnly: true,
+        data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-22T00:00:00.000Z',
+          data: { ...saved, origin: 'TAXPAY_UI' } },
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({
+      success: true, simulationOnly: true, data: { items: [], total: 0 },
     }) });
   });
   return submissions;
@@ -32,12 +63,15 @@ async function travelReview(page: Page) {
   await fillTravelDetails(page);
   await expect(page.locator('#travel-tax-route-0')).toBeChecked();
   await page.getByRole('button', { name: 'Continue to review' }).click();
+  await page.locator('#travel-mobile').fill('01712345678');
+  await page.getByRole('button', { name: 'Make Payment' }).click();
+  await expect(page.getByTestId('travel-payment-channel-screen')).toBeVisible();
 }
 
 test('guest submission and receipt use only synthetic references', async ({ page }) => {
   const submissions = await mockStoryPayments(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const ownPayer = dialog.locator('[data-payer-relationship="SELF"]');
   await ownPayer.click();
@@ -95,13 +129,13 @@ test('travel online records simulation only, with no Treasury scroll', async ({ 
   await page.getByRole('button', { name: 'Pay online' }).click();
   await page.getByRole('button', { name: 'Mobile banking' }).click();
   await page.getByRole('radio', { name: 'bKash' }).check();
-  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await page.getByRole('button', { name: 'Confirm preview payment' }).click();
+  await page.locator('.payment-review__ack input[type="checkbox"]').check();
+  await page.getByRole('button', { name: 'Confirm sample payment' }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
   await expect(page.locator('.receipt-view')).toContainText('No Treasury scroll issued');
-  await expect(page.locator('.receipt-view')).toContainText('Simulated payment record');
+  await expect(page.locator('.receipt-view')).toContainText('Saved payment record');
   await expect(page.locator('.receipt-view')).not.toContainText('BB-SCRL');
 });
 
@@ -109,10 +143,10 @@ test('travel bank-slip simulation cannot instruct a real bank payment', async ({
   const submissions = await mockStoryPayments(page);
   await travelReview(page);
   await page.getByRole('button', { name: 'Pay at a bank branch' }).click();
-  await expect(page.getByText('A-Challan is the required government integration',{exact:false})).toBeVisible();
-  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await page.getByRole('button', { name: 'Confirm preview payment' }).click();
-  await expect(page.getByText('Sample bank slip pending')).toBeVisible();
+  await expect(page.getByTestId('travel-payment-channel-screen')).toBeVisible();
+  await page.locator('.payment-review__ack input[type="checkbox"]').check();
+  await page.getByRole('button', { name: 'Confirm sample payment' }).click();
+  await expect(page.getByText('Bank slip pending')).toBeVisible();
   await expect(page.getByText('No actual bank or Treasury settlement has occurred.',{exact:false})).toBeVisible();
   expect(submissions).toHaveLength(0);
   await page.getByRole('button', { name: 'Confirm sample bank settlement' }).click();
@@ -134,7 +168,7 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
       penaltyAmount: 0, surchargeAmount: 0, interestAmount: 0, totalAmount: 1 }],
     totalAmount: 1, paymentMethod: 'BKASH', treasuryStatus: 'TREASURY_SCROLLED',
     treasuryScrollNo: 'BB-SCRL-2026-99999', taxCreditStatus: 'PENDING_RECONCILIATION',
-    createdAt: '2026-10-24 10:00:00', isSimulatedDemo: true,
+    createdAt: '2026-10-24 10:00:00', completedAt: '2026-10-24 10:00:00', isSimulatedDemo: true,
   };
   await page.route('**/*.supabase.co/**', route => route.abort());
   await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, route => route.fulfill({
@@ -155,6 +189,15 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
   await expect(receipt).toContainText(reference);
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল রেফারেন্স' : 'Treasury scroll reference');
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued');
+  await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
+  await expect(receipt.getByRole('button', { name: language === 'bn' ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate' })).toBeVisible();
+  await expect(receipt.getByTestId('payment-certificate-reference')).toHaveCount(0);
+  await page.goto('/?action=verify&lang=' + language);
+  await page.locator('#receipt-lookup-reference').fill('SK-PC-' + paymentId);
+  await page.locator('#receipt-lookup-mobile').fill('01712345678');
+  await page.locator('.receipt-lookup__submit').click();
+  await expect(receipt.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + paymentId);
+  await expect(receipt).toContainText(reference);
   await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
 });
 

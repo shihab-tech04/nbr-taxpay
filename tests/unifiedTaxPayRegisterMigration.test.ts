@@ -41,11 +41,17 @@ test('offline evidence retains exact audit state and amounts without altering it
 });
 
 
-test('signed-in Activity uses Transactions only while keeping the service record list',()=>{
+test('signed-in Activity keeps the approved Transactions grid without extra history or SQL example sections',()=>{
   const screen=read('User1DemoExperience');
   const tabs=readFileSync('src/components/layout/TaxpayerPageStructure.tsx','utf8');
   const app=readFileSync('src/App.tsx','utf8');
-  assert.match(screen,/\{route==='history'&&<DemoServiceRecordsPanel/);
+  assert.match(screen,/const transactionList=<section/);
+  assert.match(screen,/mobileTestId="taxpayer-transaction-mobile-cards"/);
+  assert.match(screen,/onViewRow=\{item=>setSelected\(item\)\}/);
+  assert.doesNotMatch(screen,/<DemoServiceRecordsPanel|<RecoveredStoryHistory/);
+  // Both stored-data services remain implemented and tested independently.
+  assert.match(read('DemoServiceRecordsPanel'),/useDemoSqlProfileAndServiceRecords/);
+  assert.match(read('RecoveredStoryHistory'),/getDetailedStorySessionPayments/);
   assert.doesNotMatch(screen,/trackingActivity|track-payment-history-link/);
   assert.doesNotMatch(tabs,/Track payment|trackPayment|পেমেন্ট অনুসন্ধান/);
   assert.doesNotMatch(app,/ReceiptLookup activityTabs accountContext/);

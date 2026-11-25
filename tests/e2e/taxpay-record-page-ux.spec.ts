@@ -23,7 +23,7 @@ for (const language of ['en','bn'] as const) {
     expect(caseActionHeight).toBeGreaterThanOrEqual(44);
     await page.getByRole('searchbox',{name:tr('Search case references','বিষয়ের রেফারেন্স খুঁজুন')}).fill('zz-no-matches');
     await expect(cases).toHaveCount(0);
-    await page.getByRole('button',{name:tr('Clear filters','ফিল্টার মুছুন')}).click();
+    await page.getByRole('button',{name:tr('Clear all','সব ফিল্টার মুছুন')}).click();
     await expect(cases.getByRole('row').nth(1)).toBeVisible();
     if(desktop){
       const columns=await cases.locator('.taxpay-record-list__row').first().evaluate(
@@ -83,3 +83,60 @@ test('desktop ledger never duplicates mobile cards under the table after changin
     await expect(ledger.locator('.taxpay-mobile-table-cards')).toBeHidden();
   }
 });
+
+
+/** A single compositional frame, not individual lookalike toolbars.
+ * All four independently rendered financial registers must share the same
+ * surface, header, filter/disclosure, row and footer contract at every viewport.
+ */
+for(const viewport of [{width:1280,height:900},{width:375,height:812}]){
+  test('Office register frame is shared by the four Activity/Ledger routes at '+viewport.width+'px',async({page})=>{
+    await page.setViewportSize(viewport);
+    const observations:{route:string;radius:string;border:string;background:string}[]=[];
+    for(const route of ['history','corrections','certificates','ledger']){
+      await page.goto('/?action='+route+'&demoUser=user1&lang=en');
+      const frame=page.locator('.taxpay-office-register-frame').first();
+      await expect(frame).toBeVisible();
+      await expect(frame.locator('.taxpay-office-register__toolbar')).toHaveCount(1);
+      await expect(frame.locator('.taxpay-office-register__actions input[type="search"]')).toHaveCount(1);
+      await expect(frame.locator('.taxpay-office-register__footer, .taxpay-table-pagination').first()).toBeVisible();
+      if(route==='history'&&viewport.width===1280){
+        const geometry=await frame.locator('.taxpay-table-viewport').evaluate(element=>{
+          const frameBounds=element.getBoundingClientRect();
+          const firstHeader=element.querySelector('thead th:first-child')?.getBoundingClientRect();
+          const firstTitle=element.querySelector('tbody tr:first-child .taxpayer-transaction-row__title')?.getBoundingClientRect();
+          // Keep every column, allow local horizontal scrolling in this register,
+          // but never let the register overflow the whole page.
+          element.scrollLeft=element.scrollWidth;
+          const lastHeader=element.querySelector('thead th:last-child')?.getBoundingClientRect();
+          const statusCell=element.querySelector('tbody tr:first-child td:nth-child(8)')?.getBoundingClientRect();
+          const statusPill=element.querySelector('tbody tr:first-child td:nth-child(8) .taxpayer-transaction-row__status > span')?.getBoundingClientRect();
+          const firstRow=element.querySelector('tbody tr:first-child')?.getBoundingClientRect();
+          if(!firstHeader||!firstTitle||!lastHeader||!statusCell||!statusPill||!firstRow)
+            throw new Error('Missing nine-column transaction geometry');
+          return {left:frameBounds.left,right:frameBounds.right,
+            firstHeader:firstHeader.left,firstTitle:firstTitle.left,lastHeader:lastHeader.right,
+            statusWidth:statusCell.width,statusPillHeight:statusPill.height,rowHeight:firstRow.height,
+            overflow:element.scrollWidth-element.clientWidth};
+        });
+        expect(geometry.firstHeader,'Payment column must not start left of the viewport').toBeGreaterThanOrEqual(geometry.left-1);
+        expect(geometry.firstTitle,'Payment title must be fully visible').toBeGreaterThanOrEqual(geometry.left-1);
+        expect(geometry.lastHeader,'Actions column must not be clipped').toBeLessThanOrEqual(geometry.right+2);
+        expect(geometry.overflow,'Register may scroll within its own viewport').toBeGreaterThanOrEqual(0);
+        expect(geometry.statusWidth,'Status must retain readable width after adding identity columns').toBeGreaterThanOrEqual(140);
+        expect(geometry.statusPillHeight,'Status badge must not wrap vertically').toBeLessThanOrEqual(42);
+        expect(geometry.rowHeight,'Transaction row must remain compact on desktop').toBeLessThanOrEqual(125);
+      }
+      const computed=await frame.evaluate(el=>{
+        const s=getComputedStyle(el);
+        return {radius:s.borderTopLeftRadius,border:s.borderTopWidth,background:s.backgroundColor};
+      });
+      observations.push({route,...computed});
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,route+' must not overflow the '+viewport.width+'px viewport').toBeLessThanOrEqual(2);
+    }
+    expect(new Set(observations.map(x=>x.radius)).size).toBe(1);
+    expect(new Set(observations.map(x=>x.border)).size).toBe(1);
+    expect(new Set(observations.map(x=>x.background)).size).toBe(1);
+  });
+}

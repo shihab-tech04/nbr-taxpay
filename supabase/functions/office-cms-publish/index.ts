@@ -71,11 +71,61 @@ async function removeUnused(db:ReturnType<typeof serviceClient>,bucket:'taxpay-b
     if(unused.length) await db.storage.from(bucket).remove(unused);
   }
 }
+
+// Keep only high-contrast, light-background palettes from the verified Office publisher.
+function luminance(hex:string):number {
+  const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)
+    .map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4);
+  return c[0]*.2126+c[1]*.7152+c[2]*.0722;
+}
+function contrast(a:string,b:string):number {
+  const x=luminance(a),y=luminance(b);
+  return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+}
+// Match Office's client-side palette rule on the authenticated publisher.
+// A readable blue-on-amber palette is still visually mismatched.
+function paletteHue(hex:string):number|null {
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
+  const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
+  const hi=Math.max(...c),lo=Math.min(...c),d=hi-lo;
+  if(d<.025) return null;
+  let h=0;
+  if(hi===c[0]) h=((c[1]-c[2])/d)%6;
+  else if(hi===c[1]) h=(c[2]-c[0])/d+2;
+  else h=(c[0]-c[1])/d+4;
+  return ((h*60)%360+360)%360;
+}
+function hueDistance(a:string,b:string):number|null {
+  const x=paletteHue(a),y=paletteHue(b);
+  return x===null||y===null?null:Math.min(Math.abs(x-y),360-Math.abs(x-y));
+}
+
+function validatePalette(p:Record<string,unknown>) {
+  const names=['background_color','heading_color','body_color','outline_color'];
+  const present=names.map(n=>p[n]!==undefined&&p[n]!==null);
+  if(!present.some(Boolean)) return;
+  if(!present.every(Boolean)||!names.every(n=>/^#[0-9a-fA-F]{6}$/.test(str(p[n]))))
+    fail('Provide all four hex banner colors.');
+  const bg=str(p.background_color);
+  if(luminance(bg)<.72||names.slice(1).some(n=>contrast(bg,str(p[n]))<4.5))
+    fail('Banner palette must have a light background and readable dark text/outline.');
+  const heading=str(p.heading_color);
+  const ink=names.slice(1).map(n=>str(p[n]));
+  if(ink.some(color=>{
+    const distance=hueDistance(heading,color);
+    return distance!==null && distance>32;
+  }) || ink.some(color=>{
+    const distance=hueDistance(bg,color);
+    return distance!==null && distance>35;
+  })) fail('Banner colors must share one color family.');
+}
+
 function validateBanner(p:Record<string,unknown>) {
   if(!/^[a-z][a-z0-9_-]{0,39}$/.test(str(p.id))) fail('Invalid banner ID');
   if(p.service_code!==null && p.service_code!=='' && !VALID_SERVICES.has(str(p.service_code))) fail('Invalid banner category');
   if(typeof p.published!=='boolean') fail('Invalid banner publication flag');
   if(p.id==='intro' && (p.published!==true || (p.service_code!==null && p.service_code!==''))) fail('Main banner must stay published');
+  validatePalette(p);
   for(const key of COPY) if(typeof p[key]!=='string' || !str(p[key]).trim() || str(p[key]).length>2400) fail('Missing or invalid banner field '+key);
   for(const key of ['mobile_heading_en','mobile_heading_bn']) if(Array.from(str(p[key])).length>24) fail('Mobile heading is too long');
   for(const key of ['mobile_description_en','mobile_description_bn']) if(Array.from(str(p[key])).length>34) fail('Mobile description is too long');
@@ -155,7 +205,7 @@ Deno.serve(async(req:Request)=>{
         const {data,error}=await db.rpc('taxpay_office_save_banner',{
           p_banner:raw!,p_expected_version:expected,p_position:position,
         });
-        if(error) {if(error.code==='40001') fail('Banner changed in another session',409);throw error;}
+        if(error) {if(error.code==='40001' || error.code==='PT409') fail('Banner changed in another session',409);throw error;}
         committed=true;
         const {data:confirmed,error:checkErr}=await db.from('taxpay_site_banners').select('*').eq('id',raw!.id).single();
         if(checkErr || !confirmed || confirmed.version!==data?.version || confirmed.sort_order!==position-1)

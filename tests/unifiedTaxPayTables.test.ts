@@ -8,7 +8,9 @@ test('one shared table stylesheet and React layout primitives own the table visu
   const css=read('src/styles/taxpay-unified-table.css');
   const component=read('src/components/ui/TaxPayDataTable.tsx');
   const entry=read('src/index.css');
-  assert.match(entry, /@import ['"]\.\/styles\/taxpay-unified-table\.css['"]/);
+  assert.doesNotMatch(entry, /@import ['"]\.\/styles\/taxpay-unified-table\.css['"]/, 'Public startup must not fetch account-only table styles');
+  assert.match(read('src/components/ui/TaxPayDataTable.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'All record grids own the shared stylesheet when mounted');
+  assert.match(read('src/components/screens/Beneficiaries.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'Beneficiary route independently owns its table stylesheet');
   for(const key of ['--taxpay-table-border','--taxpay-table-heading','--taxpay-table-stripe',
     '--taxpay-table-hover','--taxpay-table-row-height','taxpay-table-toolbar',
     'taxpay-mobile-table-card','taxpay-table-state','prefers-reduced-motion'])
@@ -68,6 +70,18 @@ test('official receipt and certificate print tables remain outside generic table
   }
 });
 
+test('payer history displays and searches the original receipt and certificate references',()=>{
+ const history=read('src/components/screens/AccountBeneficiaryHistory.tsx');
+ const references=read('src/services/accountBeneficiaryHistoryReferences.ts');
+ const receipt=read('src/components/common/ReceiptView.tsx');
+ for(const expression of ['accountBeneficiaryPaymentReferences(row)','displayAccountBeneficiaryPaymentReference(row)'])
+   assert.ok(history.includes(expression),expression);
+ for(const expression of ['entry.receipt.challanNo','SK-PC-'])
+   assert.ok(references.includes(expression),expression);
+ for(const expression of ['canViewCertificate','downloadDisplayedCertificate(receipt, paperRef.current, isCertificate)','window.print()'])
+   assert.ok(receipt.includes(expression),expression);
+});
+
 test('ledger, Activity and Beneficiaries share one column-driven data renderer with preserved actions',()=>{
   const component=read('src/components/ui/TaxPayDataTable.tsx');
   assert.ok(component.includes('export function TaxPayDataGrid<Row>'));
@@ -80,7 +94,7 @@ test('ledger, Activity and Beneficiaries share one column-driven data renderer w
     assert.ok(source.includes('getRowKey='),screen);
   }
   const beneficiaries=read('src/components/screens/Beneficiaries.tsx');
-  for(const action of ['payWith([person])','openPersonEditor(person)','setDeletePerson(person)'])assert.ok(beneficiaries.includes(action),action);
+  for(const action of ['payWith([person])','openPersonEditor(person)','requestDeletePerson(editPerson)'])assert.ok(beneficiaries.includes(action),action);
   assert.ok(read('src/components/screens/EventBasedTaxLedger.tsx').includes('renderMobileCard='));
 });
 
@@ -98,7 +112,8 @@ test('actual signed-in payment paths use shared semantic desktop tables and comp
    assert.match(source,/TaxPayTableCounter/,name);
    assert.match(source,/mobileTestId=/,name);
    assert.match(source,/getRowKey=/,name);
-   assert.match(source,/type="search"/,name);
+   assert.match(source,/<TaxPayOfficeRegisterToolbar/,name);
+   assert.match(shared,/type="search"/,name);
  }
  assert.match(activity,/onClick=\{\(\)=>setSelectedPayment\(tx\)\}/);
  assert.match(activity,/tx\.allocations\.map/);

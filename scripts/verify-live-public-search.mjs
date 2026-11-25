@@ -15,16 +15,26 @@ try {
     ['mobile', { width: 375, height: 812 }, true],
   ]) {
     const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile });
+  // Budget guard: live readback tests use bundled image fallback rather than remote CMS bytes.
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
     const url = new URL(base);
     url.searchParams.set('action', 'landing');
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
     const section = page.getByRole('region', { name: 'Find a payment record' });
     await expect(section).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#public-how-it-works')).toBeHidden();
+    await expect(page.locator('#public-faq')).toBeHidden();
+    await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+    await page.evaluate(async () => { await document.fonts.ready; });
+    // Measure the immediate following section, not the footer. On mobile the
+    // footer follows six responsive benefit cards and can move independently
+    // while CMS artwork or fonts finish loading. That movement does not mean
+    // the absolutely positioned search popover has resized its own card.
     const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
     const gapBefore = await page.evaluate(() => {
       const card = document.querySelector('.public-record-discovery').getBoundingClientRect();
-      return document.querySelector('#public-how-it-works').getBoundingClientRect().top - card.bottom;
+      return document.querySelector('.public-benefits').getBoundingClientRect().top - card.bottom;
     });
     await search.focus();
     await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
@@ -44,7 +54,7 @@ try {
         floating: getComputedStyle(list).position === 'absolute',
         belowInput: list.getBoundingClientRect().top >= field.getBoundingClientRect().bottom,
         cardHeight: element.getBoundingClientRect().height,
-        gapToNext: document.querySelector('#public-how-it-works').getBoundingClientRect().top - element.getBoundingClientRect().bottom,
+        gapToNext: document.querySelector('.public-benefits').getBoundingClientRect().top - element.getBoundingClientRect().bottom,
         dropdownOutsideCard: list.getBoundingClientRect().bottom > element.getBoundingClientRect().bottom,
       };
     });
@@ -74,7 +84,7 @@ try {
     if (page.url().includes('TKN-882190')) throw new Error('Reference leaked into live URL');
     await page.close();
   }
-  console.log('PASS: actual deployed TaxPay Pages search matched-first and sample-number sections, modal receipt, responsive bounds and no legacy blue-header route');
+  console.log('PASS: deployed TaxPay homepage hides payment steps and FAQ, while public search, receipt, responsive bounds and navigation remain functional');
 } finally {
   await browser.close();
 }

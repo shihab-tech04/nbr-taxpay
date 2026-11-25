@@ -2,10 +2,21 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function signIn(page: Page, userId: 'user1' | 'user2') {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill(userId);
   await login.getByRole('textbox', { name: 'Password' }).fill(userId);
   await login.getByRole('button', { name: 'Sign In' }).click();
+  // The preview backend is mocked in this browser test. Supply the corresponding
+  // fictional session in storage; the separate local Edge/SQL acceptance test
+  // proves that forged/mismatched capabilities are rejected in the real API.
+  await page.evaluate((actor) => {
+    sessionStorage.setItem('taxpay-taxpayer-preview-user', actor);
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:actor,capability:(actor==='user1'?'A':'B').repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000001',
+      language:'en',selectedListId:null
+    }));
+  },userId);
   await page.goto('/?action=manage_authorization');
 }
 
@@ -58,6 +69,12 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await expect(directions.getByRole('button',{name:'Can pay for me'})).toBeVisible();
   await authorization.getByRole('button',{name:'Add'}).click();
   const lookup=authorization.getByTestId('shared-taxpayer-tin-lookup');
+  await expect(lookup.getByTestId('taxpayer-tin-digits').locator('span')).toHaveCount(13);
+  const authTin=lookup.locator('#new-auth-tin');
+  await authTin.fill('2');
+  await expect(page.getByRole('listbox',{name:/Sample TIN suggestions/})).toHaveCount(0);
+  await authTin.fill('');
+
   await authorization.getByLabel('Taxpayer account reference').fill('2222222222222');
   await lookup.getByRole('button',{name:'Search',exact:true}).click();
   await expect(lookup.locator('#new-auth-name')).toHaveValue('Meghna Trading Ltd.');

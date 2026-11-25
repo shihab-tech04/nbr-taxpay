@@ -21,6 +21,8 @@ const browser=await chromium.launch({headless:true});
 let cleanupAction=null;
 try {
   const contexts=await Promise.all([browser.newContext(),browser.newContext(),browser.newContext()]);
+  // Budget guard: manual hosted identity tests must not download production CMS artwork.
+  await Promise.all(contexts.map(context => context.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'))));
   const pages=await Promise.all(contexts.map(async ctx=>{
     const page=await ctx.newPage();
     await page.goto(site,{waitUntil:'domcontentloaded',timeout:30000});

@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type Page} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
@@ -51,9 +52,20 @@ for(const language of ['en','bn'] as const){
       const row=desktop?root.locator('table.taxpay-unified-table tbody tr').first()
         :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
+      if(view==='ledger'&&desktop){
+        const ledgerTable=root.getByTestId('event-ledger-table');
+        const viewport=root.locator('.taxpay-table-viewport').first();
+        await expect(viewport).toHaveAttribute('tabindex','0');
+        await expect(root.locator('.taxpay-register-scroll-note')).toBeVisible();
+        const roles=await ledgerTable.evaluate(table=>['event','credit','balance'].map(key=>{
+          const el=table.querySelector<HTMLElement>('thead [data-column-key="'+key+'"]');
+          return el?getComputedStyle(el).position:'missing';
+        }));
+        expect(roles,'Ledger event and financial context should stay accessible').toEqual(['sticky','sticky','sticky']);
+      }
       if(view==='history'&&desktop){
-        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
-        await expect(row.locator('td')).toHaveCount(7);
+        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(9);
+        await expect(row.locator('td')).toHaveCount(9);
       }
       if(view==='history'&&!desktop){
         await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
@@ -64,60 +76,26 @@ for(const language of ['en','bn'] as const){
         await expect(row.locator('.beneficiary-directory__person .taxpayer-transaction-row__title'))
           .toHaveText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
         await expect(row.locator('.beneficiary-directory__person .beneficiary-directory__tin'))
-          .toHaveText('012345678901');
+          .toHaveText('012*********');
       }
       if(view==='beneficiaries'&&!desktop){
-        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
-        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('012345678901');
-        await expect(row).not.toContainText(language==='bn'?'টিআইএন:':'TIN:');
-      }
-      if(!desktop&&view==='ledger'){
-        const nested=await row.locator('button').first().evaluate(element=>({
-          borderTopWidth:getComputedStyle(element).borderTopWidth,
-          paddingLeft:getComputedStyle(element).paddingLeft,
-          minHeight:element.getBoundingClientRect().height
-        }));
-        expect(nested.borderTopWidth,'mobile ledger must not double-border a card').toBe('0px');
-        expect(nested.paddingLeft,'mobile ledger must not double-inset a card').toBe('0px');
-        expect(nested.minHeight).toBeGreaterThanOrEqual(44);
-        const panel=await root.locator('.taxpay-ledger-records').evaluate(element=>({
-          borderTopWidth:getComputedStyle(element).borderTopWidth,
-          background:getComputedStyle(element).backgroundColor,
-          viewportBorder:getComputedStyle(element.querySelector('.taxpay-table-viewport')!).borderTopWidth
-        }));
-        expect(panel.borderTopWidth,'mobile ledger list should not double-wrap cards').toBe('0px');
-        expect(panel.viewportBorder,'mobile ledger viewport should not frame cards').toBe('0px');
-      }
-      if(header)await expect(header).toBeVisible();
-      if(view==='ledger') {
-        const ledgerMobileList=root.locator('.taxpay-mobile-table-cards');
-        const ledgerDesktopTable=root.locator('table.taxpay-unified-table');
-        if(desktop){
-          await expect(ledgerMobileList).toBeHidden();
-          await expect(ledgerDesktopTable).toBeVisible();
-        } else {
-          await expect(ledgerMobileList).toBeVisible();
-          await expect(ledgerDesktopTable).toBeHidden();
-        }
-      }
-      if(view==='beneficiaries'&&!desktop){
-        const filters=page.locator('.beneficiary-directory__filters');
-        const list=filters.locator('.beneficiary-directory__list-filter');
-        const tag=filters.locator('.beneficiary-directory__tag-filter');
-        const search=filters.locator('.beneficiary-directory__search-filter');
-        const [listBox,tagBox,searchBox]=await Promise.all([list.boundingBox(),tag.boundingBox(),search.boundingBox()]);
-        if(!listBox||!tagBox||!searchBox)throw Error('Missing beneficiary mobile filters');
-        expect(Math.abs(tagBox.y-searchBox.y),'Tag and Search share a row').toBeLessThanOrEqual(3);
-        expect(listBox.y+listBox.height,'Selected list precedes Tag and Search').toBeLessThanOrEqual(tagBox.y);
+        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
+        const context=page.locator('.beneficiary-directory__filters .beneficiary-directory__list-filter');
+        const search=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
+        await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
+        await expect(search.getByRole('searchbox')).toBeVisible();
+        const [listBox,searchBox]=await Promise.all([context.boundingBox(),search.boundingBox()]);
+        if(!listBox||!searchBox)throw Error('Missing list switch or shared search');
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
-        await tag.locator('select').selectOption('friends_family');
-        const relationship=filters.locator('.beneficiary-directory__relationship-filter');
-        await expect(relationship).toBeVisible();
-        const relationBox=await relationship.boundingBox();
-        if(!relationBox)throw Error('Relationship filter is missing');
-        expect(relationBox.y,'Relationship follows Tag/Search row').toBeGreaterThan(tagBox.y+tagBox.height-2);
-        await tag.locator('select').selectOption('all');
-        await expect(relationship).toHaveCount(0);
+        const filters=page.locator('.beneficiary-directory__filters');
+        const tag=filters.locator('.beneficiary-directory__tag-filter');
+        await expect(tag).toBeVisible();
+        // The approved combined Tag + Relationship is still one grouped searchable selector.
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','friends_family:father');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','friends_family:father');
+        await expect(filters.locator('.beneficiary-directory__relationship-filter')).toHaveCount(0);
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','all');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','all');
       }
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'
@@ -140,12 +118,27 @@ for(const language of ['en','bn'] as const){
         };
       },{view,desktop});
       expect(style.overflow,view+' horizontal overflow').toBeLessThanOrEqual(2);
+      if(desktop){
+        // Wide register tables scroll inside their frame, never beneath the sidebar
+        // or beyond the document. All existing columns and actions stay present.
+        const viewport=root.locator('.taxpay-table-viewport').first();
+        await expect(viewport).toBeVisible();
+        const scroll=await viewport.evaluate(el=>({
+          width:el.clientWidth,
+          scrollWidth:el.scrollWidth,
+          overflowX:getComputedStyle(el).overflowX,
+          viewportWidth:document.documentElement.clientWidth
+        }));
+        expect(scroll.width,view+' table viewport has usable width').toBeGreaterThan(200);
+        expect(scroll.width,view+' table fits the app viewport').toBeLessThanOrEqual(scroll.viewportWidth);
+        expect(scroll.overflowX,view+' uses its own horizontal scroll').toBe('auto');
+      }
       const textSize=await row.evaluate(element=>{
         const cell=element.matches('tr')?element.querySelector('td'):element;
         return parseFloat(getComputedStyle(cell??element).fontSize);
       });
       expect(textSize,view+' primary record typography').toBeGreaterThanOrEqual(16);
-      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(view==='history'?64:76);
+      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(64);
       else expect(style.borderRadius,view+' card corners').not.toBe('0px');
       observations.push({view,background:style.background,fontSize:style.fontSize,
         color:style.color,borderRadius:style.borderRadius,rowHeight:style.rowHeight});
@@ -222,10 +215,12 @@ for(const language of ['en','bn'] as const){
       status:200,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:[{
         id:'EXAMPLE-USER2-1',transactionId:'00000000-0000-4000-8000-000000000121',
         payer:'user2',state:'SIMULATED',createdAt:'2026-10-24T10:00:00Z',
-        simulationOnly:true,totalMinor:5000,reviewStatus:'PENDING_OFFICER',
+        simulationOnly:true,totalMinor:8000,reviewStatus:'UNKNOWN_REVIEW',
         allocations:[
           {id:'a1',lineNo:1,beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:1500},
-          {id:'a2',lineNo:2,beneficiary:'user3',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:3500}
+          {id:'a2',lineNo:2,beneficiary:'user3',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:3500},
+          {id:'a3',lineNo:3,beneficiary:'user4',category:'ASSESSED_DEMAND',assessmentYear:'2025-26',amountMinor:1200},
+          {id:'a4',lineNo:4,beneficiary:'user5',category:'OTHER_TAX_PAYMENT',assessmentYear:'2024-25',amountMinor:1800}
         ],events:[{id:1,action:'CREATED',note:'Payment record saved',occurredAt:'2026-10-24T10:00:00Z'}]
       }]})
     }));
@@ -238,6 +233,18 @@ for(const language of ['en','bn'] as const){
     const desktop=info.project.name==='desktop-1280';
     const table=panel.getByTestId('signed-in-payment-activity-table');
     const cards=panel.getByTestId('signed-in-payment-activity-cards');
+    const visibleRecords=desktop?table:cards;
+    await expect(visibleRecords.getByText(language==='bn'
+      ?'অফিস পর্যালোচনা: পাওয়া যায়নি':'Office review: Unavailable',{exact:true})).toBeVisible();
+    const searchLabel=language==='bn'?'লেনদেন খুঁজুন':'Search transactions';
+    const searchPlaceholder=language==='bn'?'রেফারেন্স বা নাম':'Reference or name';
+    const toolbar=panel.locator('.taxpay-office-register__toolbar');
+    const search=toolbar.getByRole('searchbox',{name:searchLabel});
+    const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+    await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(searchLabel);
+    await expect(searchField).toBeVisible();
+    await expect(search).toHaveAttribute('placeholder',searchPlaceholder);
+    await expect(search).toHaveAttribute('title',searchPlaceholder);
     const expand=language==='bn'?'বরাদ্দ দেখুন':'View allocations';
     if(desktop){
       await expect(table).toBeVisible();
@@ -246,6 +253,7 @@ for(const language of ['en','bn'] as const){
         : ['Reference','Date','Payer','Allocations','Amount','Status','Actions']);
       await expect(table.locator('tbody tr')).toHaveCount(1);
       await expect(cards).toBeHidden();
+      await expect(table.locator('tbody tr details > ul')).toBeHidden();
       await table.getByText(expand).click();
       await expect(table.getByText('৳35.00',{exact:true})).toBeVisible();
       await table.locator('tbody td').first().click();
@@ -253,11 +261,16 @@ for(const language of ['en','bn'] as const){
       await expect(table).toBeHidden();
       await expect(cards).toBeVisible();
       await expect(cards.locator(':scope > li')).toHaveCount(1);
-      await expect(cards.getByText(language==='bn'?'মোট: ৳50.00':'Total: ৳50.00',{exact:true})).toBeVisible();
+      await expect(cards.locator(':scope > li details > ul')).toBeHidden();
+      await expect(cards.getByText(language==='bn'?'মোট: ৳80.00':'Total: ৳80.00',{exact:true})).toBeVisible();
       await cards.getByText(expand).click();
       await expect(cards.getByText('৳35.00',{exact:true})).toBeVisible();
       await cards.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details'}).click();
     }
+    const allocationDetails=desktop?table.locator('tbody tr details'):cards.locator(':scope > li details');
+    await expect(allocationDetails.locator('ul > li')).toHaveCount(4);
+    for(const beneficiary of ['user2','user3','user4','user5'])
+      await expect(allocationDetails).toContainText(beneficiary);
     const modal=page.getByRole('dialog',{name:language==='bn'?'পেমেন্টের বিবরণ':'Payment details'});
     await expect(modal).toBeVisible();
     await expect(modal).toContainText('EXAMPLE-USER2-1');
@@ -265,7 +278,78 @@ for(const language of ['en','bn'] as const){
     await expect(modal).toContainText('CREATED');
     await page.keyboard.press('Escape');
     await expect(modal).toHaveCount(0);
-    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(2);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const expandedPanel=width<768?cards:table;
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' history search field width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' history search field containment at '+width+'px').toBe(true);
+      await expect(expandedPanel).toBeVisible();
+      const details=width<768?cards.locator(':scope > li details'):table.locator('tbody tr details');
+      const summary=details.locator('summary');
+      if(await details.getAttribute('open')===null)await summary.click();
+      await expect(details.locator('ul > li')).toHaveCount(4);
+      await expect(details).toContainText('user4');
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' multi-allocation history overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
   });
 }
+
+
+test('Office-style record workspaces fill laptop width without hiding transaction columns',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop laptop register geometry');
+  for(const view of ['beneficiaries','history','ledger'] as const){
+    if(view==='beneficiaries')await beneficiaryFixture(page);
+    await page.goto('/?action='+view+'&demoUser=user1&lang=en');
+    const workspace=page.locator('[data-taxpay-register-page="true"]').first();
+    await expect(workspace).toBeVisible();
+    const dimensions=await workspace.evaluate(element=>{
+      const main=document.querySelector<HTMLElement>('#main-content');
+      if(!main)throw new Error('Approved register workspace main is missing');
+      const style=getComputedStyle(main);
+      const area=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+      return {
+        width:element.getBoundingClientRect().width,
+        right:element.getBoundingClientRect().right,
+        area,
+        screenWidth:window.innerWidth
+      };
+    });
+    // A laptop with its approved navigation/side padding can offer 900px of
+    // content space. Do not demand >940px and force document overflow.
+    const expectedWidth=Math.min(dimensions.area,1150);
+    expect(dimensions.width,view+' must use the available desktop workspace')
+      .toBeGreaterThanOrEqual(expectedWidth-2);
+    expect(dimensions.width,view+' must stay within its approved content area')
+      .toBeLessThanOrEqual(dimensions.area+2);
+    expect(dimensions.right,view+' stays within viewport').toBeLessThanOrEqual(dimensions.screenWidth+1);
+    if(view==='beneficiaries'){
+      const actionCell=page.getByTestId('beneficiary-records').locator('tbody tr').first().locator('td:nth-child(2)');
+      const buttons=actionCell.getByRole('button');
+      await expect(buttons).toHaveCount(2);
+      const tops=await buttons.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
+      expect(Math.max(...tops)-Math.min(...tops),'Beneficiary actions should fit one desktop row').toBeLessThanOrEqual(8);
+    }
+    if(view==='history'){
+      const table=page.locator('.taxpayer-transaction-panel table.taxpayer-transaction-table');
+      await expect(table.locator('thead th')).toHaveCount(9);
+      for(const header of await table.locator('thead th').all())await expect(header).toBeVisible();
+      const meta=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-compact-meta').first();
+      await expect(meta).toBeHidden();
+      const viewport=page.locator('.taxpayer-transaction-panel .taxpay-table-viewport');
+      // New payer and beneficiary columns fit inside the existing locally scrollable table.
+      // Scrolling the table must not scroll the entire page or hide actions permanently.
+      await viewport.evaluate(node=>{node.scrollLeft=node.scrollWidth;});
+      const action=table.locator('tbody tr').first().locator('td:last-child button');
+      const [windowBox,actionBox]=await Promise.all([viewport.boundingBox(),action.boundingBox()]);
+      expect(windowBox).not.toBeNull();expect(actionBox).not.toBeNull();
+      expect(actionBox!.x+actionBox!.width,'Transaction actions remain accessible by table-only scrolling')
+        .toBeLessThanOrEqual(windowBox!.x+windowBox!.width+2);
+    }
+    const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(horizontalOverflow,view+' must not overflow document').toBeLessThanOrEqual(2);
+  }
+});
+

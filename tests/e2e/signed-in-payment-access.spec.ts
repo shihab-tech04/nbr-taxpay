@@ -1,16 +1,18 @@
 import { expect, test } from '@playwright/test';
+import { ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 for (const locale of ['en', 'bn'] as const) {
   test(`already signed-in ${locale.toUpperCase()} taxpayer skips redundant account/walk-in choice for both payers`, async ({ page }) => {
     await page.goto('/?action=taxpayer_login');
-    const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+    const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
     await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
     await login.getByLabel('Password', { exact: true }).fill('user1');
     await login.getByRole('button', { name: 'Sign In' }).click();
     await expect(login).toHaveCount(0);
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const payment = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
+    await ensureNewPaymentEntry(payment);
 
     for (const payer of ['OTHER', 'SELF'] as const) {
       await payment.locator(`[data-payer-relationship="${payer}"]`).click();
@@ -23,7 +25,7 @@ for (const locale of ['en', 'bn'] as const) {
       await continueButton.click();
       await expect(payment.locator('.taxpay-modal__step-count')).toContainText('1/4');
       await expect(payment.locator('.tax-service-choice__account-access')).toHaveCount(0);
-      await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
+      await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
       if (payer === 'OTHER') {
         await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(1);
       }
@@ -34,7 +36,7 @@ for (const locale of ['en', 'bn'] as const) {
 
 test('signed-out taxpayer still sees Sign-in and Walk-in payment options', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();

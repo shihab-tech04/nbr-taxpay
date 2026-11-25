@@ -1,5 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
-import {enterTaxPayService} from './pay-tax-entry-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 type Status='ACTIVE'|'PENDING'|'EXPIRED'|'REVOKED';
 function authorization(taxpayerId:'user2'|'user3',status:Status,activeUntil:number|null=null){
@@ -47,13 +48,13 @@ async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT'){
     return route.fallback();
   });
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,service,'OTHER');
   return dialog;
@@ -63,18 +64,23 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await mockSavedBeneficiaries(page);await mockAuthorizations(page,[]);
   const dialog=await openSignedInPayment(page);
   const picker=dialog.getByTestId('saved-beneficiary-picker');
-  await expect(picker.getByRole('heading',{name:'Choose beneficiaries'})).toBeVisible();
+  // The parent payment section owns exactly one visible heading; the picker must not duplicate it.
+  await expect(dialog.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(1);
+  await expect(picker.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(0);
   await expect(picker.getByRole('button',{name:'Family'})).toHaveAttribute('aria-expanded','true');
-  await expect(picker).toContainText('2222222222222');
-  await expect(picker).toContainText('3333333333333');
+  await expect(picker).toContainText('222**********');
+  await expect(picker).toContainText('333**********');
   await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
   await expect(dialog.locator('#guest-tin')).toHaveCount(0);
   await expect(dialog.locator('#guest-payer-name')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
-  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  // Preserve the order chosen for payment, not the original saved-list row order.
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).check();
+  await expect(picker.locator('input[type=checkbox]').first()).toHaveAttribute('aria-label','Select Saved Taxpayer Three');
+  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await expect(picker.locator('input[type=checkbox]').first()).toHaveAttribute('aria-label','Select Saved Taxpayer Three');
   await expect(picker).toContainText('2 selected for this payment');
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).uncheck();
   await expect(picker).toContainText('1 selected for this payment');
@@ -183,7 +189,10 @@ test('one temporary guest read outage recovers without losing the browser-saved 
   const dialog=await openSignedInPayment(page);
   const picker=dialog.getByTestId('saved-beneficiary-picker');
   await expect(picker.getByRole('button',{name:'Family'})).toBeVisible();
-  expect(listReads).toBe(2);
+  // The dashboard's saved-tag category breakdown may perform one additional read.
+  // Recovery still succeeds after the single transient outage, without retry storms.
+  expect(listReads).toBeGreaterThanOrEqual(2);
+  expect(listReads).toBeLessThanOrEqual(3);
   await expect(picker.getByText('Could not load your beneficiary lists.')).toHaveCount(0);
 });
 
@@ -202,7 +211,7 @@ test('unavailable guest capability blocks payment with actionable recovery guida
 
 test('guest input remains editable and limited to twelve digits',async({page})=>{
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   const tin=dialog.locator('#guest-tin');
@@ -215,10 +224,11 @@ test('guest input remains editable and limited to twelve digits',async({page})=>
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
 });
 
-test('signed-in facilitated payments save one record per selected taxpayer item', async ({ page }) => {
+test('signed-in facilitated payments produce one combined receipt with linked allocations', async ({ page }) => {
   await mockSavedBeneficiaries(page);
   await mockAuthorizations(page, null);
   const submitted: Array<Record<string, any>> = [];
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
@@ -245,7 +255,19 @@ test('signed-in facilitated payments save one record per selected taxpayer item'
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay ৳ 50/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
-  expect(submitted.map(record => record.details.taxpayerTin)).toEqual(['2222222222222', '3333333333333']);
-  expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
-  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].amountMinor).toBe(5000);
+  expect(submitted[0].details.combinedPayment).toBe(true);
+  expect(submitted[0].details.allocations.map((line:{taxpayerTin:string;amountMinor:number}) =>
+    [line.taxpayerTin,line.amountMinor])).toEqual([
+      ['2222222222222',1500],['3333333333333',3500]
+    ]);
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  const paper=dialog.locator('.receipt-view__paper');
+  await expect(paper).toContainText('2222222222222');
+  await expect(paper).toContainText('3333333333333');
+  await expect(paper).toContainText('৳ 50');
+  await dialog.getByRole('button',{name:'Back to confirmation'}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
 });

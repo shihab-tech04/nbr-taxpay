@@ -1,0 +1,86 @@
+name: TaxPay public Storage binary recovery
+on:
+  workflow_dispatch:
+  push:
+    branches: [security/handoff-office-auth-gate-20261110]
+    paths:
+      - '.github/workflows/taxpay-storage-binary-recovery.yml'
+      - '.github/recovery/taxpay-storage-integrity-manifest.json'
+permissions:
+  contents: read
+jobs:
+  verify-and-export-public-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout approved repository source
+        uses: actions/checkout@v4
+      - name: Download, checksum and rehearse restoration of public Storage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, shutil, tarfile, urllib.request, urllib.parse
+          manifest=json.load(open('.github/recovery/taxpay-storage-integrity-manifest.json'))
+          assert manifest['sourceProjectId']=='eyqhoavnitkrajvyqvxn'
+          assert len(manifest['objects'])==21 and manifest['totalBytes']==24474931
+          root=pathlib.Path('storage-export')
+          live=root/'source-storage'
+          live.mkdir(parents=True,exist_ok=True)
+          verified=[]
+          for obj in manifest['objects']:
+              bucket,path=obj['bucket'],obj['path']
+              assert bucket in ('taxpay-banners','taxpay-branding')
+              assert path and '..' not in pathlib.PurePosixPath(path).parts
+              dest=live/bucket/path
+              dest.parent.mkdir(parents=True,exist_ok=True)
+              url=('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/'
+                   +urllib.parse.quote(bucket,safe='')+'/'
+                   +urllib.parse.quote(path,safe='/'))
+              req=urllib.request.Request(url,headers={'User-Agent':'TaxPay-independent-recovery/1.0'})
+              with urllib.request.urlopen(req,timeout=45) as response:
+                  assert response.status==200
+                  content=response.read(5242881)
+              assert len(content)==obj['bytes'],f'Size mismatch: {bucket}/{path}'
+              digest=hashlib.sha256(content).hexdigest()
+              assert digest==obj['sourceSha256'],f'Checksum mismatch: {bucket}/{path}'
+              dest.write_bytes(content)
+              verified.append({'bucket':bucket,'path':path,'bytes':len(content),'sha256':digest})
+          assert len(verified)==21 and sum(x['bytes'] for x in verified)==manifest['totalBytes']
+          shutil.copyfile('.github/recovery/taxpay-storage-integrity-manifest.json',root/'storage-integrity-manifest.json')
+          archive=root/'taxpay-source-storage-binaries.tar.gz'
+          with tarfile.open(archive,'w:gz') as tf:
+              tf.add(live,arcname='source-storage')
+          # Restore into an isolated directory from the actual generated archive,
+          # then compare every restored byte against the original source SHA-256.
+          restored=root/'isolated-restore'
+          with tarfile.open(archive,'r:gz') as tf:
+              assert all(m.name.startswith('source-storage/') or m.name=='source-storage' for m in tf.getmembers())
+              tf.extractall(restored,filter='data')
+          for obj in manifest['objects']:
+              buf=(restored/'source-storage'/obj['bucket']/obj['path']).read_bytes()
+              assert len(buf)==obj['bytes']
+              assert hashlib.sha256(buf).hexdigest()==obj['sourceSha256']
+          report={'sourceProjectId':manifest['sourceProjectId'],'fileCount':21,
+                  'totalBytes':sum(x['bytes'] for x in verified),
+                  'archiveSHA256':hashlib.sha256(archive.read_bytes()).hexdigest(),
+                  'archiveBytes':archive.stat().st_size,
+                  'sha256Matches':21,'restoredFilesVerified':21,
+                  'containsActualStorageBinaries':True,'result':'PASS'}
+          (root/'restore-report.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('Verified public Storage objects: 21/21')
+          print('Verified isolated binary restore: 21/21')
+          print('Archive SHA256: '+report['archiveSHA256'])
+          shutil.rmtree(live)
+          shutil.rmtree(restored)
+          PY
+      - name: Preserve exact binary archive and restore evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-original-public-storage-binaries
+          path: |
+            storage-export/taxpay-source-storage-binaries.tar.gz
+            storage-export/storage-integrity-manifest.json
+            storage-export/restore-report.json
+          retention-days: 3
+          if-no-files-found: error

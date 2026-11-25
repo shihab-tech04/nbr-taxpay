@@ -1,0 +1,50 @@
+name: TaxPay independent pre-release recovery archive
+on:
+  push:
+    branches:
+      - fix/taxpay-core-allocations-20261110
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive-and-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bundle and restore pre-release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA=c0e6148d51bb25930019660c3bda8300573fb62d
+          BASE_TREE=266d97803107efaa984a11c66a602208da3753d5
+          git cat-file -e "${BASE_SHA}^{commit}"
+          test "$(git rev-parse "${BASE_SHA}^{tree}")" = "${BASE_TREE}"
+          mkdir -p "$RUNNER_TEMP/recovery"
+          git bundle create "$RUNNER_TEMP/recovery/taxpay-history.bundle" HEAD
+          git bundle verify "$RUNNER_TEMP/recovery/taxpay-history.bundle"
+          git archive --format=tar "$BASE_SHA" | gzip -n > "$RUNNER_TEMP/recovery/taxpay-source.tar.gz"
+          git init -q "$RUNNER_TEMP/restore-test"
+          git -C "$RUNNER_TEMP/restore-test" fetch -q "$RUNNER_TEMP/recovery/taxpay-history.bundle" HEAD
+          git -C "$RUNNER_TEMP/restore-test" cat-file -e "${BASE_SHA}^{commit}"
+          test "$(git -C "$RUNNER_TEMP/restore-test" rev-parse "${BASE_SHA}^{tree}")" = "${BASE_TREE}"
+          mkdir -p "$RUNNER_TEMP/recovered-source"
+          git -C "$RUNNER_TEMP/restore-test" archive "$BASE_SHA" | tar -x -C "$RUNNER_TEMP/recovered-source"
+          mkdir -p "$RUNNER_TEMP/recovered-from-tar"
+          tar -xzf "$RUNNER_TEMP/recovery/taxpay-source.tar.gz" -C "$RUNNER_TEMP/recovered-from-tar"
+          diff -qr "$RUNNER_TEMP/recovered-from-tar" "$RUNNER_TEMP/recovered-source"
+          (cd "$RUNNER_TEMP/recovery" && sha256sum taxpay-history.bundle taxpay-source.tar.gz > SHA256SUMS.txt)
+          printf 'BASE_SHA=%s\nBASE_TREE=%s\nRESTORE_TEST=PASS\n' "$BASE_SHA" "$BASE_TREE" > "$RUNNER_TEMP/recovery/RESTORE_CHECK.txt"
+      - name: Upload independently restorable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-pre-release-main-c0e6148d
+          path: |
+            ${{ runner.temp }}/recovery/taxpay-history.bundle
+            ${{ runner.temp }}/recovery/taxpay-source.tar.gz
+            ${{ runner.temp }}/recovery/SHA256SUMS.txt
+            ${{ runner.temp }}/recovery/RESTORE_CHECK.txt
+          if-no-files-found: error
+          retention-days: 14

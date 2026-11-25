@@ -1,3 +1,4 @@
+import {openTaxpayerPayTax} from './taxpayer-travel-menu-helper';
 import { fillTravelDetails, fillForeignPassenger } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
@@ -7,9 +8,11 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
+  // An embedded walk-in receipt is named by its shared modal header;
+  // the independent public lookup keeps its original receipt heading.
   const receiptTitle = embedded
-    ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
-    : language === 'bn' ? 'করবৃত্ত — রসিদের বিবরণ' : 'Korbritto — Receipt details';
+    ? language === 'bn' ? 'চালানের বিবরণ' : 'Challan details'
+    : language === 'bn' ? 'সহজকর — রসিদের বিবরণ' : 'Sohojkor — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280' && !embedded) {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
@@ -76,9 +79,9 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await page.goto('/?action=landing');
   await expect(page.locator('#public-home-title')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
-  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
-  await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
+  await expect(page.locator('#public-how-it-works')).toBeHidden();
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(0);
+  await expect(page.locator('#public-faq')).toBeHidden();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   if(page.viewportSize()!.width<=900) await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
   else await expect(page.locator('.citizen-pay')).toBeHidden();
@@ -88,7 +91,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await switchToBangla();
   await expect(page.locator('#public-home-title')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'যেভাবে কর পরিশোধ করবেন'})).toBeVisible();
+  await expect(page.locator('#public-how-it-works')).toBeHidden();
   await expect(page.locator('footer').getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('public-hub-bn');
@@ -137,6 +140,22 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   // This is a disconnected public-UI browser test. The hosted payment-sync
   // contract is verified separately; never depend on external latency here.
   let paymentPosts = 0;
+  let paymentReadbacks = 0;
+  let savedInput: Record<string, unknown> | null = null;
+  // Return the same synthetic SQL source record the client just submitted.
+  // Never create hosted payments during UI acceptance.
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    expect(new URL(route.request().url()).searchParams.get('sessionId')).toBe(savedInput?.sessionId);
+    expect(savedInput).not.toBeNull();
+    paymentReadbacks++;
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, simulationOnly: true, data: {
+        id: '10000000-0000-4000-8000-000000000002',
+        status: 'SIMULATED_SUCCESS', data: savedInput,
+      },
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const payload = route.request().postDataJSON() as {
@@ -146,6 +165,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     expect(payload.service).toBe('TAX_WITH_RETURN');
     expect(payload.amountMinor).toBe(1500000);
     expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    savedInput = route.request().postDataJSON() as Record<string, unknown>;
     paymentPosts += 1;
     await route.fulfill({
       status: 200, contentType: 'application/json',
@@ -211,6 +231,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড সংরক্ষিত' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
+  expect(paymentReadbacks).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.locator('.receipt-view__summary').getByRole('heading', { name: 'রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
@@ -244,10 +265,10 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   // A receipt modal blocks the page-level language control until it is closed.
-  await page.getByRole('dialog', { name: 'করবৃত্ত — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  await page.getByRole('dialog', { name: 'সহজকর — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
   await page.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(page.getByRole('dialog', { name: 'Korbritto — Receipt details' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sohojkor — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
@@ -255,6 +276,22 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   // Keep this UI regression independent of the hosted database and verify the
   // exact simulated request rather than creating a hosted QA payment.
   let paymentPosts = 0;
+  let paymentReadbacks = 0;
+  let savedInput: Record<string, unknown> | null = null;
+  // Return the same synthetic SQL source record the client just submitted.
+  // Never create hosted payments during UI acceptance.
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    expect(new URL(route.request().url()).searchParams.get('sessionId')).toBe(savedInput?.sessionId);
+    expect(savedInput).not.toBeNull();
+    paymentReadbacks++;
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, simulationOnly: true, data: {
+        id: '10000000-0000-4000-8000-000000000002',
+        status: 'SIMULATED_SUCCESS', data: savedInput,
+      },
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const payload = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number; sessionId?: string };
@@ -262,6 +299,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
     expect(payload.service).toBe('TAX_WITH_RETURN');
     expect(payload.amountMinor).toBe(2500000);
     expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    savedInput = route.request().postDataJSON() as Record<string, unknown>;
     paymentPosts += 1;
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
       success: true, status: 'SIMULATED_SUCCESS', id: '10000000-0000-4000-8000-000000000002',
@@ -270,26 +308,32 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   });
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
-  await page.getByRole('button', { name: 'Pay — select payment type' }).click();
+  await openTaxpayerPayTax(page);
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   // The approved compact payment shell exposes a 10px progressbar, not the obsolete numbered track.
   const progress = services.getByRole('progressbar', { name: 'Payment progress' });
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
   await expect(progress).toHaveAttribute('aria-valuemax', '4');
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
   expect(progressHeight).toBe(10);
-  const fillWidth = await progress.locator('.taxpay-modal__progress-fill').evaluate(element => element.getBoundingClientRect().width);
-  const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
-  expect(Math.abs(fillWidth / trackWidth - 0.25)).toBeLessThan(0.02);
+  // The fill uses a 180ms CSS transition. Assert its settled width, not a
+  // transient animation frame immediately after the progress value changes.
+  await expect.poll(async () => {
+    const fillWidth = await progress.locator('.taxpay-modal__progress-fill')
+      .evaluate(element => element.getBoundingClientRect().width);
+    const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
+    return Math.abs(fillWidth / trackWidth - 0.25);
+  }, { message: 'payment progress fill settles at one quarter of the track' })
+    .toBeLessThan(0.02);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   const stepTextSize = await services.locator('.taxpay-modal__step-count')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(stepTextSize).toBeGreaterThanOrEqual(14);
-  const visibleContextTextSize = await services.locator('.tax-service-choice__selected-service')
+  const visibleContextTextSize = await services.locator('.taxpay-modal__subtitle')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(visibleContextTextSize).toBeGreaterThanOrEqual(14);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
@@ -314,12 +358,14 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await expect(services.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await expect(services.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveCount(1);
-  const smallDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd, .payment-form-summary__eyebrow')
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
+  await expect(services.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
+  const summaryDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd')
     .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
-  expect(smallDetails.length).toBeGreaterThan(0);
-  expect(Math.min(...smallDetails)).toBeGreaterThanOrEqual(14);
+  expect(summaryDetails.length).toBeGreaterThan(0);
+  expect(Math.min(...summaryDetails), 'payment terms and values are 16px body text').toBe(16);
+  await expect(services.locator('.payment-form-summary__eyebrow').first()).toHaveCSS('font-size', '12px');
   const visibleSmallUtilities = await services.locator('.payment-flow-embedded .text-xs, .payment-flow-embedded [class~="text-[10px]"], .payment-flow-embedded [class~="text-[11px]"]')
     .evaluateAll(elements => elements.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
@@ -339,8 +385,9 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: /Pay ৳ 25,000/ }).click();
   await expect(services.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
+  expect(paymentReadbacks).toBe(1);
   await services.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);
 
   if (info.project.name === 'mobile-320') {
@@ -350,7 +397,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   if (info.project.name === 'desktop-1280') {
     await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/taxpayer-wizard-bn-desktop-1280.png' });
   }
-  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Challan details' })).toBeVisible();
 });
 
 test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview and one receipt', async ({ page }, info) => {
@@ -364,11 +411,14 @@ test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview 
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
   await expect(page.locator('.travel-flow__age-breakdown')).toContainText('SAMPLE PASSENGER');
   await page.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+  await page.locator('#travel-mobile').fill('01712345678');
   await expect(page.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
+  await page.getByRole('button', { name: 'পেমেন্ট করুন' }).click();
+  await expect(page.getByTestId('travel-payment-channel-screen')).toBeVisible();
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();
   await page.getByRole('radio', { name: 'Nagad' }).check();
-  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
+  await page.locator('.payment-review__ack input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'নমুনা পেমেন্ট নিশ্চিত করুন' }).click();
   await expect(page.locator('.receipt-view__paper')).toBeVisible();
   await expect(page.getByTestId('travel-family-challan')).toBeVisible();

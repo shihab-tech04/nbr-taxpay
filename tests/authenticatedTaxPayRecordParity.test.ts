@@ -21,7 +21,9 @@ test('authenticated Notifications uses the real account route and unified owner-
   assert.match(account,/taxpay_in_app_notifications/);
   assert.match(account,/taxpay_payment_drafts/);
   assert.match(account,/\.eq\('owner_uid', uid\)/);
-  assert.match(account,/setReviewNotices\(prev=>prev\.map/);
+  assert.match(account,/setNoticeSnapshot\(prev=>prev\?\.ownerUid===requestUid/);
+  assert.match(account,/isCurrentUid\(requestUid\)/);
+  assert.match(account,/\.eq\('recipient_uid', requestUid\)/);
   assert.match(account,/onClick=\{markViewed\}/);
   assert.match(account,/SessionPaymentNotifications language=\{language\}/);
   assert.doesNotMatch(account,/<ul className="taxpayer-account-notices"/);
@@ -54,11 +56,14 @@ test('real receipts page exposes searchable payment-record register outside gove
   assert.match(source,/TaxPayDataGrid variant="tabular"/);
   assert.match(source,/testId="account-certificate-payment-table"/);
   assert.match(source,/mobileTestId="account-certificate-payment-cards"/);
-  assert.match(source,/value=\{recordSearch\}/);
+  assert.match(source,/searchValue=\{recordSearch\}/);
+  assert.match(source,/onSearchChange=\{setRecordSearch\}/);
   assert.match(source,/getRowKey=\{row=>row.key\}/);
   assert.match(source,/getAccountStoryPayments\(authenticatedUser.id\)/);
   assert.match(source,/getDetailedStorySessionPayments\(\)/);
-  assert.match(source,/setReceiptReturnToSummary\(false\)/);
+  assert.match(source,/setReceiptReturnToSummary\(fromSummary\)/);
+  assert.match(source,/openDocument\(row\.receipt,'receipt'\)/);
+  assert.match(source,/mode === 'certificate' && !canViewPaymentCertificate\(receipt\)/);
   assert.match(source,/if\(receiptReturnToSummary\)setSummaryOpen\(true\)/);
   assert.match(source,/receipt-view__financial-table/);
   assert.match(source,/Saved payment records are not government-issued certificates/);

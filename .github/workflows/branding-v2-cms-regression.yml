@@ -1,0 +1,43 @@
+name: Sohojkor dynamic branding V2 regression
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches: [main]
+    paths:
+      - src/components/layout/SiteLogo.tsx
+      - src/components/screens/PublicHeroCarousel.tsx
+      - src/services/brandingCmsHealth.ts
+      - tests/brandingCmsHealth.test.ts
+      - tests/e2e/branding-v2-dynamic-cms.spec.ts
+      - .github/workflows/branding-v2-cms-regression.yml
+permissions:
+  contents: read
+
+# Replace only obsolete same-PR checks; Main and manual runs stay independent.
+concurrency:
+  group: taxpay-branding-v2-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  no-branding-websocket-storm:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
+    name: Dynamic CMS REST and 402 regression (isolated)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --import tsx --test tests/brandingCmsHealth.test.ts
+      - run: npx playwright install chromium --only-shell
+      - name: Verify the real approved logo and dynamic banner with synthetic CMS
+        env:
+          VITE_SUPABASE_URL: https://branding-tests.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: synthetic-public-test-key
+          VITE_SUPABASE_DISABLED: 'false'
+        run: npx playwright test tests/e2e/branding-v2-dynamic-cms.spec.ts --project=desktop-1280 --project=mobile-375

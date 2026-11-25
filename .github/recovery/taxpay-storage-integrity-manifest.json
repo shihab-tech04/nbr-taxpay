@@ -1,0 +1,202 @@
+{
+  "backupType": "Storage integrity manifest (binaries remain in source and destination Storage)",
+  "sourceProjectId": "eyqhoavnitkrajvyqvxn",
+  "destinationProjectId": "gmuhitmaynfhipcvbvkh",
+  "verifiedAt": "2026-11-09T07:33:29.842Z",
+  "sourceFileCount": 21,
+  "destinationCopiedFileCount": 21,
+  "totalBytes": 24474931,
+  "sha256Method": "Per-file source download and destination readback; equal SHA-256 verified by temporary JWT-protected migration helper",
+  "failedFiles": [],
+  "objects": [
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/advance/4ecafe03-442a-4b58-9da8-ca577d34b3a1.png",
+      "bytes": 4119606,
+      "mimeType": "image/png",
+      "sourceSha256": "26b4628b803cd3a24632cc0bc017966e2284e57a300e5160de8661f44ceea442",
+      "destinationSha256": "26b4628b803cd3a24632cc0bc017966e2284e57a300e5160de8661f44ceea442",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/intro/c6bd8f1e-611d-4691-932f-9b6812f46085.jpg",
+      "bytes": 331492,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "3c6bedc6f30ccac8097c680eda984230686dd577c22692dc1b4ab1b0e2d051fb",
+      "destinationSha256": "3c6bedc6f30ccac8097c680eda984230686dd577c22692dc1b4ab1b0e2d051fb",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/return/ffa907f6-1ee0-4ebb-86a1-f75392849905.png",
+      "bytes": 4122959,
+      "mimeType": "image/png",
+      "sourceSha256": "7829218a2fcbbe99edfce0bf20b08f6b4d67c3b5cd502ce47352367e77573c92",
+      "destinationSha256": "7829218a2fcbbe99edfce0bf20b08f6b4d67c3b5cd502ce47352367e77573c92",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/travel/5a02e106-bcc0-4aba-8021-6520d289c009.png",
+      "bytes": 4161369,
+      "mimeType": "image/png",
+      "sourceSha256": "8a3823d3f000b737419399242abfb557789cfe9d581607be2b36fffa929167d6",
+      "destinationSha256": "8a3823d3f000b737419399242abfb557789cfe9d581607be2b36fffa929167d6",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/1affb273-1f0e-4cdf-bcb4-e06d5c1e15e8.png",
+      "bytes": 4077259,
+      "mimeType": "image/png",
+      "sourceSha256": "2d132a62e812f0a18079b851a955887d8c7d6d1b33b6fee1a3e092a8fed14ee6",
+      "destinationSha256": "2d132a62e812f0a18079b851a955887d8c7d6d1b33b6fee1a3e092a8fed14ee6",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/1be8aeaf-3e96-4a62-8cab-014ddef77d7b.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/47c318a8-6fc9-44a9-bab0-3273a4c5e2c1.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/57fbe92b-9b9f-4f1f-a7ee-a4eccd1f8262.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/8cade842-9b44-4c2a-960d-ec2681801baa.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/c309cf16-2090-408c-acac-b45350a811d9.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/d101c060-073a-498e-9c92-b81dc4d144ad.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/d9e27fa5-b012-41df-9f5b-7b1ea4850355.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-banners",
+      "path": "banners/withholding/f0d11b36-cb1a-4a1e-9222-8e4bdfb01a1f.jpg",
+      "bytes": 409149,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "destinationSha256": "2a4ac93924a205dfd1f4ed8b101c104701d24c200257c24e89be937c76742831",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/04d6e79e-ab94-4303-97b7-0faa0d945362.jpg",
+      "bytes": 85044,
+      "mimeType": "image/jpeg",
+      "sourceSha256": "079e03e67976ca6d356d7a98f4d344d1c9cc3ee7dc6376ee752cbb9dfb5919c5",
+      "destinationSha256": "079e03e67976ca6d356d7a98f4d344d1c9cc3ee7dc6376ee752cbb9dfb5919c5",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/0e3e902f-d9a9-4614-8efa-4631d344cf33.png",
+      "bytes": 620776,
+      "mimeType": "image/png",
+      "sourceSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "destinationSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/3712d1f6-0483-4cdc-b60f-37b9816c5827.png",
+      "bytes": 620776,
+      "mimeType": "image/png",
+      "sourceSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "destinationSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/6d5da825-5778-4177-9221-893ee92aa29a.png",
+      "bytes": 579626,
+      "mimeType": "image/png",
+      "sourceSha256": "3d1e0f66cc11bc234bcb47c2bc6d8fa82fc7b542318da5d12097e8c49a14a7c4",
+      "destinationSha256": "3d1e0f66cc11bc234bcb47c2bc6d8fa82fc7b542318da5d12097e8c49a14a7c4",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/cb5c469d-a4ce-499a-9d8a-c2dbccaf2d06.png",
+      "bytes": 620776,
+      "mimeType": "image/png",
+      "sourceSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "destinationSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/d119096c-8b27-4870-b78f-1f1b63e218af.png",
+      "bytes": 620640,
+      "mimeType": "image/png",
+      "sourceSha256": "79d9c778d0083f3131cb15bb2d0ed7a516a094169117c1f0137637c2f8137c85",
+      "destinationSha256": "79d9c778d0083f3131cb15bb2d0ed7a516a094169117c1f0137637c2f8137c85",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/ec9f2fde-0f36-41dc-be75-f8169d5b73ea.png",
+      "bytes": 620776,
+      "mimeType": "image/png",
+      "sourceSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "destinationSha256": "3e1cdce0aea32e3865952fc40b3345ca34581729cac9d666c671c46be409b72b",
+      "verified": true
+    },
+    {
+      "bucket": "taxpay-branding",
+      "path": "logos/edef0c5a-5ac4-4c68-9144-5318daf0732d.png",
+      "bytes": 620640,
+      "mimeType": "image/png",
+      "sourceSha256": "79d9c778d0083f3131cb15bb2d0ed7a516a094169117c1f0137637c2f8137c85",
+      "destinationSha256": "79d9c778d0083f3131cb15bb2d0ed7a516a094169117c1f0137637c2f8137c85",
+      "verified": true
+    }
+  ]
+}

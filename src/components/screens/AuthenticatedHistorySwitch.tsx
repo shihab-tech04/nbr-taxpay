@@ -31,7 +31,7 @@ export const AuthenticatedHistorySwitch:React.FC<{ownerUid:string;language:'en'|
   if(mode==='simulation')return <>
     <DemoPaymentActivity activityTabs={activityTabs}/>
     <div className="mx-auto max-w-5xl px-3 pb-12 sm:px-5">
-      <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
+      <AccountBeneficiaryHistory key={ownerUid} ownerUid={ownerUid} language={language}/>
     </div>
   </>;
   // AccountReviewHistory already includes its owner-scoped beneficiary payment history.

@@ -22,6 +22,28 @@ export interface TravelPassenger {
 
 export const TRAVEL_TAX_YEAR = '2026-27';
 export const TRAVEL_TAX_ECONOMIC_CODE = '1144102';
+/** Version of the in-app preview mapping; this is not a statutory rate publication. */
+export const TRAVEL_TAX_RATE_MODEL_VERSION = 'APP_PREVIEW_2026-11-02';
+
+export function travelTaxRateEvidence(mode: TravelMode, adultUnitRate: number) {
+  const adultUnitRateMinor = Math.round(adultUnitRate * 100);
+  if (!Number.isSafeInteger(adultUnitRateMinor) || adultUnitRateMinor < 0)
+    throw new Error('Travel Tax preview rate is invalid.');
+  return {
+    referenceVersion: TRAVEL_TAX_RATE_MODEL_VERSION,
+    classification: 'ILLUSTRATIVE' as const,
+    source: 'IN_APP_PREVIEW' as const,
+    mode,
+    economicCode: TRAVEL_TAX_ECONOMIC_CODE,
+    currency: 'BDT' as const,
+    adultUnitRateMinor,
+    ageBands: [
+      { band: 'UNDER5' as const, minAgeInclusive: 0, maxAgeInclusive: 5, multiplierBps: 0 },
+      { band: 'CHILD' as const, minAgeInclusive: 6, maxAgeInclusive: 12, multiplierBps: 5000 },
+      { band: 'ADULT' as const, minAgeInclusive: 13, maxAgeInclusive: null, multiplierBps: 10000 },
+    ],
+  };
+}
 
 export const TRAVEL_TAX_ZONES = [
   { name: 'Tax Zone-1, Dhaka', code: '1110215102417' },
@@ -62,6 +84,16 @@ export function makeTravelPassenger(id: string, nationality: TravellerNationalit
     id, nationality, passport: '', name: '', birthDate: '', country: nationality === 'BD' ? 'Bangladesh' : '',
     ageBand: 'ADULT', identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL', medicalPortReferral: false,
   };
+}
+
+export function dhakaTravelDate(now = new Date()): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Dhaka' }).format(now);
+}
+
+export function isPlannedTravelDate(date: string, now = new Date()): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < dhakaTravelDate(now)) return false;
+  const day = new Date(date + 'T00:00:00Z');
+  return Number.isFinite(day.getTime()) && day.toISOString().slice(0, 10) === date;
 }
 
 /** Age is measured on the selected travel date, not on today's date. */

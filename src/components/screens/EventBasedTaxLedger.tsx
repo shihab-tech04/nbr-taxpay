@@ -1,8 +1,9 @@
-import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import type {Language} from '../../types/tax';
+import {EXTERNAL_LEDGER_SOURCES} from '../../services/externalLedgerRecords';
 
 /** Read-only event projection. Monetary effects exist only when the source explicitly
  * supplies a tax-account posting; a payment attempt or receipt is not a credit. */
@@ -18,6 +19,10 @@ export type TaxAccountEvent = {
   balanceAfterMinor:number|null;
   actor:string;
   source:string;
+  /** Original provider identity and section; never inferred from category or channel. */
+  sourceCode?:string;
+  dhara?:string;
+  creditEvidenceStatus?:'RECORDED_ONLY'|'OFFICIAL_POSTING';
   taxEventId?:string;
   paymentId?:string;
   challanNo?:string;
@@ -145,7 +150,7 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
         <h3 className="mb-3 text-sm font-semibold">{t('Payment lifecycle','পেমেন্টের ধাপসমূহ')}</h3>
         <ol className="space-y-3">{record.events.length?record.events.map(e=><li key={e.id} className="border-l-2 border-taxpay-primary py-1 pl-3 text-sm">
           <p className="font-semibold">{e.title}</p><p className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)}</p>
-          {e.note&&<p className="mt-1 text-xs text-taxpay-muted">{e.note}</p>}
+          {e.note&&<p className="mt-1 whitespace-pre-wrap break-words text-xs text-taxpay-muted">{e.note}</p>}
         </li>):<li className="text-sm text-taxpay-muted">{t('No lifecycle events recorded.','কোনো পেমেন্ট ধাপ পাওয়া যায়নি।')}</li>}</ol>
       </section>
       <section className="rounded-xl border border-taxpay-border bg-white p-4">
@@ -171,18 +176,26 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
   </div>;
 }
 
-export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment}:{
+export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment,showExternalSources=false}:{
   events:readonly TaxAccountEvent[];language:Language;year?:string;
   onYearChange?:(year:string)=>void;financialBalanceVerified?:boolean;showRecordedScenarioBalance?:boolean;onOpenPayment?:(paymentId:string)=>void;
+  showExternalSources?:boolean;
 }){
   const t=(en:string,bn:string)=>pair(en,bn,language);
   const [selectedYear,setSelectedYear]=useState('all');
   const [type,setType]=useState<typeof filters[number][0]>('all');
+  const [ledgerFiltersExpanded,setLedgerFiltersExpanded]=useState(false);
+  const [ledgerSearch,setLedgerSearch]=useState('');
+  const [sourceFilter,setSourceFilter]=useState('all');
   const [selected,setSelected]=useState<TaxAccountEvent|null>(null);
   const allYears=useMemo(()=>[...new Set(events.map(e=>e.assessmentYear))].filter(Boolean).sort().reverse(),[events]);
   const currentYear=year??selectedYear;
-  const visible=useMemo(()=>events.filter(e=>(currentYear==='all'||e.assessmentYear===currentYear)&&(type==='all'||ledgerEventClass(e.code)===type))
-    .sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt)||b.id.localeCompare(a.id)),[events,currentYear,type]);
+  const visible=useMemo(()=>events.filter(e=>(currentYear==='all'||e.assessmentYear===currentYear)
+    &&(type==='all'||ledgerEventClass(e.code)===type)
+    &&(sourceFilter==='all'||(sourceFilter==='SOHOJKOR'?!e.sourceCode:e.sourceCode===sourceFilter))
+    &&(!ledgerSearch.trim()||(e.title+' '+e.reference+' '+e.taxEventId+' '+e.id+' '+e.component+' '+e.source+' '+(e.dhara||'')+' '+(e.challanNo||''))
+      .toLocaleLowerCase().includes(ledgerSearch.trim().toLocaleLowerCase())))
+    .sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt)||b.id.localeCompare(a.id)),[events,currentYear,type,ledgerSearch,sourceFilter]);
   const canShowBalance=financialBalanceVerified||showRecordedScenarioBalance;
   const balance=canShowBalance&&currentYear!=='all'
     ? events.filter(e=>e.assessmentYear===currentYear&&e.balanceAfterMinor!==null)
@@ -198,6 +211,14 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
     </div>
+    <div className="taxpay-office-register-frame">
+    <TaxPayOfficeRegisterToolbar title={t('Tax event register','কর ঘটনার তালিকা')}
+      count={visible.length} total={events.length} countLabel={t('records','রেকর্ড')}
+      searchValue={ledgerSearch} onSearchChange={setLedgerSearch}
+      searchLabel={t('Search ledger events','লেজারের ঘটনা খুঁজুন')}
+      searchPlaceholder={t('Event or reference','ঘটনা বা রেফারেন্স')}
+      filterLabel={t('Filter','ফিল্টার')} filtersOpen={ledgerFiltersExpanded}
+      onToggleFilters={()=>setLedgerFiltersExpanded(open=>!open)}/>
     <TaxPayTableControls className="taxpay-table-toolbar taxpay-table-filters">
       <nav className="taxpay-table-tabs flex max-w-full gap-2 overflow-x-auto" aria-label={t('Event categories','ঘটনার শ্রেণি')}>
         {filters.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>setType(key)}
@@ -205,6 +226,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           {language==='bn'?({all:'সব',liabilities:'দায়',credits:'ক্রেডিট',payments:'পেমেন্টের ধাপ',corrections:'সংশোধন',refunds:'ফেরত'} as Record<string,string>)[key]:label}
         </button>)}
       </nav>
+    </TaxPayTableControls>
+    <TaxPayOfficeRegisterFilters open={ledgerFiltersExpanded}>
       <label className="flex items-center gap-2 text-xs text-taxpay-muted">
         {t('Assessment year','করবর্ষ')}
         <select aria-label={t('Filter ledger by year','করবর্ষ অনুযায়ী লেজার')}
@@ -214,9 +237,31 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           {allYears.map(y=><option key={y} value={y}>{y}</option>)}
         </select>
       </label>
-    </TaxPayTableControls>
+      {showExternalSources&&<label className="flex items-center gap-2 text-xs text-taxpay-muted">
+        {t('Payment source','পেমেন্টের উৎস')}
+        <select aria-label={t('Filter ledger by payment source','পেমেন্টের উৎস অনুযায়ী লেজার')}
+          value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)}
+          className="min-h-10 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+          <option value="all">{t('All sources','সব উৎস')}</option>
+          <option value="SOHOJKOR">Sohojkor</option>
+          {Object.entries(EXTERNAL_LEDGER_SOURCES).map(([code,label])=><option key={code} value={code}>{label}</option>)}
+        </select>
+      </label>}
+    </TaxPayOfficeRegisterFilters>
+    <TaxPayActiveFilterChips clearLabel={t('Clear all','সব ফিল্টার মুছুন')}
+      onClear={()=>{setType('all');setSourceFilter('all');setLedgerSearch('');onYearChange?onYearChange('all'):setSelectedYear('all');}}
+      filters={[
+        ...(ledgerSearch.trim()?[{key:'search',label:t('Search: ','অনুসন্ধান: ')+ledgerSearch.trim(),onRemove:()=>setLedgerSearch('')}]:[]),
+        ...(type!=='all'?[{key:'type',label:language==='bn'?({liabilities:'দায়',credits:'ক্রেডিট',payments:'পেমেন্টের ধাপ',corrections:'সংশোধন',refunds:'ফেরত'} as Record<string,string>)[type]:filters.find(([key])=>key===type)?.[1]??type,onRemove:()=>setType('all')}]:[]),
+        ...(currentYear!=='all'?[{key:'year',label:currentYear,onRemove:()=>onYearChange?onYearChange('all'):setSelectedYear('all')}]:[]),
+        ...(showExternalSources&&sourceFilter!=='all'?[{key:'source',label:sourceFilter==='SOHOJKOR'?'Sohojkor':EXTERNAL_LEDGER_SOURCES[sourceFilter as keyof typeof EXTERNAL_LEDGER_SOURCES],onRemove:()=>setSourceFilter('all')}]:[])
+      ]}/>
     <TaxPayTablePanel className="taxpay-ledger-records">
-    <TaxPayTableViewport>
+    {visible.length>0&&<p className="taxpay-register-scroll-note hidden md:block" role="note">
+      {t('Scroll the ledger for additional source columns; event, credit and balance stay visible.',
+         'উৎসের অতিরিক্ত কলাম দেখতে লেজারটি পাশে স্ক্রল করুন; ঘটনা, ক্রেডিট ও ব্যালেন্স দেখা যাবে।')}
+    </p>}
+    <TaxPayTableViewport role="region" aria-label={t('Scrollable tax event ledger','স্ক্রলযোগ্য কর ঘটনার লেজার')} tabIndex={0}>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
         {(events.length===0||visible.length>0)&&<TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
           testId="event-ledger-table" ariaLabel={t('Tax event ledger','কর ঘটনার লেজার')}
@@ -225,9 +270,11 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             {key:'event',header:t('Event','ঘটনা'),renderCell:e=><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
               {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button>},
             {key:'year',header:t('Year · component','বর্ষ · খাত'),renderCell:e=><>{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></>},
+            ...(showExternalSources?[{key:'dhara',header:t('Dhara / section','ধারা'),renderCell:(e:TaxAccountEvent)=>e.dhara||t('Not supplied','উৎসে নেই')}]:[]),
             {key:'particulars',header:t('Description / tax head','বিবরণ / কর খাত'),renderCell:e=><>{e.title}<span className="block text-taxpay-muted">{e.component}</span></>},
+            ...(showExternalSources?[{key:'recorded',header:t('Recorded amount','নথিভুক্ত পরিমাণ'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:(e:TaxAccountEvent)=>e.creditEvidenceStatus==='OFFICIAL_POSTING'?'—':e.amountMinor===null?'—':money(e.amountMinor,language)}]:[]),
             {key:'debit',header:t('Debit (liability)','ডেবিট (দায়)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'},
-            {key:'credit',header:t('Credit (payment)','ক্রেডিট (পরিশোধ)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'},
+            {key:'credit',header:showExternalSources?t('Verified credit','যাচাইকৃত ক্রেডিট'):t('Credit (payment)','ক্রেডিট (পরিশোধ)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'},
             {key:'effect',header:t('Effect','প্রভাব'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor===null?'—':(e.effectMinor>0?'+':'−')+money(Math.abs(e.effectMinor),language)},
             {key:'balance',header:t('Balance after','পরবর্তী ব্যালেন্স'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right font-semibold tabular-nums',renderCell:e=>canShowBalance&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):'—'},
             {key:'actor',header:t('Actor · source','কার্যকারী · উৎস'),renderCell:e=><>{e.actor}<span className="block text-taxpay-muted">{e.source}</span></>},
@@ -238,7 +285,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             <span className="text-sm text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear} · {e.component}</span>
             <span className="break-all text-sm">{e.reference||e.taxEventId||e.id}</span>
             <span className="grid w-full grid-cols-2 gap-x-4 gap-y-2 border-t border-taxpay-border pt-2">
-              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Recorded amount','নথিভুক্ত পরিমাণ')}</span>
+              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{e.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Verified credit','যাচাইকৃত ক্রেডিট'):t('Recorded amount','নথিভুক্ত পরিমাণ')}</span>
                 <strong className="block break-words text-sm tabular-nums">{e.amountMinor===null?t('Not recorded','নথিভুক্ত নয়'):money(e.amountMinor,language)}</strong></span>
               <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Effect on balance','ব্যালেন্সের প্রভাব')}</span>
                 <strong className="block break-words text-sm tabular-nums">{e.effectMinor===null?t('Not verified','যাচাই হয়নি'):(e.effectMinor>0?'+':e.effectMinor<0?'−':'')+money(Math.abs(e.effectMinor),language)}</strong></span>
@@ -247,11 +294,15 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
               <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Recorded status','নথিভুক্ত অবস্থা')}</span>
                 <strong className="block break-words text-sm">{e.status||t('Not recorded','নথিভুক্ত নয়')}</strong></span>
             </span>
-            <span className="w-full break-words text-sm text-taxpay-muted">{t('Source','উৎস')}: {e.source}</span>
+            <span className="w-full break-words text-sm text-taxpay-muted">{t('Source','উৎস')}: {e.source}{showExternalSources?' · '+t('Dhara','ধারা')+': '+(e.dhara||t('Not supplied','উৎসে নেই')):''}</span>
+            {e.creditEvidenceStatus&&<span className="w-full text-sm text-taxpay-muted">{e.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Separate official credit posting recorded','স্বতন্ত্র সরকারি ক্রেডিট পোস্টিং নথিভুক্ত'):t('Recorded payment only — no confirmed credit','শুধু পেমেন্ট নথিভুক্ত — ক্রেডিট নিশ্চিত নয়')}</span>}
           </button>}/>}
 
     </TaxPayTableViewport>
     </TaxPayTablePanel>
+    <TaxPayOfficeRegisterFooter shown={visible.length} total={events.length}
+      labels={{showing:t('Showing','দেখানো হচ্ছে'),of:t('of','মোট'),records:t('records','রেকর্ড')}}/>
+    </div>
     {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <section className="space-y-4 p-1" data-testid="tax-event-details">
         <div className="flex items-center gap-2 text-xs text-taxpay-muted"><Clock3 size={16}/>{dateTime(selected.occurredAt,language)}</div>
@@ -263,6 +314,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <Field title={t('Effect on balance','ব্যালেন্সের প্রভাব')} value={selected.effectMinor===null?t('None confirmed','নিশ্চিত নয়'):money(selected.effectMinor,language)}/>
           <Field title={t('Actor','কার্যকারী')} value={selected.actor}/>
           <Field title={t('Source system','উৎস সিস্টেম')} value={selected.source}/>
+          {selected.sourceCode&&<Field title={t('Dhara / section','ধারা')} value={selected.dhara||t('Not supplied','উৎসে নেই')}/>}
+          {selected.creditEvidenceStatus&&<Field title={t('Tax credit evidence','কর ক্রেডিটের প্রমাণ')} value={selected.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Separate official posting','স্বতন্ত্র সরকারি পোস্টিং'):t('Not verified by this record','এই রেকর্ডে যাচাই হয়নি')}/>}
           <Field title={t('Year · component','বর্ষ · খাত')} value={selected.assessmentYear+' · '+selected.component}/>
           <Field title={t('Amount','পরিমাণ')} value={selected.amountMinor===null?'—':money(selected.amountMinor,language)}/>
           <Field title={t('Payment transaction','পেমেন্ট লেনদেন')} value={selected.paymentId||unavailable(language)}/>
@@ -270,7 +323,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <Field title={t('Reference','রেফারেন্স')} value={selected.reference||'—'}/>
           <Field title={t('Status','অবস্থা')} value={selected.status||'—'}/>
         </FactGrid>
-        {selected.reason&&<p className="text-sm text-taxpay-muted">{selected.reason}</p>}
+        {selected.reason&&<p className="whitespace-pre-wrap break-words text-sm text-taxpay-muted">{selected.reason}</p>}
         {selected.linkedReferences?.length?<div className="text-sm"><h3 className="mb-1 font-semibold">{t('Related references','সংযুক্ত রেফারেন্স')}</h3>
           <p className="break-all text-taxpay-muted">{selected.linkedReferences.join(' · ')}</p></div>:null}
         {onOpenPayment&&selected.paymentId&&<button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white"

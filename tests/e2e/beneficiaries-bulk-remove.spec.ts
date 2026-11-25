@@ -29,7 +29,11 @@ for(const language of ['en','bn'] as const){
     await expect(rows).toHaveCount(2);
     const bn=language==='bn';
     await screen.getByRole('checkbox',{name:bn?'দেখানো সব উপকারভোগী নির্বাচন':'Select all visible beneficiaries'}).check();
-    const bulk=screen.locator('.beneficiary-directory__bulk-actions').getByRole('button',{name:bn?'নির্বাচিতদের সরান':'Remove selected'});
+    const more=screen.getByTestId('beneficiary-bulk-more');
+    const bulk=more.getByRole('button',{name:bn?'নির্বাচিতদের সরান':'Remove selected'});
+    await expect(more.locator('summary')).toBeVisible();
+    await expect(bulk).toBeHidden(); // Destructive action is no longer alongside Pay Tax.
+    await more.locator('summary').click();
     await expect(bulk).toBeVisible();
     await bulk.click();
     const confirm=page.getByRole('dialog',{name:bn?'একাধিক উপকারভোগী সরানো নিশ্চিত করুন':'Confirm bulk beneficiary removal'});

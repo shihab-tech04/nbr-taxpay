@@ -32,6 +32,7 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   await expect(events.getByText('Calculated balance for selected year')).toBeVisible();
   await expect(events.getByText('৳ 25,000').first()).toBeVisible();
 
+  await events.getByRole('button',{name:'Filter',exact:true}).click();
   await events.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2025-2026');
   await events.getByRole('button',{name:'Credits'}).click();
   await expect(events.getByRole('button',{name:/Salary withholding/}).first()).toBeVisible();
@@ -73,12 +74,40 @@ test('event ledger keeps the mobile viewport free from page-level horizontal ove
   expect(overflow).toBeLessThanOrEqual(2);
 });
 
+for(const language of ['en','bn'] as const){
+  test('event ledger search label and field remain readable at approved widths in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the full responsive matrix once per language');
+    const searchLabel=language==='en'?'Search ledger events':'লেজারের ঘটনা খুঁজুন';
+    const searchPlaceholder=language==='en'?'Event or reference':'ঘটনা বা রেফারেন্স';
+    await page.goto('/?action=ledger&demoUser=user1&lang='+language);
+    const ledger=page.getByTestId('event-tax-ledger');
+    await expect(ledger).toBeVisible();
+    const toolbar=ledger.locator('.taxpay-office-register__toolbar');
+    const search=toolbar.getByRole('searchbox',{name:searchLabel});
+    const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+    await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(searchLabel);
+    await expect(searchField).toBeVisible();
+    await expect(search).toHaveAttribute('placeholder',searchPlaceholder);
+    await expect(search).toHaveAttribute('title',searchPlaceholder);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' ledger search width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' ledger search containment at '+width+'px').toBe(true);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' ledger viewport overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
+  });
+}
+
 
 test('desktop ledger keeps one year control and the complete table within its own scroll region',async({page})=>{
   await page.setViewportSize({width:1440,height:900});
   await page.goto(ledger);
   await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+  await page.getByTestId('event-tax-ledger').getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toHaveCount(1);
   const table=page.getByTestId('event-ledger-table');
   const scroller=table.locator('..');
@@ -94,8 +123,10 @@ test('desktop ledger keeps one year control and the complete table within its ow
 test('activity filters share one desktop row and details use the shared wide modal',async({page})=>{
   await page.setViewportSize({width:1600,height:900});
   await page.goto(history);
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   const controls=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-filters > label');
-  await expect(controls).toHaveCount(4);
+  await expect(controls).toHaveCount(5);
+  await expect(page.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true})).toBeVisible();
   const positions=await controls.evaluateAll(nodes=>nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
   expect(new Set(positions).size).toBe(1);
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-ETDS-SAL-01');
@@ -162,6 +193,7 @@ test('mobile ledger preserves financial fields, source and unverified balance in
 test('ledger filtered-empty state does not display a duplicate empty financial table or card list',async({page})=>{
   await page.goto(ledger);
   const panel=page.getByTestId('event-tax-ledger');
+  await panel.getByRole('button',{name:'Filter',exact:true}).click();
   await panel.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2024-2025');
   await panel.getByRole('button',{name:'Refunds',exact:true}).click();
   await expect(panel.locator('.taxpay-table-state')).toContainText('No recorded events match the selected filters.');
@@ -185,5 +217,24 @@ test('all six ledger categories retain their own source events and selection sta
     await tab.click();
     await expect(tab).toHaveAttribute('aria-pressed','true');
     await expect(panel.getByRole('button',{name:new RegExp(record)}).first()).toBeVisible();
+  }
+});
+
+test('read-only payment detail notes preserve line breaks without changing the shared modal',async({page})=>{
+  for(const width of [320,1280]){
+    await page.setViewportSize({width,height:800});
+    for(const language of ['en','bn'] as const){
+      await page.goto(history+'&lang='+language);
+      const search=page.getByRole('searchbox');
+      await search.fill('DEMO-ETDS-SAL-01');
+      const label=language==='bn'?'বিস্তারিত: Salary withholding':'Details for Salary withholding';
+      await page.getByRole('button',{name:label}).click();
+      const note=page.getByTestId('payment-lifecycle-details').locator('p.whitespace-pre-wrap').first();
+      await expect(note).toBeVisible();
+      await expect(note).toHaveCSS('white-space','pre-wrap');
+      await expect(note).toHaveCSS('overflow-wrap','break-word');
+      await expect(page.getByRole('dialog')).toBeVisible();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
   }
 });

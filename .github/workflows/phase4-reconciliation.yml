@@ -1,0 +1,33 @@
+name: Phase 4 - field-level SQL reconciliation contract
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    paths:
+      - 'scripts/ci/phase4-reconcile*.mjs'
+      - 'scripts/ci/phase4-bridge-readiness*.mjs'
+      - 'scripts/ci/phase4-threeway*.mjs'
+      - '.github/workflows/phase4-reconciliation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ci/phase4-reconcile*.mjs'
+      - 'scripts/ci/phase4-bridge-readiness*.mjs'
+      - 'scripts/ci/phase4-threeway*.mjs'
+      - '.github/workflows/phase4-reconciliation.yml'
+permissions:
+  contents: read
+jobs:
+  immutable-payment-parity:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject invented payment or Office SQL readiness
+        run: |
+          node --test scripts/ci/phase4-reconcile.test.mjs
+          node --test scripts/ci/phase4-bridge-readiness.test.mjs
+          node --test scripts/ci/phase4-threeway.test.mjs

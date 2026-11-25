@@ -6,10 +6,20 @@ test('authorization request uses Add taxpayer and inline Cancel, never a large C
     status:200, contentType:'application/json', body:JSON.stringify({success:true,data:[]})
   }));
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByRole('textbox',{name:'Password'}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
+  // Offline layout fixture only: the hosted demo consent API separately
+  // verifies that this fabricated capability is not valid for any account.
+  await page.evaluate(() => {
+    sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:'user1',capability:'A'.repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000001',
+      language:'en',selectedListId:null
+    }));
+  });
   await page.goto('/?action=manage_authorization');
   const panel=page.getByTestId('manage-authorization');
   const add=panel.getByRole('button',{name:'Add taxpayer'});
@@ -32,10 +42,10 @@ test('transaction search has one outer focus boundary at mobile and desktop widt
   for(const width of [375,1280]){
     await page.setViewportSize({width,height:850});
     await page.goto('/?action=taxpayer_home&demoUser=user1');
-    await page.getByRole('button',{name:'Open transaction history'}).click();
+    await page.getByRole('button',{name:'View all activity'}).click();
     await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
     await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
-    const wrapper=page.locator('.taxpayer-transaction-filter__search');
+    const wrapper=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
     const search=wrapper.locator('input[type="search"]');
     await expect(search).toHaveCount(1);
     await expect(search).toHaveCSS('border-top-width','0px');

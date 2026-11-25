@@ -27,7 +27,9 @@ test('account preference writes require current Auth owner, not a URL or preview
   assert.match(source,/db\.auth\.updateUser\(\{data:/);
   assert.match(state,/validSavedLanguage\(accountUser\.user_metadata\?\.taxpay_language\)/);
   assert.match(state,/saveAccountViewPreference\(accountUser\.id,'taxpay_language',lang\)/);
-  assert.match(people,/rememberedBeneficiaryListId\(data\.lists,savedListId\)/);
+  assert.match(people,/getPreviewSettings\(\)\.catch\(\(\)=>null\)/);
+  assert.match(people,/serverSettings\.selectedListId\?\?'all'/);
+  assert.match(people,/rememberedBeneficiaryListId\(\[\{id:'all'\},\.\.\.data\.lists\],latestChoice\)/);
   assert.match(people,/saveAccountViewPreference\(owner,'taxpay_last_beneficiary_list_id',id\)/);
   // Payment receipt and beneficiary ownership remain independent of preferences.
   assert.doesNotMatch(source,/\.from\('taxpay_beneficiar/);
@@ -42,10 +44,15 @@ test('sign-out never invalidates Auth before pending preference persistence is c
   assert.match(prefs,/outstanding\.set\(key,value\)/);
   assert.match(prefs,/if\(outstanding\.get\(key\)===value\)/);
   assert.match(prefs,/await saveAccountViewPreference\(ownerUid,key,value\)/);
-  assert.match(identity,/if\(current\.user\)await flushAccountViewPreferences\(current\.user\.id\)/);
+  assert.match(identity,/const signingOutUid=current\.user\?\.id\?\?null/);
+  assert.match(identity,/if\(signingOutUid\)await flushAccountViewPreferences\(signingOutUid\)/);
+  assert.match(identity,/const \{data:beforeSignOut,error:sessionError\}=await supabase\.auth\.getUser\(\)/);
+  assert.match(identity,/if\(\(beforeSignOut\.user\?\.id\?\?null\)!==signingOutUid\)/);
   assert.doesNotMatch(identity,/Promise\.race\(/);
   assert.ok(identity.indexOf('await flushAccountViewPreferences')<identity.indexOf("await supabase.auth.signOut"));
   assert.match(workspace,/await signOutApplicationAccount\(\)/);
+  assert.match(workspace,/if\(currentAuthUserId\.current && currentAuthUserId\.current!==requestUid\)return/);
+  assert.match(workspace,/if\(!currentAuthUserId\.current \|\| currentAuthUserId\.current===requestUid\)\s*setBusy\(false\)/);
   assert.doesNotMatch(workspace,/supabase\.auth\.signOut\(/);
 });
 

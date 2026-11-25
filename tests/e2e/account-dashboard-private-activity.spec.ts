@@ -35,8 +35,13 @@ const privateHistory=[{
   ],
 }];
 
-async function mockPrivateAccount(page:Page,profile:'user2'|null){
-  const session=sessionFor(owner);
+async function mockPrivateAccount(page:Page,profile:'user1'|'user2'|null,displayName?:string){
+  // Optional identity variation isolates the privacy regression from all other
+  // tests; it does not change the signed-in Auth UID or source owner scopes.
+  const currentOwner=displayName===undefined?owner:{
+    ...owner,user_metadata:{...owner.user_metadata,taxpay_display_name:displayName}
+  };
+  const session=sessionFor(currentOwner);
   await page.addInitScript(({key,value})=>{
     localStorage.setItem(key,JSON.stringify(value));
   },{key:`sb-${projectRef}-auth-token`,value:session});
@@ -60,7 +65,7 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
     if(request.method()==='OPTIONS')return json({});
     if(url.pathname==='/auth/v1/user'&&request.method()==='GET'){
       expect(ownerFromToken()).toBe(owner.id);
-      return json(owner);
+      return json(currentOwner);
     }
     if(url.pathname==='/rest/v1/rpc/sim_my_taxpayer_profile'&&request.method()==='POST'){
       expect(ownerFromToken()).toBe(owner.id);
@@ -72,16 +77,16 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
       const beneficiaryRows=profile==='user2'?privateHistory.map(row=>({
         ...row,allocations:row.allocations.filter(allocation=>allocation.beneficiary===profile),
       })):[];
-      return json(body.p_view==='beneficiary'?beneficiaryRows:[]);
+      return json(body.p_view==='beneficiary'?beneficiaryRows:(profile==='user1'?privateHistory:[]));
     }
-    if(url.pathname==='/rest/v1/taxpay_payment_drafts'||
+    if(url.pathname==='/rest/v1/taxpay_account_payment_form_drafts'||
        url.pathname==='/rest/v1/taxpay_payment_requests'||
        url.pathname==='/rest/v1/taxpay_correction_inquiries'||
        url.pathname==='/rest/v1/taxpay_in_app_notifications'){
       expect(ownerFromToken()).toBe(owner.id);
       const ownerFilter=url.searchParams.get('owner_uid')??url.searchParams.get('requester_uid')??url.searchParams.get('recipient_uid');
       expect(ownerFilter).toBe(`eq.${owner.id}`);
-      const count=url.pathname.endsWith('payment_drafts')?1:url.pathname.endsWith('payment_requests')?2:url.pathname.endsWith('correction_inquiries')?1:1;
+      const count=url.pathname.endsWith('payment_form_drafts')?1:url.pathname.endsWith('payment_requests')?2:url.pathname.endsWith('correction_inquiries')?1:1;
       return route.fulfill({status:200,headers:{
         'content-range':`0-0/${count}`,
         'access-control-expose-headers':'content-range, x-total-count',
@@ -93,6 +98,27 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
     return json({message:'Blocked by the account-dashboard browser test'},403);
   });
 }
+
+test('payer-owned monthly chart uses selected assessment-year allocations without crediting recipients',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.setViewportSize({width:375,height:820});
+  await page.goto('/?action=taxpayer_home');
+  const summary=page.getByTestId('account-workflow-summary');
+  const monthly=summary.getByTestId('account-scenario-monthly');
+  await expect(monthly).toBeVisible();
+  await expect(monthly.getByRole('heading',{name:'Monthly payment activity'})).toBeVisible();
+  await expect(monthly.locator('[data-month="2026-10"]')).toHaveAttribute('data-amount-minor','13000');
+  await expect(monthly).toContainText('not Treasury-confirmed payments or tax credits');
+  const correction=page.locator('#dashboard-correction-requests');
+  const [activityBox,correctionBox]=await Promise.all([summary.boundingBox(),correction.boundingBox()]);
+  expect(activityBox&&correctionBox).toBeTruthy();
+  expect(activityBox!.y).toBeLessThan(correctionBox!.y);
+  await summary.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(monthly.locator('[data-month="2026-10"]')).toHaveAttribute('data-amount-minor','3450');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await setWorkspaceLanguage(page,'bn');
+  await expect(monthly.getByRole('heading',{name:'মাসভিত্তিক পেমেন্ট কার্যক্রম'})).toBeVisible();
+});
 
 test('record count follows the selected assessment year, not the all-year total',async({page})=>{
   await mockPrivateAccount(page,'user2');
@@ -126,16 +152,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await page.goto('/?action=taxpayer_home');
   const dashboard=page.getByTestId('account-workflow-summary');
   await expect(dashboard).toBeVisible();
-  // Verified account uses the same approved financial KPI cards as the static
-  // reference, but must never inherit user1's fabricated assessed balances.
-  const financialCards=page.locator('.taxpayer-dashboard-kpi');
-  await expect(financialCards).toHaveCount(4);
-  await expect(financialCards.nth(0)).toContainText('Total tax');
-  await expect(financialCards.nth(1)).toContainText('Tax already deducted or paid early');
-  await expect(financialCards.nth(2)).toContainText('Income tax paid directly');
-  await expect(financialCards.nth(3)).toContainText('Still remaining');
-  await expect(financialCards.nth(0)).toContainText('—');
-  await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
+  // No verified external assessment: the first row must be absent, not placeholders or sample amounts.
+  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
+  await expect(page.getByTestId('authenticated-overview-bento')).toHaveCount(0);
   const phase=page.getByTestId('authenticated-dashboard-v11');
   await expect(phase).toBeVisible();
   await expect(phase.getByText('Coverage details are not available yet')).toBeVisible();
@@ -151,9 +170,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('Already covered').first()).toBeVisible();
   await expect(phase.getByText('Still remaining').first()).toBeVisible();
   await expect(phase.getByRole('button',{name:'Check tax ledger'})).toBeVisible();
-  for (const heading of ['Quick actions','How your tax is covered','Monthly activity','By tax year','Already covered','Tax summary for this year']) {
+  for (const heading of ['Quick actions','How your tax is covered','By tax year','Already covered','Tax summary for this year']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
+  await expect(phase.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   // A signed-in account must use the approved Phase A/B visual sections, but
   // private scenario allocations never become government liability or credits.
   await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('—');
@@ -161,35 +181,23 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('Tax credit details are not available yet')).toBeVisible();
   await expect(phase.getByText('A payment request or receipt alone does not confirm a posted tax credit. Only verified credits linked to this account appear here.')).toBeVisible();
   await expect(phase).not.toContainText('৳ 180,000');
-  // Sample mode is explicit, reversible and never mutates SQL or changes the
-  // meaning of owner-owned activity. It reuses the existing v11 example ledger.
+  // Authenticated pages must not offer fictional liability/credit totals.
+  // Year navigation remains available and cannot turn source requests into posted credits.
   const writes:string[]=[];
   page.on('request',request=>{
     if(/\/rest\/v1\/(taxpay_payment_requests|taxpay_payment_drafts|taxpay_request_events)/.test(request.url())&&
        ['POST','PATCH','PUT','DELETE'].includes(request.method()))writes.push(request.url());
   });
-  const examples=page.getByTestId('dashboard-example-controls');
-  await examples.getByRole('button',{name:'View examples'}).click();
-  await expect(examples).toContainText('not your tax records');
-  await expect(examples.getByRole('button',{name:'Hide examples'})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
-  await expect(financialCards.nth(0)).toContainText('৳ 180,000');
-  await expect(financialCards.nth(3)).toContainText('৳ 25,000');
-  await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
-  await expect(phase.getByText('Tax credit details are not available yet')).toHaveCount(0);
-  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
-  await expect(phase.getByText('Coverage details are not available yet')).toHaveCount(0);
-  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 6,500');
-  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toBeVisible();
-  await phase.getByRole('button',{name:'2024-2025'}).click();
-  await expect(financialCards.nth(3)).toContainText('৳ 10,000');
-  await examples.getByRole('button',{name:'Hide examples'}).click();
-  await expect(examples.getByRole('button',{name:'View examples'})).toHaveAttribute('aria-pressed','false');
-  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
-  await expect(financialCards.nth(0)).toContainText('—');
+  await expect(page.getByTestId('dashboard-example-controls')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'View examples'})).toHaveCount(0);
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
-  await expect(phase.getByText('Tax credit details are not available yet')).toBeVisible();
-  await expect(phase.getByText('A payment request or receipt alone does not confirm a posted tax credit. Only verified credits linked to this account appear here.')).toBeVisible();
+  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toHaveCount(0);
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
+  await phase.getByRole('button',{name:'2024-2025'}).click();
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2024-2025');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
+  await phase.getByRole('button',{name:'2026-2027'}).click();
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
   expect(writes).toEqual([]);
 
   await expect(dashboard).toContainText('৳ 65.50');
@@ -204,8 +212,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(page.getByRole('button',{name:'Review payment options'})).toHaveCount(0);
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('linked scenario profile user2 · Meghna Trading Ltd.');
-  await expect(dashboard.getByText('Payment requests')).toBeVisible();
-  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toBeVisible();
+  await expect(dashboard.getByTestId('account-dashboard-status-summary')).toContainText('Saved Drafts');
+  // A beneficiary-only account has received activity but no payer-owned
+  // category chart. Showing one here would incorrectly claim spending.
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(dashboard).toContainText('৳ 34.50');
   await expect(dashboard).not.toContainText('৳ 65.50');
@@ -213,10 +223,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('কর সমন্বয়ের তথ্য এখনও পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByText('কর ক্রেডিটের তথ্য এখনও পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByRole('heading',{name:'ইতোমধ্যে সমন্বিত কর'})).toBeVisible();
-  await expect(financialCards.nth(0)).toContainText('মোট আয়কর');
-  await expect(financialCards.nth(1)).toContainText('উৎসে কাটা বা অগ্রিম পরিশোধিত কর');
-  await expect(financialCards.nth(2)).toContainText('সরাসরি পরিশোধিত আয়কর');
-  await expect(financialCards.nth(3)).toContainText('এখনও বাকি কর');
+  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
   await expect(phase.getByRole('heading',{name:'যে বিষয়ে খেয়াল রাখা দরকার'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
@@ -265,6 +275,7 @@ test('bound SQL ledger keeps historical and new mixed-year allocations independe
   await page.goto('/?action=ledger');
   const ledger=page.getByTestId('event-tax-ledger');
   await expect(ledger).toBeVisible();
+  await ledger.getByRole('button',{name:'Filter',exact:true}).click();
   const years=ledger.getByRole('combobox',{name:'Filter ledger by year'});
   await years.selectOption('2026-27');
   await expect(ledger.locator('tbody tr')).toHaveCount(1);
@@ -277,4 +288,548 @@ test('bound SQL ledger keeps historical and new mixed-year allocations independe
   await expect(page.getByTestId('tax-event-details')).toContainText('৳ 34.50');
   await expect(page.getByTestId('tax-event-details')).not.toContainText('৳ 65.50');
   await expect(ledger).not.toContainText('৳ 164.50');
+});
+
+test('completed summary and amounts count only successful payer records in the selected year',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.route(`${supabaseUrl}/rest/v1/rpc/sim_my_payment_history`,async route=>{
+    const body=route.request().postDataJSON() as {p_view:'payer'|'beneficiary'};
+    if(body.p_view!=='payer')return route.fallback();
+    const second={
+      ...privateHistory[0],id:'SIM-PAY-2025-SECOND',
+      transactionId:'00000000-0000-4000-8000-000000000903',
+      totalMinor:2500,createdAt:'2026-01-10T09:00:00Z',
+      allocations:[{id:'second-2025',lineNo:1,beneficiary:'user2',
+        category:'PENALTY',assessmentYear:'2025-26',amountMinor:2500}],
+    };
+    const failed={
+      ...second,id:'SIM-PAY-2025-FAILED',
+      transactionId:'00000000-0000-4000-8000-000000000904',
+      state:'FAILED',totalMinor:5000,
+      allocations:[{id:'failed-2025',lineNo:1,beneficiary:'user2',
+        category:'PENALTY',assessmentYear:'2025-26',amountMinor:5000}],
+    };
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify([...privateHistory,second,failed])});
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const completed=dashboard.getByTestId('account-dashboard-status-summary')
+    .getByText('Completed Payments',{exact:true}).locator('..');
+  await expect(completed.locator('p').nth(1)).toHaveText('1');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(completed.locator('p').nth(1)).toHaveText('2');
+  const totals=dashboard.getByTestId('dashboard-payment-role-totals');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('৳ 59.50');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('৳ 59.50');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('—');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard.getByTestId('account-dashboard-status-summary')
+    .getByText('সম্পন্ন পেমেন্ট',{exact:true}).locator('..').locator('p').nth(1)).toHaveText('২');
+  await expect(totals).toContainText('পরিশোধকারীর মোট');
+});
+
+
+test('beneficiary-only signed-in dashboard does not present payments made by someone else as my spending',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2026-27');
+  const completed=dashboard.getByTestId('account-dashboard-status-summary')
+    .getByText('Completed Payments',{exact:true}).locator('..');
+  await expect(completed.locator('p').nth(1)).toHaveText('0');
+  const totals=dashboard.getByTestId('dashboard-payment-role-totals');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 65.50');
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
+  // Received activity is not payer spending and therefore has no tag-spend panel.
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('No completed payments initiated by this account');
+  // The received transaction is still visible in Activity.
+  await expect(dashboard.getByRole('list',{name:'Recent scenario transactions'})).toBeVisible();
+});
+
+test('role totals count each payer parent once and follow the selected-year allocations',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  const payer={
+    id:'SIM-PAY-DASHBOARD-PARENT',transactionId:'00000000-0000-4000-8000-000000000951',
+    payer:'user1',state:'SIMULATED',createdAt:'2026-10-28T10:00:00Z',
+    simulationOnly:true,totalMinor:35000,reviewStatus:'PENDING_OFFICER',events:[],
+    allocations:[
+      {id:'dashboard-self-2026',lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:10000},
+      {id:'dashboard-other-2026',lineNo:2,beneficiary:'user2',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:20000},
+      {id:'dashboard-self-2025',lineNo:3,beneficiary:'user1',category:'PENALTY',assessmentYear:'2025-26',amountMinor:3000},
+      {id:'dashboard-other-2025',lineNo:4,beneficiary:'user3',category:'SOURCE_TAX_DEPOSIT',assessmentYear:'2025-26',amountMinor:2000},
+    ],
+  };
+  const received={
+    id:'SIM-PAY-DASHBOARD-RECEIVED',transactionId:'00000000-0000-4000-8000-000000000952',
+    payer:'user2',state:'SIMULATED',createdAt:'2026-10-29T10:00:00Z',
+    simulationOnly:true,totalMinor:8500,reviewStatus:'PENDING_OFFICER',events:[],
+    allocations:[
+      {id:'dashboard-received-2026',lineNo:1,beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:4500},
+      {id:'dashboard-received-2025',lineNo:2,beneficiary:'user1',category:'SOURCE_TAX_DEPOSIT',assessmentYear:'2025-26',amountMinor:2500},
+    ],
+  };
+  await page.route(supabaseUrl+'/rest/v1/rpc/sim_my_payment_history',async route=>{
+    const body=route.request().postDataJSON() as {p_view:'payer'|'beneficiary'};
+    const beneficiaryRows=[
+      {...payer,allocations:payer.allocations.filter(allocation=>allocation.beneficiary==='user1')},
+      received,
+    ];
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify(body.p_view==='payer'?[payer]:beneficiaryRows)});
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const totals=dashboard.getByTestId('dashboard-payment-role-totals');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('৳ 300.00');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('৳ 100.00');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('৳ 200.00');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 45.00');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('৳ 50.00');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('৳ 30.00');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('৳ 20.00');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 25.00');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(totals).toContainText('পরিশোধকারীর মোট');
+  await expect(totals).toContainText('অন্য পরিশোধকারীর কাছ থেকে প্রাপ্ত');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('linked empty account shows verified no-data guidance without fictional amounts',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.route(supabaseUrl+'/rest/v1/**',async route=>{
+    const request=route.request();
+    const url=new URL(request.url());
+    if(request.method()==='OPTIONS')return route.fallback();
+    const token=request.headers().authorization?.replace(/^Bearer\s+/i,'').split('.')[1];
+    expect(token).toBeTruthy();
+    expect((JSON.parse(atob(token!)) as {sub?:string}).sub).toBe(owner.id);
+    if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'){
+      return route.fulfill({status:200,contentType:'application/json',
+        headers:{'access-control-allow-origin':'*'},body:'[]'});
+    }
+    if([
+      '/rest/v1/taxpay_account_payment_form_drafts',
+      '/rest/v1/taxpay_payment_requests',
+      '/rest/v1/taxpay_correction_inquiries',
+      '/rest/v1/taxpay_in_app_notifications',
+    ].includes(url.pathname)){
+      const ownerFilter=url.searchParams.get('owner_uid')??url.searchParams.get('requester_uid')??url.searchParams.get('recipient_uid');
+      expect(ownerFilter).toBe('eq.'+owner.id);
+      return route.fulfill({status:200,headers:{
+        'content-range':'*/0','access-control-expose-headers':'content-range, x-total-count',
+        'access-control-allow-origin':'*',
+      },body:''});
+    }
+    return route.fallback();
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await expect(dashboard).toContainText('No stored payment activity is linked to this scenario profile.');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('No completed payments initiated by this account');
+  await expect(dashboard.getByTestId('dashboard-payment-role-totals')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toHaveCount(0);
+  await expect(dashboard.getByRole('list',{name:'Recent scenario transactions'})).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-dashboard-status-summary')).toContainText('Completed Payments');
+  await expect(dashboard.getByTestId('account-dashboard-status-summary').locator('article').first())
+    .toContainText('0');
+  await expect(dashboard.getByText(/৳/)).toHaveCount(0);
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard).toContainText('এই সিনারিও প্রোফাইলে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('নির্বাচিত করবর্ষে এই অ্যাকাউন্ট থেকে সম্পন্ন কোনো পেমেন্ট নেই।');
+  await expect(dashboard.getByText(/৳/)).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('recent-activity filter preserves yearly owner totals and supplies bilingual empty/recovery states',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const account=page.getByTestId('account-workflow-summary');
+  const filter=account.getByTestId('dashboard-recent-service-filter');
+  await expect(filter).toBeVisible();
+  const parentCount=account.getByTestId('account-dashboard-status-summary');
+  await expect(parentCount).toContainText('Completed Payments');
+  const list=account.getByTestId('dashboard-recent-activity-list');
+  await expect(list.getByRole('listitem')).toHaveCount(1);
+  await expect(list).toContainText('SIM-PAY-OWNER-2026');
+  const before=await parentCount.innerText();
+  const totals=account.getByTestId('dashboard-payment-role-totals');
+  const originalTotal=await totals.innerText();
+
+  await filter.selectOption('SOURCE_TAX_DEPOSIT');
+  const empty=account.getByTestId('dashboard-recent-activity-empty');
+  await expect(empty).toContainText('No recent payment activity matches this service');
+  await expect(account.getByTestId('dashboard-recent-activity-list')).toHaveCount(0);
+  await expect.poll(()=>parentCount.innerText()).toBe(before);
+  await expect.poll(()=>totals.innerText()).toBe(originalTotal);
+
+  await filter.selectOption('ADVANCE_TAX');
+  await expect(list).toContainText('SIM-PAY-OWNER-2026');
+  await expect(empty).toHaveCount(0);
+  await filter.selectOption('PENALTY');
+  await expect(empty).toBeVisible();
+  await account.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(list).toContainText('SIM-PAY-OWNER-2026');
+  await expect(empty).toHaveCount(0);
+  await filter.selectOption('all');
+
+  await setWorkspaceLanguage(page,'bn');
+  const banglaFilter=account.getByRole('combobox',{name:'সাম্প্রতিক কার্যক্রম সেবাভিত্তিক ফিল্টার'});
+  await expect(banglaFilter).toHaveValue('all');
+  await banglaFilter.selectOption('SOURCE_TAX_DEPOSIT');
+  await expect(account.getByTestId('dashboard-recent-activity-empty'))
+    .toContainText('নির্বাচিত করবর্ষে এই সেবার কোনো সাম্প্রতিক');
+  await banglaFilter.selectOption('PENALTY');
+  await expect(account.getByTestId('dashboard-recent-activity-list')).toContainText('SIM-PAY-OWNER-2026');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('dashboard correction shortcut focuses the existing request register and lists all authorized years',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const phase=page.getByTestId('authenticated-dashboard-v11');
+  const years=await page.getByRole('combobox',{name:'Assessment year'}).first().locator('option').allTextContents();
+  for(const year of years.filter(value=>/^20\d{2}-20\d{2}$/.test(value.trim()))){
+    await expect(phase.getByRole('button',{name:year.trim(),exact:true})).toHaveCount(1);
+  }
+  await phase.getByRole('button',{name:'Correction inquiries'}).click();
+  await expect(page.locator('#dashboard-correction-requests')).toBeFocused();
+  await setWorkspaceLanguage(page,'bn');
+  await phase.getByRole('button',{name:'সংশোধনের অনুসন্ধান'}).click();
+  await expect(page.locator('#dashboard-correction-requests')).toBeFocused();
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+
+test('dashboard never exposes the full fallback email and financial breakdown remains accessible across English/Bangla',async({page})=>{
+  await mockPrivateAccount(page,'user1','');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await expect(dashboard.getByText('pri****@example.invalid',{exact:true})).toBeVisible();
+  await expect(dashboard).not.toContainText('private-dashboard-owner@example.invalid');
+  const category=dashboard.getByTestId('account-payment-category-breakdown');
+  const rows=category.getByRole('list',{name:'Category amounts for private scenario records'});
+  await expect(rows).toBeVisible();
+  await expect(rows.getByRole('listitem')).toHaveCount(2);
+  await expect(rows.getByRole('listitem').first()).toContainText('Tax with return');
+  await expect(rows.getByRole('listitem').first()).toContainText('৳ 65.50');
+  await expect(rows.getByRole('listitem').nth(1)).toContainText('৳ 64.50');
+  await expect(category).not.toContainText('৳ 164.50');
+  await expect(dashboard.getByTestId('dashboard-tag-classification-note'))
+    .toContainText('current saved tags');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard.getByText('pri****@example.invalid',{exact:true})).toBeVisible();
+  await expect(dashboard).not.toContainText('private-dashboard-owner@example.invalid');
+  await expect(dashboard.getByRole('list',{name:'ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ'})
+    .getByRole('listitem')).toHaveCount(2);
+  await expect(dashboard.getByTestId('dashboard-tag-classification-note'))
+    .toContainText('বর্তমান সংরক্ষিত ট্যাগ');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('private recent activity has an owner-scoped history action with localized accessible reference',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=bn');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const refButton=dashboard.getByTestId('dashboard-recent-history-00000000-0000-4000-8000-000000000901');
+  await expect(refButton).toBeVisible();
+  await expect(refButton).toHaveAccessibleName(/রেফারেন্স খুঁজতে পেমেন্ট ইতিহাস খুলুন SIM-PAY-OWNER-2026/);
+  await refButton.click();
+  await expect(page).toHaveURL(/action=history/);
+  await expect(page.getByTestId('account-workflow-summary')).toHaveCount(0);
+});
+
+test('F-122 signed-in mobile bottom navigation survives scrolling, language switch and refresh',async({page})=>{
+  // A short data-backed dashboard may have no native vertical overflow.
+  // Introduce scroll space only in this browser fixture, never in production UI,
+  // so the compact-header threshold is actually exercised instead of asserting
+  // that the application must fabricate content to make the page scroll.
+  const exerciseScroll=async(top:number)=>{
+    await page.evaluate(()=>{
+      const parent=document.querySelector('#main-content');
+      if(!parent)return;
+      let spacer=parent.querySelector<HTMLElement>('[data-test-only-scroll-space]');
+      if(!spacer){
+        spacer=document.createElement('div');
+        spacer.dataset.testOnlyScrollSpace='true';
+        spacer.setAttribute('aria-hidden','true');
+        spacer.style.height='800px';
+        spacer.style.pointerEvents='none';
+        parent.appendChild(spacer);
+      }
+    });
+    await page.evaluate(y=>window.scrollTo(0,y),top);
+    await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  };
+  await page.setViewportSize({width:375,height:812});
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+  const nav=page.getByRole('navigation',{name:'Mobile primary navigation'});
+  const pay=page.getByRole('button',{name:'Pay — select payment type'});
+  await expect(nav).toBeVisible();
+  for(const name of ['Overview','Activity','Tax Ledger']){
+    await expect(nav.getByRole('button',{name,exact:true})).toBeVisible();
+  }
+  await expect(pay).toBeVisible();
+
+  // This scroll distance used to trigger compact mode and remove the dock.
+  await exerciseScroll(400);
+  await expect(nav).toBeVisible();
+  await expect(pay).toBeVisible();
+  await expect(page.locator('header.citizen-header--hidden')).toHaveCount(0);
+  await expect(page.locator('.citizen-corner--bottom-left')).toHaveCount(0);
+
+  await setWorkspaceLanguage(page,'bn');
+  const banglaNav=page.getByRole('navigation',{name:'মোবাইল প্রধান নেভিগেশন'});
+  await expect(banglaNav).toBeVisible();
+  for(const name of ['সংক্ষিপ্ত বিবরণ','লেনদেন','কর লেজার']){
+    await expect(banglaNav.getByRole('button',{name,exact:true})).toBeVisible();
+  }
+  await exerciseScroll(440);
+  await expect(banglaNav).toBeVisible();
+  await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+  await page.reload();
+  await expect(banglaNav).toBeVisible();
+  await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+
+  // The smallest supported viewport must keep the same approved taxpayer dock,
+  // even after scroll compaction and a persisted language/session refresh.
+  await page.setViewportSize({width:320,height:812});
+  await exerciseScroll(440);
+  await expect(banglaNav).toBeVisible();
+  for(const name of ['সংক্ষিপ্ত বিবরণ','লেনদেন','কর লেজার']){
+    await expect(banglaNav.getByRole('button',{name,exact:true})).toBeVisible();
+  }
+  await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+  await expect(page.locator('header.citizen-header--hidden')).toHaveCount(0);
+  await expect(page.locator('.citizen-corner--bottom-left')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('F-123 signed-in Pay menu has predictable EN/BN arrow, Home/End and Escape keyboard recovery',async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+  const pay=page.getByRole('button',{name:'Pay — select payment type'});
+  await pay.click();
+  const menu=page.getByRole('menu',{name:'Payment options'});
+  const payTax=menu.getByRole('menuitem',{name:'Pay Tax'});
+  const travel=menu.getByRole('menuitem',{name:'Travel Tax'});
+  const gift=menu.getByRole('menuitem',{name:'Gift Tax'});
+  await expect(menu.getByRole('menuitem')).toHaveCount(3);
+  await expect(payTax).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(travel).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(gift).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(payTax).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(gift).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(payTax).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(gift).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(pay).toBeFocused();
+
+  await setWorkspaceLanguage(page,'bn');
+  const banglaPay=page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'});
+  await banglaPay.click();
+  const banglaMenu=page.getByRole('menu',{name:'পরিশোধের ধরন'});
+  await expect(banglaMenu.getByRole('menuitem',{name:'কর পরিশোধ'})).toBeFocused();
+  await expect(banglaMenu.getByRole('menuitem')).toHaveCount(3);
+  await page.keyboard.press('ArrowDown');
+  await expect(banglaMenu.getByRole('menuitem',{name:'ভ্রমণ কর'})).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(banglaMenu.getByRole('menuitem',{name:'দানকর'})).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(banglaMenu).toHaveCount(0);
+  await expect(banglaPay).toBeFocused();
+  await expect(page.getByRole('navigation',{name:'মোবাইল প্রধান নেভিগেশন'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('F-099 correction shortcuts focus the embedded register and recover to the corrections page when missing',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const account=page.getByTestId('account-workflow-summary');
+  const correction=page.locator('#dashboard-correction-requests');
+  await expect(correction).toBeVisible();
+  const correctionCard=account.getByTestId('account-dashboard-status-summary').locator('article').nth(2);
+  await expect(correctionCard).toContainText('Correction Requests');
+  await correctionCard.getByRole('button',{name:'Open records'}).click();
+  await expect(correction).toBeFocused();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await setWorkspaceLanguage(page,'bn');
+  const shortcut=account.getByRole('navigation',{name:'অ্যাকাউন্ট শর্টকাট'}).getByRole('button',{name:'সংশোধন'});
+  await expect(shortcut).toBeVisible();
+  await shortcut.click();
+  await expect(correction).toBeFocused();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  // When the embedded register is not mounted, the existing dedicated page
+  // must remain reachable; the action must not silently do nothing.
+  await correction.evaluate(node=>{node.id='temporarily-disabled-correction-register';});
+  await shortcut.click();
+  await expect(page).toHaveURL(/action=corrections(?:&|$)/);
+});
+
+test('F-099 correction status-card fallback works without embedded register in English',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const correction=page.locator('#dashboard-correction-requests');
+  await expect(correction).toBeAttached();
+  await correction.evaluate(node=>{node.id='temporarily-disabled-correction-register';});
+  const correctionCard=page.getByTestId('account-dashboard-status-summary').locator('article').nth(2);
+  await correctionCard.getByRole('button',{name:'Open records'}).click();
+  await expect(page).toHaveURL(/action=corrections(?:&|$)/);
+});
+
+test('F-122 signed-in Sohojkor logo returns to the private dashboard instead of public landing EN/BN',async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await mockPrivateAccount(page,'user1');
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=history&lang='+language);
+    const brand=page.getByRole('button',{name:language==='bn'?'সহজকর মূল পাতা':'Sohojkor home'});
+    await expect(brand).toBeVisible();
+    await brand.click();
+    await expect(page).toHaveURL(/action=taxpayer_home(?:&|$)/);
+    await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+    await expect(page.getByRole('navigation',{name:language==='bn'?'মোবাইল প্রধান নেভিগেশন':'Mobile primary navigation'})).toBeVisible();
+  }
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('F-122 signed-in public desktop wordmark opens private dashboard, preserving modifier-click target and guest-independent routing',async({page})=>{
+  await page.setViewportSize({width:1280,height:800});
+  await mockPrivateAccount(page,'user1');
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=landing&lang='+language);
+    const desktop=page.locator('.taxpay-public-desktop-navigation');
+    const brand=desktop.locator('.public-home-brand');
+    await expect(brand).toBeVisible();
+    const href=await brand.getAttribute('href');
+    expect(href).toContain('action=taxpayer_home');
+    if(language==='bn')expect(href).toContain('lang=bn');
+    await brand.click();
+    await expect(page).toHaveURL(/action=taxpayer_home(?:&|$)/);
+    await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+  }
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+
+test('Phase 8 logged-in main content uses available width capped at 1300px above 1400px, keeping rail and public pages unchanged',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One browser checks its own explicit responsive viewports');
+  await mockPrivateAccount(page,'user1');
+  for(const width of [1399,1400,1440,1920]){
+    for(const lang of ['en','bn'] as const){
+      await page.setViewportSize({width,height:900});
+      await page.goto('/?action=taxpayer_home&lang='+lang);
+      await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+      const measure=await page.evaluate(()=>{
+        const shell=document.querySelector('.taxpay-citizen-shell')!;
+        const main=document.querySelector<HTMLElement>('main#main-content')!;
+        const content=main.firstElementChild as HTMLElement;
+        const rail=document.querySelector<HTMLElement>('.taxpayer-reference-rail')!;
+        const padding=getComputedStyle(main);
+        const area=main.clientWidth-parseFloat(padding.paddingLeft)-parseFloat(padding.paddingRight);
+        const rect=main.getBoundingClientRect();
+        const inner=content.getBoundingClientRect();
+        const nav=rail.getBoundingClientRect();
+        return {authenticated:shell.classList.contains('taxpay-authenticated-content'),
+          area,content:inner.width,mainLeft:rect.left,railRight:nav.right,
+          leftInset:inner.left-rect.left-parseFloat(padding.paddingLeft),
+          rightInset:rect.right-parseFloat(padding.paddingRight)-inner.right,
+          overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+      });
+      expect(measure.authenticated).toBe(true);
+      expect(Math.abs(measure.mainLeft-measure.railRight),JSON.stringify({width,lang,measure})).toBeLessThanOrEqual(2);
+      expect(measure.area).toBeGreaterThan(0);
+      const expected=width>1400 ? Math.min(1300,measure.area) : measure.area;
+      expect(Math.abs(measure.content-expected),JSON.stringify({width,lang,measure})).toBeLessThanOrEqual(2);
+      expect(Math.abs(measure.leftInset-measure.rightInset)).toBeLessThanOrEqual(2);
+      expect(measure.overflow).toBeLessThanOrEqual(2);
+      await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
+      // Save actual Playwright-rendered evidence from the exact integrated head,
+      // not a synthetic screenshot or a viewport calculation alone.
+      if(lang==='en'){
+        await info.attach('authenticated-main-width-'+width+'-en',{
+          body:await page.screenshot({fullPage:true}),contentType:'image/png'
+        });
+      }
+      if(width===1440){
+        // The same authenticated content wrapper serves Activity/Profile.
+        for(const route of ['history','account_profile']){
+          await page.goto('/?action='+route+'&lang='+lang);
+          await expect(page.locator('.taxpay-authenticated-content main#main-content > *').first()).toBeVisible();
+          const ratio=await page.evaluate(()=>{
+            const main=document.querySelector<HTMLElement>('main#main-content')!;
+            const child=main.firstElementChild!.getBoundingClientRect();
+            const style=getComputedStyle(main);
+            const available=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+            return child.width/available;
+          });
+          expect(Math.abs(ratio-1),route+' '+lang).toBeLessThanOrEqual(.005);
+        }
+      }
+    }
+  }
+  // Signing in does not constrain the already approved public home.
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto('/?action=landing&lang=bn');
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+  await expect(page.locator('.taxpay-citizen-shell')).not.toHaveClass(/taxpay-authenticated-content/);
+  await expect(page.locator('main#main-content')).toHaveClass(/public-information-main/);
+});
+
+
+test('successful null SQL history aggregate shows User2 empty state without crashing Activity',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.route(supabaseUrl+'/rest/v1/rpc/sim_my_payment_history',async route=>{
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:'null'});
+  });
+  await page.goto('/?action=history');
+  const activity=page.getByTestId('signed-in-payment-activity');
+  await expect(activity).toBeVisible();
+  await expect(activity.getByRole('searchbox',{name:'Search transactions'})).toBeVisible();
+  await expect(activity.getByText('No transactions yet.')).toBeVisible();
+  await expect(page.getByTestId('history-route-recovery')).toHaveCount(0);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.getByTestId('signed-in-payment-activity').getByText('No transactions yet.')).toBeVisible();
+});
+
+test('malformed successful SQL history is an explicit retry error, not an invented empty payment ledger',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.route(supabaseUrl+'/rest/v1/rpc/sim_my_payment_history',async route=>{
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:'{"unexpected":"data"}'});
+  });
+  await page.goto('/?action=history');
+  const activity=page.getByTestId('signed-in-payment-activity');
+  await expect(activity.getByText('Unable to load transactions.')).toBeVisible();
+  await expect(activity.getByRole('button',{name:'Retry'})).toBeVisible();
+  await expect(activity.getByText('No transactions yet.')).toHaveCount(0);
+  await expect(page.getByTestId('history-route-recovery')).toHaveCount(0);
 });

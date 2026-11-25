@@ -1,17 +1,15 @@
-@import './styles/office-design.css';
-@import './styles/office-auth-source.css';
+/* Office-owned styles are loaded by OfficeTheme and OfficeLoginPage, not every public visitor. */
 @import './styles/taxpayer-login-dialog.css';
 @import "tailwindcss";
 @import "./styles/taxpay-citizen.css";
 @import "./styles/taxpay-taxpayer-reference.css";
 @import "./styles/taxpay-design-transfer.css";
-@import "./styles/taxpay-service-choice.css";
 @import "./styles/taxpay-hero-carousel.css";
-@import './styles/taxpay-payment-form.css';
 @import './styles/taxpayer-tin-lookup.css';
 @import './styles/taxpayer-sobaike-parity.css';
-@import './styles/taxpay-unified-table.css';
 @import './styles/taxpay-form-labels.css';
+@import './styles/taxpay-mobile-bottom-sheets.css';
+@import './styles/taxpay-responsive-typography.css';
 
 @theme {
   /* Locked Korbritto primary: never replace this with a service/status color. */
@@ -46,25 +44,28 @@
 
 /* Citizen typography contract: both Public and Taxpayer; officer selectors excluded. */
 @theme {
-  --taxpay-type-body: 1rem;
-  --taxpay-type-helper: .875rem;
-  --taxpay-type-h1: 1.75rem;
-  --taxpay-type-h2: 1.375rem;
-  --taxpay-type-h3: 1.125rem;
+  /* Six reusable 4px-step citizen sizes. Micro is for genuinely secondary labels only. */
+  --taxpay-type-micro: .75rem;       /* 12px */
+  --taxpay-type-body: 1rem;         /* 16px */
+  --taxpay-type-helper: 1rem;
+  --taxpay-type-h1: 1.5rem;         /* 24px, small screens */
+  --taxpay-type-h2: 1.25rem;        /* 20px */
+  --taxpay-type-h3: 1.25rem;
   --taxpay-type-h4: 1rem;
   --taxpay-type-label: 1rem;
-  --taxpay-type-action: .875rem;
-  --taxpay-type-meta: .875rem;
+  --taxpay-type-action: 1rem;
+  --taxpay-type-meta: 1rem;
   --taxpay-type-financial: 1.5rem;
 }
+/* 320–479: 24px titles; 480–1023: 28px; 1024+: 32px. */
+@media (min-width: 480px) {
+  :root { --taxpay-type-h1: 1.75rem; }
+}
 @media (min-width: 768px) {
-  :root {
-    --taxpay-type-h1: 2rem;
-    --taxpay-type-h2: 1.5rem;
-    --taxpay-type-h3: 1.25rem;
-    --taxpay-type-h4: 1.125rem;
-    --taxpay-type-financial: 1.75rem;
-  }
+  :root { --taxpay-type-h2: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  :root { --taxpay-type-h1: 2rem; }
 }
 @layer base {
   body {
@@ -115,7 +116,7 @@
 .taxpay-citizen-shell .taxpay-type-meta { font-size: var(--taxpay-type-meta); line-height: 1.5; }
 .taxpay-citizen-shell .taxpay-type-financial { font-size: var(--taxpay-type-financial); line-height: 1.35; font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell[lang="bn"] { line-height: 1.65; }
-.taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button) { line-height: 1.55; }
+.taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button):not(:where([data-home2-view] *)) { line-height: 1.55; }
 
 /* Enforce the same loaded font in both citizen experiences, never Officer. */
 .taxpay-citizen-shell { font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif; }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Send,
   CheckCircle2
@@ -10,16 +10,42 @@ import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import type {ChallanReceipt} from '../../types/tax';
+import {activePreviewSession} from '../../services/previewAccountSession';
+import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
+import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 
-export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
-  const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest, language } = useTaxState();
+export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string;embedded?:boolean}> =
+  ({activityTabs=false,recordedReceipts=[],preferredReference='',embedded=false}) => {
+  const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest, language, previewAccount, routeParams } = useTaxState();
   const tr=(en:string,bn:string)=>language==='bn'?bn:en;
   const {user:authenticatedUser}=useAccountIdentity();
-  const visibleReceipts = taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser));
+  const [ownedReceipts,setOwnedReceipts]=useState<ChallanReceipt[]>([]);
+  useEffect(()=>{
+    let active=true;
+    setOwnedReceipts([]);
+    if(!previewAccount || activePreviewSession()?.profileId!==previewAccount.id)return()=>{active=false;};
+    // The existing preview capability authorizes this owner-scoped read.
+    // Do not infer a receipt from route parameters or from illustrative cases.
+    void getDetailedStorySessionPayments().then(payments=>{
+      if(!active)return;
+      setOwnedReceipts(payments.flatMap(payment=>{
+        try{return [makeConfirmedReceipt(payment)];}catch{return [];}
+      }));
+    }).catch(()=>{if(active)setOwnedReceipts([]);});
+    return()=>{active=false;};
+  },[previewAccount?.id]);
+  const visibleReceipts=[...new Map([
+    ...taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser)),
+    ...recordedReceipts,...ownedReceipts
+  ].map(r=>[r.paymentTransactionId||r.challanNo,r])).values()];
   const visibleCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
 
-  const [challanNo, setChallanNo] = useState('');
-  const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo) ?? visibleReceipts[0];
+  const routeReference=typeof routeParams?.originalReference==='string'
+    ?routeParams.originalReference.slice(0,80):'';
+  const [challanNo, setChallanNo] = useState(preferredReference||routeReference);
+  const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo) ??
+    (!challanNo?visibleReceipts[0]:undefined);
   const selectedChallanNo = selectedReceipt?.challanNo ?? '';
   const currentAY = selectedReceipt?.assessmentYear ?? '';
   const [proposedAY, setProposedAY] = useState('2025-2026');
@@ -72,11 +98,11 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
-        description="Request a change to the assessment year, tax circle or payment head." />
-      {activityTabs && <TaxpayerActivityTabs />}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div className={embedded ? 'w-full min-w-0 space-y-4' : 'max-w-4xl mx-auto space-y-6 pb-12'}>
+      {!embedded && <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
+        description="Request a change to the assessment year, tax circle or payment head." />}
+      {!embedded && activityTabs && <TaxpayerActivityTabs />}
+      <div className={embedded ? 'bg-white border border-taxpay-border rounded-xl p-3 sm:p-5' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
         {submittedTicket && (
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
@@ -105,6 +131,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
               <select
                 id="correction-challan"
                 value={selectedChallanNo}
+                disabled={Boolean(preferredReference)}
                 onChange={(e) => {
                   const receipt = visibleReceipts.find(r => r.challanNo === e.target.value);
                   setChallanNo(e.target.value);

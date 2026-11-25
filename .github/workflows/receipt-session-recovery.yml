@@ -2,6 +2,7 @@ name: TaxPay receipt session recovery acceptance
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
     paths:
       - 'src/components/screens/ReceiptLookup.tsx'
@@ -27,8 +28,14 @@ on:
 permissions:
   contents: read
 
+# Replace only obsolete same-PR checks; Main and manual runs stay independent.
+concurrency:
+  group: taxpay-receipt-session-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   recover-session-receipt:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Session-owned receipt readback and privacy
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -45,7 +52,7 @@ jobs:
           npm run lint
           npm run test:domain
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Verify receipt recovery and fail-closed errors at mobile and desktop widths
         env:
           VITE_SUPABASE_DISABLED: 'true'

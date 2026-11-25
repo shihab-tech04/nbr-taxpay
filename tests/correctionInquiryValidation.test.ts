@@ -49,3 +49,17 @@ test('COR-002 rejects identical, unsupported and oversized attribution proposals
  const noValue={...valid,change:{field:'ATTRIBUTION' as const,previousValue:'',proposedValue:'New'}};
  assert.equal(validateCorrectionInquiry(noValue).allowedToRecordInquiry,false);
 });
+
+test('F-094 records an unsolicited-payment allegation as an unverified category only',()=>{
+ const result=validateCorrectionInquiry({...valid,caseKind:'UNSOLICITED_PAYMENT_REPORT'});
+ assert.equal(result.allowedToRecordInquiry,true);
+ assert.equal(result.verifiedClaimant,false);
+ assert.equal(result.verifiedOriginalReceipt,false);
+ assert.equal(result.authorizesFinancialCorrection,false);
+});
+test('F-094 preserves ordinary review and denies forged inquiry categories',()=>{
+ assert.equal(validateCorrectionInquiry({...valid,caseKind:'CORRECTION_REVIEW'}).allowedToRecordInquiry,true);
+ const invalid=validateCorrectionInquiry({...valid,caseKind:'ISSUE_TAX_CREDIT' as any});
+ assert.equal(invalid.allowedToRecordInquiry,false);
+ assert.equal(invalid.authorizesFinancialCorrection,false);
+});

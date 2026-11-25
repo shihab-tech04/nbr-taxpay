@@ -1,0 +1,29 @@
+name: WS3 D1 retired handoff route boundary
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches: [main]
+    paths:
+      - 'supabase/functions/taxpay-handoff-api/index.ts'
+      - 'tests/integration/ws3LegacyHandoffRetirement.test.mjs'
+      - '.github/workflows/ws3-d1-handoff-retirement.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  retired-route:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
+    name: Retired routes fail closed; current Story1 path remains separate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Exercise every legacy route in a disposable HTTP harness
+        run: node --test tests/integration/ws3LegacyHandoffRetirement.test.mjs

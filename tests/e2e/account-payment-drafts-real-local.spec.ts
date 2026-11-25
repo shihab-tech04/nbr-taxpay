@@ -49,6 +49,7 @@ test('same account resumes, updates and deletes a SQL payment draft from a diffe
     const payload = {
       schemaVersion: 1, category: 'TAX_WITH_RETURN', step: 2, forSelf: true,
       assessmentYear: '2026-27', selectedHeadIds: [1], amountInputs: { '1': '123.45' },
+      paymentRemarks: 'বাংলা চালান মন্তব্য: অতিরিক্ত তথ্য\nEnglish note retained by the next browser.',
     };
     const saved = await invoke(browserA, 'payment-draft-create',
       { service: 'TAX_WITH_RETURN', payload }, ownerCapability);
@@ -69,7 +70,8 @@ test('same account resumes, updates and deletes a SQL payment draft from a diffe
     const restored = listB.result.data.find((row: { id: string }) => row.id === cleanupId);
     expect(restored?.form_payload).toEqual(payload);
 
-    const updatedPayload = { ...payload, amountInputs: { '1': '987.60' } };
+    const updatedPayload = { ...payload, amountInputs: { '1': '987.60' },
+      paymentRemarks: 'নতুন চালান মন্তব্য\nUpdated note remains editable in this draft.' };
     const updated = await invoke(browserB, 'payment-draft-update', {
       id: cleanupId, revision: latestRevision, service: 'TAX_WITH_RETURN',
       payload: updatedPayload,

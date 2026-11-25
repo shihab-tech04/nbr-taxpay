@@ -1,0 +1,61 @@
+name: Phase 7 recipient notification and correction acceptance
+
+# This is a feature-branch validation only. No hosted database credentials,
+# SQL migrations, GitHub Pages release, or privileged write permissions.
+on:
+  pull_request:
+    branches:
+      - ws5/v95-integrated-release-candidate-20261115
+    paths:
+      - 'src/components/screens/AuthorizationRequestPopup.tsx'
+      - 'src/components/screens/CorrectionInquiries.tsx'
+      - 'src/components/screens/ReceivedPaymentNoticeRegister.tsx'
+      - 'src/components/screens/NotificationsView.tsx'
+      - 'src/components/screens/TaxpayerLoginDialog.tsx'
+      - 'src/components/screens/SecureWorkspace.tsx'
+      - 'src/components/screens/AuthenticatedReceivedPaymentPopup.tsx'
+      - 'src/services/accountIdentity.ts'
+      - 'src/services/receivedPaymentCaseIntent.ts'
+      - 'src/services/accountReceivedPaymentNotices.ts'
+      - 'src/services/verifiedAccountNoticePage.ts'
+      - 'src/services/receivedNoticeRegisterScope.ts'
+      - 'src/services/verifiedEmailOtp.ts'
+      - 'src/services/demoReceivedPaymentNotices.ts'
+      - 'tests/receivedPaymentCaseIntent.test.ts'
+      - 'tests/verifiedEmailOtp.test.ts'
+      - 'tests/verifiedAccountNoticePage.test.ts'
+      - 'tests/receivedNoticeRegisterScope.test.ts'
+      - 'tests/demoReceivedPaymentNotices.test.ts'
+      - '.github/workflows/phase7-recipient-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase7-recipient-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  phase7:
+    name: Domain tests, typecheck, and production build (read-only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact PR merge candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node version from repo
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install exact dependency lock
+        run: npm ci --no-audit --no-fund
+      - name: Test Phase 7 recipient source and notification contract
+        run: node --import tsx --test tests/receivedPaymentCaseIntent.test.ts tests/demoReceivedPaymentNotices.test.ts tests/verifiedEmailOtp.test.ts tests/verifiedAccountNoticePage.test.ts tests/receivedNoticeRegisterScope.test.ts
+      - name: Typecheck complete Taxpayer candidate
+        run: npm run lint
+      - name: Build production bundle (without deployment)
+        run: npm run build

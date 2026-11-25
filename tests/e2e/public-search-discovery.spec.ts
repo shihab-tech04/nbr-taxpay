@@ -25,12 +25,15 @@ test('search uses the established icon-free section heading and concise single-l
 
 test('typing opens a clean floating dropdown without changing the card height', async ({ page }) => {
   await page.goto('/?action=landing');
+  // Compare settled layout to settled layout: swapping in Poppins after the
+  // initial measurement can change wrapped helper text by one line on 375px.
+  await page.evaluate(async () => { await document.fonts.ready; });
   const section = page.getByRole('region', { name: 'Find a payment record' });
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
   const nextGapBefore = await page.evaluate(() => {
     const card = document.querySelector('.public-record-discovery')!.getBoundingClientRect();
-    const next = document.querySelector('#public-how-it-works')!.getBoundingClientRect();
+    const next = document.querySelector('.public-footer')!.getBoundingClientRect();
     return next.top - card.bottom;
   });
   await search.fill('DEMO-REF-001');
@@ -48,7 +51,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
       belowField: rect.top >= searchField.getBoundingClientRect().bottom,
       cardHeight: element.getBoundingClientRect().height,
       dropdownOutsideCard: rect.bottom > element.getBoundingClientRect().bottom,
-      nextGap: document.querySelector('#public-how-it-works')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
+      nextGap: document.querySelector('.public-footer')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
     };
   });
   expect(geometry.position).toBe('absolute');
@@ -117,7 +120,7 @@ test('dropdown overlays following content without resizing the card or overflowi
     const geometry = await page.evaluate(() => {
       const section = document.querySelector<HTMLElement>('.public-record-discovery')!;
       const dropdown = document.querySelector<HTMLElement>('.public-record-suggestions')!;
-      const following = document.querySelector<HTMLElement>('#public-how-it-works')!;
+      const following = document.querySelector<HTMLElement>('.public-footer')!;
       const bounds = dropdown.getBoundingClientRect();
       return {
         left: bounds.left, right: bounds.right,
@@ -172,4 +175,43 @@ test('typed search keeps matched references above a distinct bottom sample-numbe
   const match = dropdown.locator('.public-record-suggestions__group').first().getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ });
   await expect(match).toBeVisible();
   await expect(match).toHaveCSS('text-decoration-line', 'none');
+});
+
+test('public suggestions announce only example matches and keyboard selection without exposing references in URL',async({page})=>{
+  await page.goto('/?action=landing&lang=en');
+  const discovery=page.locator('.public-record-discovery');
+  const search=discovery.getByRole('searchbox',{name:'Search payment records by reference'});
+  await search.fill('TKN-882190');
+  await expect(search).toHaveAttribute('aria-autocomplete','list');
+  await expect(search).toHaveAttribute('aria-describedby','public-record-discovery-help');
+  await expect(discovery.getByTestId('public-search-match-status')).toContainText('matching example references');
+  await search.press('ArrowDown');
+  await expect(discovery.locator('#public-search-option-0')).toHaveClass(/is-active/);
+  await search.press('Escape');
+  await expect(search).toBeFocused();
+  // Persistent live-region remains present but becomes empty after dismissal.
+  await expect(discovery.getByTestId('public-search-match-status')).toHaveCount(1);
+  await expect(discovery.getByTestId('public-search-match-status')).toBeEmpty();
+  await search.fill('TKN-882190');
+  await search.press('ArrowDown');
+  await search.press('Enter');
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('initialReference')).toBeNull();
+});
+
+test('unmatched public examples never falsely imply that actual payment SQL was searched (EN/BN)',async({page})=>{
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=landing&lang='+language);
+    const discovery=page.locator('.public-record-discovery');
+    const search=discovery.getByRole('searchbox',{name:language==='bn'
+      ?'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন':'Search payment records by reference'});
+    await search.fill('ZZ-UNKNOWN-REFERENCE-765');
+    const notice=discovery.getByTestId('public-search-match-status');
+    await expect(notice).toContainText(language==='bn'?'কোনো নমুনা রেফারেন্স মেলেনি':'No example references matched');
+    await expect(discovery.locator('.public-record-suggestions__empty'))
+      .toContainText(language==='bn'?'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই':'No matching references among the examples');
+    await discovery.getByRole('button',{name:language==='bn'?'রেকর্ড খুঁজুন':'Search records'}).click();
+    await expect(page).toHaveURL(/action=verify/);
+    await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+  }
 });

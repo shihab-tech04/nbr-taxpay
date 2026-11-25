@@ -1,12 +1,22 @@
 name: Verified pre-release source recovery
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
+# Superseded PR commits cannot be released; only the newest exact-head archive
+# must pass. Cancel stale full-history backups within the *same PR* so parallel
+# feature work does not repeatedly consume runners or GitHub artifact storage.
+# Manual recovery runs remain independent, and neither Main releases nor another
+# PR's backup can be cancelled by this group.
+concurrency:
+  group: taxpay-source-recovery-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   source-backup:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -45,4 +55,50 @@ jobs:
           name: pre-release-recovery-${{ github.event.pull_request.number || github.run_id }}
           path: recovery/
           retention-days: 1
+          if-no-files-found: error
+
+  candidate-source-backup:
+    # Source snapshots stay within GitHub Actions until the verified archive is
+    # independently transferred outside GitHub. Never include credentials.
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Archive the exact reviewed release-candidate head
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE_SHA="${{ github.event.pull_request.head.sha }}"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git branch candidate-recovery "$CANDIDATE_SHA"
+          mkdir -p candidate-recovery
+          git bundle create candidate-recovery/candidate-history.bundle refs/heads/candidate-recovery
+          git bundle verify candidate-recovery/candidate-history.bundle
+          git archive --format=tar "$CANDIDATE_SHA" | gzip -n -9 > candidate-recovery/candidate-source.tar.gz
+          printf '%s\n' "$CANDIDATE_SHA" > candidate-recovery/CANDIDATE_SHA
+          (cd candidate-recovery && sha256sum candidate-history.bundle candidate-source.tar.gz CANDIDATE_SHA > SHA256SUMS)
+          (cd candidate-recovery && sha256sum --check SHA256SUMS)
+      - name: Independently restore the exact candidate history and source
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE_SHA="$(cat candidate-recovery/CANDIDATE_SHA)"
+          mkdir -p "$RUNNER_TEMP/sohojkor-candidate-restore"
+          git clone --mirror candidate-recovery/candidate-history.bundle "$RUNNER_TEMP/sohojkor-candidate-restore/repository.git"
+          git --git-dir="$RUNNER_TEMP/sohojkor-candidate-restore/repository.git" cat-file -e "$CANDIDATE_SHA^{commit}"
+          git --git-dir="$RUNNER_TEMP/sohojkor-candidate-restore/repository.git" fsck --full --strict
+          mkdir -p "$RUNNER_TEMP/sohojkor-candidate-restore/source"
+          tar -xzf candidate-recovery/candidate-source.tar.gz -C "$RUNNER_TEMP/sohojkor-candidate-restore/source"
+          test -f "$RUNNER_TEMP/sohojkor-candidate-restore/source/package.json"
+          echo "EXACT_CANDIDATE_RESTORE_PASS_SHA=$CANDIDATE_SHA"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-recovery-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: candidate-recovery/
+          retention-days: 2
           if-no-files-found: error

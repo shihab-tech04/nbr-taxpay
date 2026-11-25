@@ -8,6 +8,8 @@ test('real account restores its own language and selected beneficiary list in a 
   const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
   if(!raw||!key)throw new Error('Disposable Supabase credentials required.');
   const api=new URL(raw);
+  // This acceptance case is specifically the 375px owner-switch journey.
+  const viewport={width:375,height:812};
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing a non-loopback preferences test.');
 
@@ -48,7 +50,7 @@ test('real account restores its own language and selected beneficiary list in a 
   };
 
   const a=await signUp();
-  const first=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
+  const first=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
   const page=await first.newPage();
   await page.goto(url(a.session));
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
@@ -62,6 +64,8 @@ test('real account restores its own language and selected beneficiary list in a 
   }
   await addList('Family');
   await addList('Clients');
+  if(await page.locator('#beneficiary-list').count()===0)
+    await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.locator('#beneficiary-list')).toContainText('Clients');
   const ownedLists=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?select=id,name',api.origin),{
     headers:{apikey:key,Authorization:'Bearer '+a.session.access_token}
@@ -97,6 +101,19 @@ test('real account restores its own language and selected beneficiary list in a 
   const accountPages=page.getByRole('navigation',{name:'Account pages'});
   await accountPages.getByRole('button',{name:'Profile',exact:true}).click();
   await expect(accountPages.getByRole('button',{name:'Profile',exact:true})).toHaveAttribute('aria-current','page');
+  // M02 F-166: actual disposable Auth email stays private until the explicit
+  // owner's eye action; signing in must not print it in the account summary.
+  const localPart=a.email.slice(0,a.email.indexOf('@'));
+  const maskedEmail=localPart.slice(0,2)+'*'.repeat(Math.max(3,localPart.length-2))+'@****.***';
+  await expect(page.getByText(maskedEmail,{exact:true})).toBeVisible();
+  await expect(page.getByText(a.email,{exact:true})).toHaveCount(0);
+  const revealEmail=page.getByRole('button',{name:'Show Account email',exact:true});
+  await expect(revealEmail).toBeVisible();
+  await expect(page.getByRole('button',{name:'Copy Account email',exact:true})).toBeVisible();
+  await revealEmail.click();
+  await expect(page.getByText(a.email,{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Hide Account email',exact:true}).click();
+  await expect(page.getByText(a.email,{exact:true})).toHaveCount(0);
   await accountPages.getByRole('button',{name:'Profile settings'}).click();
   await expect(page.locator('#taxpay-profile-language')).toBeVisible();
   await page.locator('#taxpay-profile-display-name').fill('Account A profile');
@@ -125,20 +142,37 @@ test('real account restores its own language and selected beneficiary list in a 
   // Sign out immediately after selecting Bangla. The owner preference must
   // finish saving before the session is revoked: no waiting for SQL here.
   await page.locator('.citizen-mobile-menu-trigger').click();
+  const signedOutUrl=new URL('/',page.url()).href;
   await page.locator('.citizen-dialog-signout').click();
-  await expect(page).toHaveURL(/^(?!.*action=account_settings)/,{timeout:15000});
+  await page.waitForURL(signedOutUrl,{waitUntil:'load',timeout:15000});
+  // F-017-T03/T04: successful local Auth sign-out clears persisted credentials
+  // from either Remember-me storage mode, including after browser reload.
+  // This checks the actual browser session, not an invented account identity.
+  const storedAuthTokens=()=>page.evaluate(()=>[window.localStorage,window.sessionStorage]
+    .flatMap(storage=>Object.keys(storage).filter(key=>/^sb-.*-auth-token$/.test(key))));
+  await expect.poll(storedAuthTokens,{timeout:10000}).toEqual([]);
+  await page.reload();
+  expect(await storedAuthTokens()).toEqual([]);
+  await page.goto('/?action=beneficiaries');
+  await expect(page.getByText('Account A profile')).toHaveCount(0);
+  await expect(page.getByText('Sajid Khan')).toHaveCount(0);
   await first.close();
 
   const aSession=await signIn(a.email,a.password);
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_language).toBe('bn');
-  const second=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
+  const second=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
   const again=await second.newPage();
+  expect(again.viewportSize()).toEqual(viewport);
   await again.goto(url(aSession));
+  expect(again.viewportSize()).toEqual(viewport);
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
+  if(await again.locator('#beneficiary-list').count()===0)
+    await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   await expect(again.locator('#beneficiary-list')).toContainText('Family');
   await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
-  await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
+  await expect(again.getByTestId('beneficiary-records')).toContainText('000*********');
+  await expect(again.getByTestId('beneficiary-records')).not.toContainText('000000000047');
   await expect(again.getByTestId('beneficiary-records')).toContainText('বন্ধু');
   await expect((await authUser(aSession.access_token)).user_metadata?.taxpay_display_name).toBe('Account A profile');
   await expect((await authUser(aSession.access_token)).user_metadata?.taxpay_in_app_notifications).toBe(false);
@@ -148,15 +182,16 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByText('ভাষা পরিবর্তন করেছেন · বাংলা')).toBeVisible();
   await again.reload();
   await expect(again.getByRole('heading',{name:'আমার সাম্প্রতিক কার্যক্রম'})).toBeVisible();
-  await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী')).toBeVisible();
+  await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী').first()).toBeVisible();
 
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_last_beneficiary_list_id).toBe(familyId);
-  await second.close();
+  const aUserId=(await authUser(aSession.access_token)).id;
 
   const b=await signUp();
-  const third=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
+  const third=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
   const another=await third.newPage();
   await another.goto(url(b.session));
+  expect(another.viewportSize()).toEqual(viewport);
   await expect(another.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(another.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
   await expect(another.locator('#beneficiary-list')).toHaveCount(0);
@@ -175,7 +210,7 @@ test('real account restores its own language and selected beneficiary list in a 
   const foreignActivity=await fetch(new URL('/rest/v1/taxpay_account_activity',api.origin),{
     method:'POST',headers:{apikey:key,Authorization:'Bearer '+b.session.access_token,
       'content-type':'application/json'},
-    body:JSON.stringify({owner_uid:(await authUser(aSession.access_token)).id,
+    body:JSON.stringify({owner_uid:aUserId,
       event_type:'PAGE_OPENED',route:'account_profile'})
   });
   expect(foreignActivity.status).toBeGreaterThanOrEqual(400);
@@ -188,4 +223,44 @@ test('real account restores its own language and selected beneficiary list in a 
   expect(forgedActivity.status).toBeGreaterThanOrEqual(400);
 
   await third.close();
+
+  // Repeat the account switch in the SAME 375px browser context. Separate-context
+  // isolation remains above; this also catches stale client state after sign-out.
+  await again.locator('.citizen-mobile-menu-trigger').click();
+  const ownerASignedOutUrl=new URL('/',again.url()).href;
+  await again.locator('.citizen-dialog-signout').click();
+  await again.waitForURL(ownerASignedOutUrl,{waitUntil:'load',timeout:15000});
+  await again.goto(url(b.session));
+  expect(again.viewportSize()).toEqual(viewport);
+  await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+  await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
+  await expect(again.locator('#beneficiary-list')).toHaveCount(0);
+  await expect(again.getByTestId('beneficiary-records')).toHaveCount(0);
+  await expect(again.getByText('Sajid Khan')).toHaveCount(0);
+  await again.goto('/?action=account_profile');
+  await expect(again.getByRole('heading',{name:'My recent activity'})).toBeVisible();
+  await expect(again.getByText('No saved activity yet.')).toBeVisible();
+  await expect(again.getByText('Account A profile')).toHaveCount(0);
+
+  const sameBrowserBUserId=(await authUser(b.session.access_token)).id;
+  const sameBrowserActivity=await fetch(new URL('/rest/v1/taxpay_account_activity?select=id&owner_uid=eq.'+
+    sameBrowserBUserId,api.origin),{
+      headers:{apikey:key,Authorization:'Bearer '+b.session.access_token}
+    });
+  expect(sameBrowserActivity.status).toBe(200);
+  expect(await sameBrowserActivity.json()).toEqual([]);
+  const sameBrowserForeignActivity=await fetch(new URL('/rest/v1/taxpay_account_activity',api.origin),{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+b.session.access_token,
+      'content-type':'application/json'},
+    body:JSON.stringify({owner_uid:aUserId,event_type:'PAGE_OPENED',route:'account_profile'})
+  });
+  expect(sameBrowserForeignActivity.status).toBeGreaterThanOrEqual(400);
+  const sameBrowserForgedActivity=await fetch(new URL('/rest/v1/taxpay_account_activity',api.origin),{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+b.session.access_token,
+      'content-type':'application/json'},
+    body:JSON.stringify({owner_uid:sameBrowserBUserId,event_type:'PAYMENT_CONFIRMED',route:'account_profile'})
+  });
+  expect(sameBrowserForgedActivity.status).toBeGreaterThanOrEqual(400);
+
+  await second.close();
 });

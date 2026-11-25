@@ -1,40 +1,74 @@
-import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
+import { maskTinForDisplay } from '../../services/tinDisplay';
+import '../../styles/taxpay-unified-table.css';
+// The shared taxpayer lookup result card must be styled on direct Beneficiaries entry.
+import '../../styles/taxpay-payment-form.css';
+import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
-import {activePreviewSession,savePreviewSetting} from '../../services/previewAccountSession';
+import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
+import {beneficiaryDeleteFailureMayHaveCommitted,beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged,type BeneficiaryOwnerContext} from '../../services/beneficiaryFormOwner';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
-import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
+import {TaxpayerTinLookup,TaxpayerTinSearchResultCard} from '../ui/TaxpayerTinLookup';
+import {demoIncomeTaxTypeForTin} from '../../services/demoIncomeTaxType';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
-import {UiButton,UiInput,UiSelect} from '../ui/Controls';
-import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
+import {UiButton,UiInput} from '../ui/Controls';
+import {SearchableSelect} from '../ui/SearchableSelect';
+import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
+import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
-import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
-import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
+import {BeneficiaryProfile} from './BeneficiaryProfile';
+import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,matchesBeneficiaryClassification,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
+// The same 30 approved lookup aliases are shared with all TaxPay TIN entries.
 interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,demoUser,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
+    pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
+  // A single searchable grouped menu selects both the stored tag and relationship.
+  const familyGroup=tr('FRIENDS & FAMILY MEMBERS','বন্ধু ও পরিবারের সদস্য');
+  const familyChoices=BENEFICIARY_RELATIONS.map(relation=>({
+    value:'friends_family:'+relation,
+    label:beneficiaryTagLabel('friends_family',relation,language).split(' · ').at(-1)??relation,
+    group:familyGroup
+  }));
+  const classificationOptions=[
+    {value:'clients',label:tr('Clients','ক্লায়েন্ট'),group:tr('CLIENTS','ক্লায়েন্ট')},
+    ...familyChoices,
+    {value:'others',label:tr('Others — specify','অন্যান্য — লিখুন'),group:tr('OTHERS','অন্যান্য')}
+  ];
+  const classificationFilters=[
+    {value:'all',label:tr('All tags','সব ট্যাগ')},
+    {value:'clients',label:tr('Clients','ক্লায়েন্ট'),group:tr('CLIENTS','ক্লায়েন্ট')},
+    {value:'friends_family',label:tr('All family & friends','সব বন্ধু ও পরিবার'),group:familyGroup},
+    ...familyChoices,
+    {value:'others',label:tr('Others','অন্যান্য'),group:tr('OTHERS','অন্যান্য')},
+    {value:'legacy',label:tr('Uncategorized','শ্রেণিবিহীন'),group:tr('OTHERS','অন্যান্য')}
+  ];
   const displayName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
   const [people,setPeople]=useState<Beneficiary[]>([]);
-  const [activeList,setActiveList]=useState('');
+  const [activeList,setActiveList]=useState('all');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
+  const [preferenceError,setPreferenceError]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
+  const [beneficiarySaveOwner,setBeneficiarySaveOwner]=useState<string|null>(null);
   const [entryChoiceOpen,setEntryChoiceOpen]=useState(false);
   const [createListOpen,setCreateListOpen]=useState(false);
   const [phase,setPhase]=useState<Phase>('upload');
@@ -46,18 +80,37 @@ export function Beneficiaries(){
   const [relationship,setRelationship]=useState<BeneficiaryRelation|''>('');
   const [otherLabel,setOtherLabel]=useState('');
   const [tagFilter,setTagFilter]=useState('all');
+  const [filtersExpanded,setFiltersExpanded]=useState(false);
   const [relationshipFilter,setRelationshipFilter]=useState('all');
   const [searchedBeneficiaryTin,setSearchedBeneficiaryTin]=useState<string|null>(null);
   const [filename,setFilename]=useState('');
   const [rows,setRows]=useState<ImportRow[]>([]);
   const [busy,setBusy]=useState(false);
-  const [restoring,setRestoring]=useState(false);
-  const [recoveryError,setRecoveryError]=useState('');
-  const [guestRecoveryDone,setGuestRecoveryDone]=useState(false);
   const [modalError,setModalError]=useState('');
   const [search,setSearch]=useState('');
+  // The Overview can focus the existing table on precisely those TINs whose
+  // saved tags are missing or conflicting. No new data source or list is created.
+  const [reviewTins,setReviewTins]=useState<string[]>(()=>Array.isArray(routeParams.reviewBeneficiaryTins)
+    ? [...new Set((routeParams.reviewBeneficiaryTins as unknown[])
+        .filter((value):value is string=>typeof value==='string'&&/^\d{12}$/.test(value)))].slice(0,30)
+    : []);
+  useEffect(()=>{
+    const incoming=routeParams.reviewBeneficiaryTins;
+    if(!Array.isArray(incoming))return;
+    const valid=[...new Set(incoming.filter((value:unknown):value is string=>
+      typeof value==='string'&&/^\d{12}$/.test(value)))].slice(0,30);
+    setReviewTins(valid);
+    if(valid.length){
+      setActiveList('all');setTagFilter('all');setRelationshipFilter('all');
+      setSearch('');setSelectedIds([]);
+    }
+  },[routeParams.reviewBeneficiaryTins]);
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
+  const [profileSelection,setProfileSelection]=useState<{id:string;account:string}|null>(null);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
+  const editOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
+  const deleteOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
+  const bulkRemoveOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const [editTargetList,setEditTargetList]=useState('');
   const [editTag,setEditTag]=useState<BeneficiaryTag|''>('');
   const [editRelationship,setEditRelationship]=useState<BeneficiaryRelation|''>('');
@@ -65,6 +118,7 @@ export function Beneficiaries(){
   const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
   const [bulkRemoveIds,setBulkRemoveIds]=useState<string[]|null>(null);
   const [listMenuOpen,setListMenuOpen]=useState(false);
+  const [listMenuPosition,setListMenuPosition]=useState<{left:number;top:number;width:number;maxHeight:number}|null>(null);
   const [editingList,setEditingList]=useState<BeneficiaryList|null>(null);
   const [editingListName,setEditingListName]=useState('');
   const [confirmListDelete,setConfirmListDelete]=useState(false);
@@ -73,34 +127,93 @@ export function Beneficiaries(){
   const fileRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     if(!listMenuOpen)return;
+    // Position against the viewport, not the register's clipped scrolling surface.
+    const reposition=()=>{
+      const rect=listTriggerRef.current?.getBoundingClientRect();
+      if(!rect)return;
+      const margin=12;
+      const width=Math.min(Math.max(rect.width,220),Math.max(160,window.innerWidth-margin*2));
+      // Keep list options outside the fixed bottom navigation on narrow screens.
+      // The menu must remain mouse/touch/keyboard accessible after scrolling.
+      const dock=document.querySelector<HTMLElement>('.citizen-bottom-nav');
+      const dockTop=dock&&window.getComputedStyle(dock).display!=='none'
+        ?dock.getBoundingClientRect().top:window.innerHeight;
+      const availableBottom=Math.max(margin+80,Math.min(window.innerHeight-margin,dockTop-8));
+      const below=availableBottom-rect.bottom-4;
+      const above=rect.top-margin-4;
+      const openAbove=below<180&&above>below;
+      const maxHeight=Math.max(80,Math.min(300,openAbove?above:below));
+      const top=openAbove?Math.max(margin,rect.top-maxHeight-4):Math.min(rect.bottom+4,Math.max(margin,availableBottom-maxHeight));
+      const left=Math.max(margin,Math.min(rect.right-width,window.innerWidth-width-margin));
+      setListMenuPosition({top,left,width,maxHeight});
+    };
+    reposition();
+    window.addEventListener('resize',reposition);
+    window.addEventListener('scroll',reposition,true);
     const closeOutside=(event:PointerEvent)=>{if(!listMenuRef.current?.contains(event.target as Node))setListMenuOpen(false);};
     const closeEscape=(event:KeyboardEvent)=>{if(event.key==='Escape'){setListMenuOpen(false);listTriggerRef.current?.focus();}};
     document.addEventListener('pointerdown',closeOutside);
     document.addEventListener('keydown',closeEscape);
-    return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
+    return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true);document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
+  // An open write form is bound to the Auth owner or current fictional profile
+  // capability. Changing profiles or regenerating a capability invalidates it.
+  const formOwnerRef=useRef<string|null>(null);
+  const createListOwnerRef=useRef<string|null>(null);
+  const currentOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:owner,ownerKey:null,checkingIdentity:true});
+  // The legacy demoUser fixture exists only on the loopback development server.
+  // In public production, a signed preview capability remains mandatory.
+  const localFixture=()=>
+    /^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)&&
+    new URLSearchParams(window.location.search).has('demoUser');
+  const activeFormOwner=()=>beneficiaryFormOwnerKey(owner,
+    previewAccount?.id??(localFixture()?demoUser?.id??null:null),
+    activePreviewSession(),localFixture());
+  // Keep live owner state available to async edits after this render changes.
+  const currentOwnerKey=activeFormOwner();
+  currentOwnerContextRef.current={ownerUid:owner,ownerKey:currentOwnerKey,checkingIdentity};
+  useEffect(()=>{
+    if(editPerson&&!beneficiaryOwnerContextUnchanged(editOwnerContextRef.current,currentOwnerContextRef.current)){
+      editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      setDeletePerson(null);setEditPerson(null);setEditTargetList('');setModalError('');
+      setNotice({en:'Your account changed. Reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি আবার খুলুন।'});
+    }
+    if(bulkRemoveIds&&!beneficiaryOwnerContextUnchanged(bulkRemoveOwnerContextRef.current,currentOwnerContextRef.current))
+      closeStaleBulkRemove();
+  },[owner,checkingIdentity,previewAccount?.id,currentOwnerKey,editPerson,bulkRemoveIds]);
+  const maySaveFor=(captured:string|null)=>!checkingIdentity&&
+    beneficiaryFormOwnerUnchanged(captured,activeFormOwner());
+  const accountChangedMessage=()=>tr('Your account changed. Cancel and reopen this form before saving.',
+    'আপনার অ্যাকাউন্ট বদলেছে। সংরক্ষণের আগে বাতিল করে এই ফর্মটি আবার খুলুন।');
+
   const savedListId=owner
     ?user?.user_metadata?.taxpay_last_beneficiary_list_id
     :previewAccount?activePreviewSession()?.selectedListId:null;
   const rememberList=(id:string)=>{
     const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
-      :previewAccount?savePreviewSetting('selected-list',id):null;
+      :previewAccount?savePreviewSetting('selected-list',id==='all'?'':id):null;
     if(!save)return;
+    setPreferenceError(null);
     void save.then(()=>owner
       ?recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries').catch(()=>undefined)
       :undefined).catch(()=>{
-      setNotice({en:'Could not remember your selected list for next login. Please retry.',
-        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
+      setPreferenceError({en:'Could not remember your selected list for next login. Please retry. Stored beneficiaries have not been changed.',
+        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন। সংরক্ষিত উপকারভোগীর তথ্য পরিবর্তন করা হয়নি।'});
     });
   };
   const initialRequestRef=useRef<symbol|null>(null);
+  // Keep late background reads from replacing the SQL-confirmed snapshot after a save.
+  const dataRevisionRef=useRef(0);
   const reload=async(preferredList?:string)=>{
-    const data=await loadBeneficiaries(owner);
+    const revision=++dataRevisionRef.current;
+    const data=await loadBeneficiaries(owner,{forceFresh:true});
+    if(revision!==dataRevisionRef.current)return data;
     setLists(data.lists);setPeople(data.people);
-    const validPreferredList=preferredList&&data.lists.some(list=>list.id===preferredList)?preferredList:null;
+    const validPreferredList=preferredList&&(preferredList==='all'||data.lists.some(list=>list.id===preferredList))?preferredList:null;
     setActiveList(current=>validPreferredList
-      ??(data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??'')));
+      ??(current==='all'||data.lists.some(list=>list.id===current)?current:'all'));
     // An edit or move may navigate to a new list without pressing the list picker.
     // That change is also a user choice and must survive a future login.
     if(validPreferredList)rememberList(validPreferredList);
@@ -112,12 +225,21 @@ export function Beneficiaries(){
     let cancelled=false;
     if(checkingIdentity){initialRequestRef.current=null;return()=>{cancelled=true;};}
     const requestToken=Symbol('beneficiary-initial-load');
+    const revision=++dataRevisionRef.current;
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
-    loadBeneficiaries(owner).then(data=>{
-      if(cancelled)return;
+    Promise.all([
+      loadBeneficiaries(owner,{forceFresh:true}),
+      // A different browser may have changed the selected list. Use a server
+      // preference only for the same preview owner; fall back safely.
+      !owner&&previewAccount?getPreviewSettings().catch(()=>null):Promise.resolve(null),
+    ]).then(([data,serverSettings])=>{
+      if(cancelled||revision!==dataRevisionRef.current)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(rememberedBeneficiaryListId(data.lists,savedListId));
+      const latestChoice=serverSettings
+        ?(serverSettings.selectedListId??'all')
+        :(savedListId||'all');
+      setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],latestChoice));
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{
         if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
@@ -126,42 +248,60 @@ export function Beneficiaries(){
     return()=>{cancelled=true;};
   },[owner,checkingIdentity,previewAccount?.id]);
 
-  // Refresh across tabs and after returning from payments. Keep the current
+  // Refresh across tabs and devices, including while this page remains open. Keep the current
   // list visible while reading; never replace a valid snapshot with an empty
   // state just because a transient request failed.
   useEffect(()=>{
     if(checkingIdentity || busy)return;
     let cancelled=false;
-    let revision=0;
     const gate=createBeneficiaryAutoRefreshGate();
     const refresh=()=>{
       // Browsers commonly fire visibilitychange and focus together. The
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
-      const current=++revision;
-      void loadBeneficiaries(owner).then(data=>{
-        if(cancelled || current!==revision)return;
+      const current=++dataRevisionRef.current;
+      void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
+        if(cancelled || current!==dataRevisionRef.current)return;
         setLists(data.lists);setPeople(data.people);setError('');
-        setActiveList(selected=>data.lists.some(list=>list.id===selected)?selected:(data.lists[0]?.id??''));
+        setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
         setSelectedIds(selected=>selected.filter(id=>data.people.some(person=>person.id===id)));
       }).catch(()=>{
         // The last verified snapshot is still visible. A manual reload gives
         // feedback if the transport or session remains unavailable.
       }).finally(()=>gate.finish());
     };
+    const interval=window.setInterval(refresh,30000);
     window.addEventListener('focus',refresh);
+    window.addEventListener('storage',refresh);
     document.addEventListener('visibilitychange',refresh);
-    return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+    return()=>{cancelled=true;window.clearInterval(interval);window.removeEventListener('focus',refresh);window.removeEventListener('storage',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[owner,checkingIdentity,busy]);
 
-  const listPeople=people.filter(person=>person.list_id===activeList);
+  const listPeople=activeList==='all'?people:people.filter(person=>person.list_id===activeList);
   const filteredPeople=listPeople.filter(person=>{
     const matchesTag=tagFilter==='all'||(tagFilter==='legacy'? !person.tag :person.tag===tagFilter);
     const matchesRelation=tagFilter!=='friends_family'||relationshipFilter==='all'||person.relationship===relationshipFilter;
-    return matchesTag&&matchesRelation&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label))
+    return (reviewTins.length===0||reviewTins.includes(person.tin))&&matchesTag&&matchesRelation&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label))
       .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
+  const profileAccount=owner??previewAccount?.id??'';
+  // Explicit Activity -> saved beneficiary deep link. Never resolve an
+  // arbitrary TIN outside the currently loaded account-owned beneficiary list.
+  const lastOpenedProfileRequest=useRef('');
+  useEffect(()=>{
+    const tin=routeParams.openBeneficiaryTin;
+    if(typeof tin!=='string'||!/^\d{12,13}$/.test(tin)||!profileAccount||
+       checkingIdentity||loading)return;
+    const requestKey=profileAccount+':'+tin;
+    if(lastOpenedProfileRequest.current===requestKey)return;
+    const match=people.find(person=>person.tin===tin);
+    if(!match)return; // Do not invent a saved contact or expose someone else's profile.
+    lastOpenedProfileRequest.current=requestKey;
+    setProfileSelection({id:match.id,account:profileAccount});
+  },[routeParams.openBeneficiaryTin,profileAccount,checkingIdentity,loading,people]);
+  const profilePerson=profileSelection?.account===profileAccount&&profileAccount
+    ?people.find(person=>person.id===profileSelection.id):undefined;
   const activeListRecord=lists.find(list=>list.id===activeList);
   const editHasChanges=Boolean(editPerson && (
     editTargetList!==editPerson.list_id ||
@@ -174,6 +314,8 @@ export function Beneficiaries(){
     editTargetList!==editPerson.list_id);
   const editValid=validBeneficiaryClassification(editTag,editRelationship,editOtherLabel) || editLegacyMove;
   const existingTins=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
+  const reviewedBeneficiary=searchedBeneficiaryTin===tin && /^\d{12}$/.test(tin);
+  const reviewedBeneficiaryMatch=reviewedBeneficiary?lookupSampleTaxpayer(tin):null;
   const reviewed=useMemo<ReviewedRow[]>(()=>{
     const seen=new Set<string>();
     return rows.map(row=>{
@@ -191,7 +333,7 @@ export function Beneficiaries(){
   const allFilteredSelected=filteredPeople.length>0&&filteredPeople.every(person=>selectedIds.includes(person.id));
 
   function switchList(id:string){
-    setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
+    setReviewTins([]);setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
     rememberList(id);
     listTriggerRef.current?.focus();
   }
@@ -226,18 +368,43 @@ export function Beneficiaries(){
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
-  function open(next:Flow){
-    setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
-    setTin('');setName('');setTag('');setRelationship('');setOtherLabel('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
+  function open(next:Flow,prefill?:{tin:string;name:string},saveOwner:string|null=null){
+    formOwnerRef.current=activeFormOwner();
+    setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList==='all'?(lists[0]?.id??'new'):activeList||'new');setListName('');
+    setBeneficiarySaveOwner(saveOwner);
+    setTin(prefill?.tin??'');setName(prefill?.name??'');setTag('');setRelationship('');setOtherLabel('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
   }
-  function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
+  useEffect(()=>{
+    const request=pendingBeneficiarySave;
+    if(!request)return;
+    if(checkingIdentity||loading||initialRequestRef.current)return;
+    if(!owner||previewAccount||owner!==request.ownerUid){clearPendingBeneficiarySave();return;}
+    if(error)return;
+    if(!/^\d{12}$/.test(request.tin)){clearPendingBeneficiarySave();return;}
+    if(people.some(person=>person.tin===request.tin)){
+      clearPendingBeneficiarySave();
+      setNotice({en:'This beneficiary is already in your lists.',bn:'এই উপকারভোগী আপনার তালিকায় আগে থেকেই আছেন।'});
+      return;
+    }
+    open('single',{tin:request.tin,name:request.name},request.ownerUid);
+    clearPendingBeneficiarySave();
+  },[pendingBeneficiarySave,checkingIdentity,loading,error,owner,previewAccount,people,activeList,lists,clearPendingBeneficiarySave]);
+  useEffect(()=>{
+    if(!beneficiarySaveOwner||checkingIdentity||owner===beneficiarySaveOwner)return;
+    setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setTag('');setRelationship('');setOtherLabel('');
+    setSearchedBeneficiaryTin(null);setModalError('');
+    setNotice({en:'Your account changed. Reopen this payment from the account that made it.',bn:'আপনার অ্যাকাউন্ট বদলেছে। যে অ্যাকাউন্ট থেকে পেমেন্টটি করা হয়েছিল, সেই অ্যাকাউন্টে ফিরে এটি আবার খুলুন।'});
+  },[beneficiarySaveOwner,checkingIdentity,owner]);
+  function closeFlow(){if(!busy){setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setModalError('');}}
 
   async function saveList(event:React.FormEvent){
     event.preventDefault();
+    if(!maySaveFor(createListOwnerRef.current)){setModalError(accountChangedMessage());return;}
     if(!listName.trim()||listName.trim().length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
     setBusy(true);setModalError('');
     try{
       const list=await createBeneficiaryList(owner,listName);
+      if(!maySaveFor(createListOwnerRef.current))throw new Error(accountChangedMessage());
       const saved=await reload(list.id);
       if(!saved.lists.some(value=>value.id===list.id))throw new Error(tr('List was not saved. Please retry.','তালিকাটি সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       setCreateListOpen(false);setListName('');
@@ -247,6 +414,7 @@ export function Beneficiaries(){
   }
 
   async function resolveList(){
+    if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
     if(targetList!=='new'){
       const list=lists.find(value=>value.id===targetList);
       if(!list)throw new Error(tr('Choose a valid list.','সঠিক তালিকা নির্বাচন করুন।'));
@@ -262,6 +430,12 @@ export function Beneficiaries(){
 
   async function saveSingle(event:React.FormEvent){
     event.preventDefault();
+    if(!maySaveFor(formOwnerRef.current)){setModalError(accountChangedMessage());return;}
+    if(beneficiarySaveOwner&&(checkingIdentity||owner!==beneficiarySaveOwner)){
+      setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setModalError('');
+      setNotice({en:'Your account changed. Reopen this payment from the account that made it.',bn:'আপনার অ্যাকাউন্ট বদলেছে। যে অ্যাকাউন্ট থেকে পেমেন্টটি করা হয়েছিল, সেই অ্যাকাউন্টে ফিরে এটি আবার খুলুন।'});
+      return;
+    }
     if(!validBeneficiaryClassification(tag,relationship,otherLabel)){setModalError(tr('Select a tag and provide the required relationship or an Others description (maximum 80 characters).','ট্যাগ বাছুন এবং প্রয়োজনীয় সম্পর্ক অথবা অন্যান্য বর্ণনা (সর্বোচ্চ ৮০ অক্ষর) লিখুন।'));return;}
     if(!/^\d{12}$/.test(tin)||name.trim().length>160){
       setModalError(tr('Enter a valid 12-digit TIN and a name of up to 160 characters.','সঠিক ১২ সংখ্যার টিআইএন এবং সর্বোচ্চ ১৬০ অক্ষরের নাম লিখুন।'));return;
@@ -269,12 +443,17 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       const id=await resolveList();
-      const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null}]);
+      if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
+      const classification={tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null};
+      const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim(),...classification}]);
       const saved=await reload(id);
-      if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
+      const savedPerson=saved.people.find(person=>person.list_id===id&&person.tin===tin);
+      if(!savedPerson){
         throw new Error(tr('Beneficiary was not saved. Please retry.','উপকারভোগী সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       }
-      setFlow(null);
+      if(count>0&&!matchesBeneficiaryClassification(savedPerson,classification))
+        throw new Error(tr('Saved beneficiary tag could not be verified. Refresh the list and try again.','সংরক্ষিত উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
+      setFlow(null);setBeneficiarySaveOwner(null);
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -293,16 +472,21 @@ export function Beneficiaries(){
 
   async function finishImport(){
     if(!chosen.length)return;
+    if(!maySaveFor(formOwnerRef.current)){setModalError(accountChangedMessage());return;}
     if(!validBeneficiaryClassification(tag,relationship,otherLabel)){setModalError(tr('Select a tag and provide the required relationship or an Others description (maximum 80 characters).','ট্যাগ বাছুন এবং প্রয়োজনীয় সম্পর্ক অথবা অন্যান্য বর্ণনা (সর্বোচ্চ ৮০ অক্ষর) লিখুন।'));return;}
     setBusy(true);setModalError('');
     try{
       const id=await resolveList();
-      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null})));
+      if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
+      const classification={tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null};
+      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim(),...classification})));
       const saved=await reload(id);
-      const savedTins=new Set(saved.people.filter(person=>person.list_id===id).map(person=>person.tin));
-      if(chosen.some(row=>!savedTins.has(row.tin))){
+      const savedByTin=new Map(saved.people.filter(person=>person.list_id===id).map(person=>[person.tin,person]));
+      if(chosen.some(row=>!savedByTin.has(row.tin))){
         throw new Error(tr('Some beneficiaries were not saved. Retry the import.','কিছু উপকারভোগী সংরক্ষিত হয়নি। আবার আমদানি করুন।'));
       }
+      if(chosen.some(row=>!matchesBeneficiaryClassification(savedByTin.get(row.tin),classification)))
+        throw new Error(tr('Some beneficiary tags could not be verified. Refresh the list and retry.','কিছু উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);
       setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
@@ -310,13 +494,36 @@ export function Beneficiaries(){
   }
 
   function openPersonEditor(person:Beneficiary){
+    editOwnerContextRef.current={ownerUid:owner,ownerKey:activeFormOwner(),checkingIdentity};
     setEditPerson(person);setEditTargetList(person.list_id);
     setEditTag(person.tag??'');setEditRelationship(person.relationship??'');
     setEditOtherLabel(person.other_label??'');setModalError('');
   }
+  function closePersonEditor(){
+    editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setEditPerson(null);setEditTargetList('');setModalError('');
+  }
+  function requestDeletePerson(person:Beneficiary){
+    const context=editOwnerContextRef.current;
+    if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)){
+      setModalError(accountChangedMessage());return;
+    }
+    deleteOwnerContextRef.current=context;
+    setModalError('');setDeletePerson(person);
+  }
+  function closeDeleteConfirmation(){
+    if(busy)return;
+    deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setDeletePerson(null);setModalError('');
+  }
   async function saveEdit(event:React.FormEvent){
     event.preventDefault();
     if(!editPerson)return;
+    const editOwnerContext=editOwnerContextRef.current;
+    const editOwnerIsCurrent=()=>beneficiaryOwnerContextUnchanged(editOwnerContext,currentOwnerContextRef.current);
+    if(!editOwnerIsCurrent()){
+      setModalError(accountChangedMessage());return;
+    }
     if(!lists.some(list=>list.id===editTargetList)){
       setModalError(tr('Choose a valid saved list.','সঠিক সংরক্ষিত তালিকা বাছুন।'));return;
     }
@@ -333,11 +540,13 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       if(editLegacyMove){
-        await moveBeneficiary(owner,editPerson.id,editPerson.list_id,editTargetList);
+        await moveBeneficiary(editOwnerContext.ownerUid,editPerson.id,editPerson.list_id,editTargetList);
       }else{
-        await editBeneficiaryClassification(owner,editPerson,editTargetList,classification);
+        await editBeneficiaryClassification(editOwnerContext.ownerUid,editPerson,editTargetList,classification);
       }
-      const saved=await reload(editTargetList);
+      if(!editOwnerIsCurrent())throw new Error(accountChangedMessage());
+      const saved=await loadBeneficiaries(editOwnerContext.ownerUid,{forceFresh:true});
+      if(!editOwnerIsCurrent())throw new Error(accountChangedMessage());
       const matching=saved.people.find(person=>person.id===editPerson.id);
       if(!matching||matching.list_id!==editTargetList||(matching.tag??null)!==classification.tag||
         (matching.relationship??null)!==classification.relationship||
@@ -345,43 +554,141 @@ export function Beneficiaries(){
         throw new Error(tr('Updated beneficiary could not be verified. Refresh and retry.',
           'উপকারভোগীর পরিবর্তন যাচাই করা যায়নি। রিফ্রেশ করে আবার চেষ্টা করুন।'));
       }
+      setLists(saved.lists);setPeople(saved.people);setActiveList(editTargetList);setSelectedIds([]);
+      rememberList(editTargetList);
       const onlyMoved=editTargetList!==editPerson.list_id &&
         classification.tag===(editPerson.tag??null) &&
         classification.relationship===(editPerson.relationship??null) &&
         classification.other_label===(editPerson.other_label??null);
-      setEditPerson(null);setEditTargetList('');
+      closePersonEditor();
       setNotice(onlyMoved
         ?{en:'Beneficiary moved to the selected list.',bn:'উপকারভোগী নির্বাচিত তালিকায় স্থানান্তরিত হয়েছেন।'}
         :{en:'Beneficiary details updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){
+      if(!editOwnerIsCurrent()){
+        closePersonEditor();
+        setNotice({en:'Your account changed. Cancel and reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি বাতিল করে আবার খুলুন।'});
+      }else setModalError(e instanceof Error?e.message:String(e));
+    }
     finally{setBusy(false);}
   }
 
+  function closeStaleBulkRemove(){
+    bulkRemoveOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setBulkRemoveIds(null);setSelectedIds([]);setModalError('');
+    setNotice({
+      en:'Your account changed. Reopen the beneficiary list before removing these records.',
+      bn:'আপনার অ্যাকাউন্ট বদলেছে। রেকর্ডগুলো সরানোর আগে উপকারভোগীর তালিকাটি আবার খুলুন।',
+    });
+  }
+
+  function requestBulkRemove(){
+    const context=currentOwnerContextRef.current;
+    const ids=selectedPeople.map(person=>person.id);
+    if(!ids.length)return;
+    if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)){
+      setNotice({
+        en:'Your account changed. Reopen the beneficiary list before removing these records.',
+        bn:'আপনার অ্যাকাউন্ট বদলেছে। রেকর্ডগুলো সরানোর আগে উপকারভোগীর তালিকাটি আবার খুলুন।',
+      });
+      return;
+    }
+    bulkRemoveOwnerContextRef.current=context;
+    setModalError('');setBulkRemoveIds(ids);
+  }
+
+  function closeBulkRemove(){
+    if(busy)return;
+    bulkRemoveOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setBulkRemoveIds(null);setModalError('');
+  }
+
   async function confirmBulkRemove(){
-    if(!bulkRemoveIds?.length||busy)return;
-    const stillSelected=bulkRemoveIds.filter(id=>people.some(person=>person.id===id&&person.list_id===activeList));
+    const selectedAtConfirmation=bulkRemoveIds;
+    if(!selectedAtConfirmation?.length||busy)return;
+    const context=bulkRemoveOwnerContextRef.current;
+    const ownerIsCurrent=()=>beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current);
+    if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
+    const stillSelected=selectedAtConfirmation.filter(id=>people.some(person=>person.id===id&&(activeList==='all'||person.list_id===activeList)));
+    if(!stillSelected.length){
+      setModalError(tr('The selected beneficiaries are no longer available. Refresh and try again.','নির্বাচিত উপকারভোগীরা আর উপলভ্য নেই। রিফ্রেশ করে আবার চেষ্টা করুন।'));
+      return;
+    }
     setBusy(true);setModalError('');
     try{
-      for(const id of stillSelected)await removeBeneficiary(owner,id);
+      for(const id of stillSelected){
+        if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
+        await removeBeneficiary(context.ownerUid,id);
+        if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
+      }
       const saved=await reload();
+      if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
       if(saved.people.some(person=>stillSelected.includes(person.id))){
         throw new Error(tr('Some selected beneficiaries could not be removed. Try again.','নির্বাচিত কয়েকজনকে সরানো যায়নি। আবার চেষ্টা করুন।'));
       }
+      bulkRemoveOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
       setBulkRemoveIds(null);
       setNotice({en:`${stillSelected.length} beneficiaries removed.`,bn:`${stillSelected.length} জন উপকারভোগী সরানো হয়েছে।`});
     }catch(e){
+      if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
       setModalError(e instanceof Error?e.message:String(e));
       await reload().catch(()=>{});
+      if(!ownerIsCurrent())closeStaleBulkRemove();
     }finally{setBusy(false);}
   }
 
   async function confirmRemove(){
-    if(!deletePerson)return;
-    setBusy(true);setError('');
+    const person=deletePerson;
+    if(!person||busy)return;
+    const deleteOwnerContext=deleteOwnerContextRef.current;
+    const deleteOwnerIsCurrent=()=>beneficiaryOwnerContextUnchanged(deleteOwnerContext,currentOwnerContextRef.current);
+    const closeStaleDelete=()=>{
+      deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      setDeletePerson(null);closePersonEditor();
+      setNotice({en:'Your account changed. Cancel and reopen this beneficiary before deleting.',bn:'আপনার অ্যাকাউন্ট বদলেছে। মুছে ফেলার আগে বাতিল করে এই উপকারভোগীটি আবার খুলুন।'});
+    };
+    if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+    setBusy(true);setModalError('');
     try{
-      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);
+      await removeBeneficiary(deleteOwnerContext.ownerUid,person.id);
+      if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      const saved=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true});
+      if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      if(saved.people.some(item=>item.id===person.id))
+        throw new Error(tr('Beneficiary removal could not be verified. Refresh and retry.','উপকারভোগী সরানো যাচাই করা যায়নি। রিফ্রেশ করে আবার চেষ্টা করুন।'));
+      setLists(saved.lists);setPeople(saved.people);
+      setSelectedIds(ids=>ids.filter(id=>id!==person.id));
+      setActiveList(current=>current==='all'||saved.lists.some(list=>list.id===current)?current:'all');
+      deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      setDeletePerson(null);setEditPerson(null);setModalError('');
       setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
-    }catch(e){setError(e instanceof Error?e.message:String(e));}
+    }catch(e){
+      if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      const message=e instanceof Error?e.message:String(e);
+      // A lost response may follow a committed DELETE. Reconcile only ambiguous
+      // transport/server failures; zero-row and authorization failures stay visible.
+      if(beneficiaryDeleteFailureMayHaveCommitted(e)){
+        try{
+          const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true});
+          if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+          if(!recovered.people.some(item=>item.id===person.id)){
+            setLists(recovered.lists);setPeople(recovered.people);
+            setSelectedIds(ids=>ids.filter(id=>id!==person.id));
+            setActiveList(current=>current==='all'||recovered.lists.some(list=>list.id===current)?current:'all');
+            deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+            setDeletePerson(null);setEditPerson(null);setModalError('');
+            setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
+            return;
+          }
+        }catch{
+          if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+        }
+      }
+      setModalError(message==='The beneficiary is no longer saved. Refresh and try again.'
+        ?tr('The beneficiary is no longer saved. Refresh and try again.',
+          'উপকারভোগীটি আর সংরক্ষিত নেই। রিফ্রেশ করে আবার চেষ্টা করুন।')
+        :message);
+    }
     finally{setBusy(false);}
   }
 
@@ -397,43 +704,39 @@ export function Beneficiaries(){
     link.href=url;link.download='Korbritto_Beneficiaries_Template.xlsx';document.body.append(link);link.click();link.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
-  const restoreFromThisBrowser=async()=>{
-    if((!owner&&!previewAccount)||restoring)return;
-    setRestoring(true);setRecoveryError('');
-    try {
-      const result=owner?await recoverGuestBeneficiariesToProfile(owner)
-        :await recoverLegacyGuestBeneficiariesToPreview();
-      await reload();
-      setGuestRecoveryDone(true);
-      setNotice({en:result.people?`Restored ${result.people} beneficiaries to your profile.`:'Your saved beneficiaries are already available in your profile.',bn:result.people?`আপনার প্রোফাইলে ${result.people} জন উপকারভোগী ফিরিয়ে আনা হয়েছে।`:'সংরক্ষিত উপকারভোগীরা ইতিমধ্যে আপনার প্রোফাইলে আছেন।'});
-    }catch(e){setRecoveryError(e instanceof Error?e.message:String(e));}
-    finally{setRestoring(false);}
-  };
   const reloadData=async()=>{
     setLoading(true);setError('');
     try{await reload();}catch(e){setError(e instanceof Error?e.message:String(e));}
     finally{setLoading(false);}
   };
 
-  return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
-    <header className="flex flex-col gap-4 rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div className="min-w-0">
-        <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">{tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}</p>
-      </div>
-      <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
-        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
-        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>setEntryChoiceOpen(true)}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
-      </div>
-    </header>
-    {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
-      <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
-      <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
-    </div>}
-    {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
+  if(profilePerson)return <BeneficiaryProfile key={profileAccount+':'+profilePerson.id}
+    person={profilePerson} ownerUid={owner} previewId={owner?null:previewAccount?.id??null}
+    language={language} backToActivity={routeParams.returnTo==='history'} onBack={()=>{
+      if(routeParams.returnTo==='history'){setProfileSelection(null);navigate('history');return;}
+      setProfileSelection(null);
+      window.requestAnimationFrame(()=>document.getElementById('beneficiary-profile-link-'+profilePerson.id)?.focus());
+    }} onMakePayment={()=>payWith([profilePerson])}/>;
+
+  return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-taxpay-register-page="true" data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
+    <TaxpayerPageHeading id="beneficiaries-title"
+      title={tr('Beneficiaries','উপকারভোগী')}
+      description={tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}
+      actions={<div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading}
+          onClick={()=>{createListOwnerRef.current=activeFormOwner();setCreateListOpen(true);setModalError('');setListName('');}}>
+          <Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}
+        </UiButton>
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading}
+          onClick={()=>open('single')}>
+          <Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}
+        </UiButton>
+      </div>}/>
+
+    {preferenceError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{preferenceError[bn?'bn':'en']}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
-    <section className="rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
+    <section className="taxpay-office-register-frame beneficiary-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
       {checkingIdentity&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Opening your beneficiary workspace…','উপকারভোগীর কর্মক্ষেত্র খোলা হচ্ছে…')}</p>}
       {!checkingIdentity&&loading&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Loading saved lists…','সংরক্ষিত তালিকা লোড হচ্ছে…')}</p>}
       {!checkingIdentity&&error&&<div className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -441,16 +744,18 @@ export function Beneficiaries(){
         <UiButton type="button" variant="outline" onClick={()=>void reloadData()}>{tr('Try again','আবার চেষ্টা করুন')}</UiButton>
       </div>}
       {!checkingIdentity&&!loading&&!error&&<>
-        <div className="taxpayer-transaction-panel__heading beneficiary-directory__heading taxpay-table-toolbar">
-          <div className="min-w-0">
-            <h2 id="beneficiary-list-heading" className="text-xl font-bold text-taxpay-text">{tr('Beneficiary list','উপকারভোগীর তালিকা')}</h2>
-            <p className="mt-1 text-sm text-taxpay-muted">{tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}</p>
-          </div>
-          {lists.length>0&&<p className="beneficiary-directory__list-total" role="status" aria-live="polite">
-            <UsersRound size={17} aria-hidden="true"/>
-            <strong>{listPeople.length}</strong> {tr(listPeople.length===1?'beneficiary':'beneficiaries','জন উপকারভোগী')}
-          </p>}
-        </div>
+        {reviewTins.length>0&&<div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-taxpay-border bg-taxpay-light px-3 py-2 text-sm" data-testid="beneficiary-review-filter">
+          <span>{tr('Showing saved records linked to unclassified payments. Select Edit to assign the correct tag.','শ্রেণিবিহীন পেমেন্টের সাথে যুক্ত সংরক্ষিত রেকর্ড দেখানো হচ্ছে। সঠিক ট্যাগ দিতে সম্পাদনা নির্বাচন করুন।')}</span>
+          <UiButton type="button" variant="outline" onClick={()=>{setReviewTins([]);setSelectedIds([]);}}>{tr('Show all beneficiaries','সব উপকারভোগী দেখুন')}</UiButton>
+        </div>}
+        <TaxPayOfficeRegisterToolbar id="beneficiary-list-heading"
+          title={tr('Beneficiary list','উপকারভোগীর তালিকা')}
+          count={filteredPeople.length} total={listPeople.length} countLabel={tr('records','রেকর্ড')}
+          searchValue={search} onSearchChange={setSearch}
+          searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
+          searchPlaceholder={tr('Name or TIN','নাম বা টিআইএন')}
+          filterLabel={tr('Filter','ফিল্টার')}
+          filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}/>
 
         {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
           <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
@@ -458,52 +763,55 @@ export function Beneficiaries(){
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
 
         </div>:<>
-          <TaxPayTableControls className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
-            <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
+          <TaxPayOfficeRegisterFilters open={filtersExpanded} className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
+            {lists.length>0&&<div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
                 <button id="beneficiary-list" ref={listTriggerRef} type="button" className="beneficiary-list-picker__trigger" aria-label={tr('Selected list','নির্বাচিত তালিকা')} aria-haspopup="dialog" aria-expanded={listMenuOpen} aria-controls="beneficiary-list-menu" onClick={()=>setListMenuOpen(current=>!current)}>
-                  <span className="truncate text-left">{activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
+                  <span className="truncate text-left">{activeList==='all'?tr('All beneficiaries','সব উপকারভোগী'):activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
                   <ChevronDown size={18} className={listMenuOpen?'rotate-180 transition-transform':'transition-transform'} aria-hidden="true"/>
                 </button>
-                {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
+                {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" style={listMenuPosition?{position:"fixed",top:listMenuPosition.top,left:listMenuPosition.left,width:listMenuPosition.width,maxHeight:listMenuPosition.maxHeight,insetInline:"auto",zIndex:1000}:undefined} aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
                   <p className="beneficiary-list-picker__caption">{tr('Your lists','আপনার তালিকা')}</p>
-                  {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
+                  <div className="beneficiary-list-picker__row">
+                      <button type="button" className="beneficiary-list-picker__select" aria-current={activeList==='all'?'true':undefined} onClick={()=>switchList('all')}>
+                        <span className="truncate">{tr('All beneficiaries','সব উপকারভোগী')}</span>{activeList==='all'&&<Check size={18} aria-hidden="true"/>}
+                      </button>
+                    </div>
+                    {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
                     <button type="button" className="beneficiary-list-picker__select" aria-current={activeList===list.id?'true':undefined} onClick={()=>switchList(list.id)}>
                       <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
                     </button>
                     <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Edit ${list.name}`,`${list.name} সম্পাদনা`)} title={tr('Edit list','তালিকা সম্পাদনা')} onClick={()=>openListEditor(list)}><Pencil size={17} aria-hidden="true"/></button>
+                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Delete ${list.name}`,`${list.name} মুছুন`)} title={tr("Delete list","তালিকা মুছুন")} onClick={()=>{setEditingList(list);setConfirmListDelete(true);setListMenuOpen(false);setModalError("");}}><Trash2 size={17} aria-hidden="true"/></button>
                   </div>)}
                 </div>}
               </div>
-            </div>
-            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag','ট্যাগ')}</span>
-              <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);}}>
-                <option value="all">{tr('All tags','সব ট্যাগ')}</option>
-                <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
-                <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
-                <option value="others">{tr('Others','অন্যান্য')}</option>
-                <option value="legacy">{tr('Uncategorized','শ্রেণিবিহীন')}</option>
-              </UiSelect>
+            </div>}
+            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span className="hidden sm:inline">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}</span><span className="sm:hidden">{tr('Tag','ট্যাগ')}</span>
+              <SearchableSelect id="beneficiary-filter-tag" ariaLabel={tr('Filter by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে ফিল্টার')}
+                value={tagFilter==='friends_family'&&relationshipFilter!=='all'
+                  ?'friends_family:'+relationshipFilter:tagFilter}
+                onChange={value=>{
+                  const choice=beneficiaryChoiceParts(value);
+                  setTagFilter(value==='all'||value==='legacy'?value:choice.tag||'friends_family');
+                  setRelationshipFilter(choice.relationship||'all');
+                  setSelectedIds([]);
+                }}
+                searchPlaceholder={tr('Search tags or relationships','ট্যাগ বা সম্পর্ক খুঁজুন')}
+                options={classificationFilters}/>
             </label>
-            {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter beneficiary-directory__relationship-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
-              <UiSelect aria-label={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')} value={relationshipFilter} onChange={event=>{setRelationshipFilter(event.target.value);setSelectedIds([]);}}>
-                <option value="all">{tr('All relationships','সব সম্পর্ক')}</option>
-                {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
-              </UiSelect>
-            </label>}
-            <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search beneficiary-directory__search-filter">
-              <span>{tr('Search','খুঁজুন')}</span>
-              <span className="taxpayer-transaction-filter__search">
-                <Search size={17} aria-hidden="true"/>
-                <input type="search" aria-label={tr('Search this list','এই তালিকায় খুঁজুন')}
-                  value={search} onChange={event=>setSearch(event.target.value)}
-                  placeholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}/>
-              </span>
-            </label>
-          </TaxPayTableControls>
-          <div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar">
-            <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={filteredPeople.length} total={listPeople.length}/>
+          </TaxPayOfficeRegisterFilters>
+          <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
+            onClear={()=>{setSearch('');setTagFilter('all');setRelationshipFilter('all');setReviewTins([]);setSelectedIds([]);if(activeList!=='all')switchList('all');}}
+            filters={[
+              ...(reviewTins.length?[{key:'review-tins',label:tr('Needs tag review','ট্যাগ যাচাই প্রয়োজন'),onRemove:()=>{setReviewTins([]);setSelectedIds([]);}}]:[]),
+              ...(activeList!=='all'&&activeListRecord?[{key:'list',label:tr('List: ','তালিকা: ')+activeListRecord.name,onRemove:()=>switchList('all')}]:[]),
+              ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
+              ...(tagFilter!=='all'?[{key:'tag',label:tagFilter==='clients'?tr('Clients','ক্লায়েন্ট'):tagFilter==='friends_family'?tr('Friends & family members','বন্ধু ও পরিবারের সদস্য'):tagFilter==='others'?tr('Others','অন্যান্য'):tr('Uncategorized','শ্রেণিবিহীন'),onRemove:()=>{setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}]:[]),
+              ...(tagFilter==='friends_family'&&relationshipFilter!=='all'?[{key:'relationship',label:beneficiaryTagLabel('friends_family',relationshipFilter as BeneficiaryRelation,language).split(' · ').at(-1)??relationshipFilter,onRemove:()=>{setRelationshipFilter('all');setSelectedIds([]);}}]:[])
+            ]}/>
+          {(selectedPeople.length>0||filteredPeople.length>0)&&<div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar" data-has-selection={selectedPeople.length>0?'true':'false'}>
             <div className="beneficiary-directory__bulk-actions">
               {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
                 <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
@@ -515,15 +823,25 @@ export function Beneficiaries(){
               {selectedPeople.length>0&&<>
                 <p className="beneficiary-directory__selected-count" role="status">{tr(`${selectedPeople.length} selected`,`${selectedPeople.length} জন নির্বাচিত`)}</p>
                 <UiButton type="button" variant="primary" onClick={()=>payWith(selectedPeople)}><CreditCard size={17} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যদের কর পরিশোধ')}</UiButton>
-                <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-taxpay-error" onClick={()=>{setBulkRemoveIds(selectedPeople.map(person=>person.id));setModalError('');}}><Trash2 size={16} aria-hidden="true"/>{tr('Remove selected','নির্বাচিতদের সরান')}</UiButton>
                 <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
+                <details className="beneficiary-directory__bulk-more" data-testid="beneficiary-bulk-more">
+                  <summary className="beneficiary-directory__bulk-more-trigger">
+                    {tr('More actions','আরও বিকল্প')}<ChevronDown size={16} aria-hidden="true"/>
+                  </summary>
+                  <div className="beneficiary-directory__bulk-more-content">
+                    <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-taxpay-error"
+                      onClick={requestBulkRemove}>
+                      <Trash2 size={16} aria-hidden="true"/>{tr('Remove selected','নির্বাচিতদের সরান')}
+                    </UiButton>
+                  </div>
+                </details>
               </>}
             </div>
-          </div>
+          </div>}
 
           {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-5 text-center">
-            <h2 className="font-semibold text-taxpay-text">{tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
-            <p className="mt-1 text-sm text-slate-600">{tr('Add a taxpayer or import a spreadsheet into this list.','এই তালিকায় করদাতার তথ্য যোগ করুন অথবা স্প্রেডশিট আমদানি করুন।')}</p>
+            <h2 className="font-semibold text-taxpay-text">{activeList==='all'?tr('No beneficiaries yet','এখনো কোনো উপকারভোগী নেই'):tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
+            <p className="mt-1 text-sm text-slate-600">{tr('Add a taxpayer to this list.','এই তালিকায় করদাতার তথ্য যোগ করুন।')}</p>
           </div>:filteredPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-8 text-center">
             <p className="font-medium text-taxpay-text">{tr('No matching beneficiaries','কোনো উপকারভোগী মেলেনি')}</p>
             <UiButton type="button" variant="quiet" className="mt-2" onClick={()=>setSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</UiButton>
@@ -535,28 +853,34 @@ export function Beneficiaries(){
                 testId="beneficiary-directory-desktop" mobileTestId="beneficiary-directory-mobile"
                 isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"beneficiary-directory__tabular-row"}
                 columns={[
-                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),renderCell:person=><div className="beneficiary-directory__identity">
+                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),headerContent:<label className="beneficiary-directory__select-all beneficiary-directory__header-select">
+                    <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')}
+                      checked={allFilteredSelected} onChange={event=>setSelectedIds(current=>event.target.checked
+                        ?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)]))
+                        :current.filter(id=>!filteredPeople.some(person=>person.id===id)))}/>
+                    <span>{tr('Beneficiary','উপকারভোগী')}</span>
+                  </label>,renderCell:person=><div className="beneficiary-directory__identity">
                     <input id={'beneficiary-select-'+person.id} type="checkbox"
                       aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)}
                       checked={selectedIds.includes(person.id)}
                       onChange={event=>setSelectedIds(current=>event.target.checked
                         ?Array.from(new Set([...current,person.id]))
                         :current.filter(id=>id!==person.id))}/>
-                    <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
+                    <a id={'beneficiary-profile-link-'+person.id} href="#beneficiary-profile-title"
+                      className="taxpayer-transaction-row__identity beneficiary-directory__person w-full text-left"
+                      aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
+                      onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                       <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
-                      <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
-                    </label>
+                      <p className="beneficiary-directory__tin tabular-nums">{maskTinForDisplay(person.tin)}</p>
+                    </a>
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
+                    <UiButton type="button" variant="outline" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="beneficiary-directory__pay gap-2 text-sm" onClick={()=>payWith([person])}>
-                      <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+                      <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>
-                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary gap-2 text-sm text-taxpay-error"
-                      aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
-                      onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>}
                 ]}
                 renderMobileCard={person=>{ const finalTag=beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label); return <>
@@ -568,26 +892,27 @@ export function Beneficiaries(){
                         onChange={event=>setSelectedIds(current=>event.target.checked
                           ?Array.from(new Set([...current,person.id]))
                           :current.filter(id=>id!==person.id))}/>
-                      <label htmlFor={'beneficiary-mobile-select-'+person.id} className="taxpay-mobile-table-card__title">
+                      <a href="#beneficiary-profile-title" className="taxpay-mobile-table-card__title text-left"
+                        aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
+                        onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                         <span className="block break-words">{displayName(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}</span>
-                        <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{person.tin}</span>
-                      </label>
+                        <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{maskTinForDisplay(person.tin)}</span>
+                      </a>
                     </div>
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="gap-2" onClick={()=>payWith([person])}>
-                      <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+                      <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>
-                    <UiButton type="button" variant="quiet" className="text-taxpay-error"
-                      aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
-                      onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>
                 </>; }}
                 ariaLabel={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}/>
               </TaxPayTablePanel>
             </div>
+            <TaxPayOfficeRegisterFooter shown={filteredPeople.length} total={listPeople.length}
+              labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
           </>}
         </>}
       </>}
@@ -664,26 +989,23 @@ export function Beneficiaries(){
           </div>)}
         </div>}
         <div><label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('Add to list','তালিকায় যোগ করুন')} *</label>
-          <UiSelect id="beneficiary-target-list" value={targetList} onChange={event=>setTargetList(event.target.value)}>
-            <option value="new">{tr('Create new list','নতুন তালিকা তৈরি')}</option>{lists.map(list=><option key={list.id} value={list.id}>{list.name}</option>)}
-          </UiSelect>
+          <SearchableSelect id="beneficiary-target-list" value={targetList} onChange={setTargetList}
+            ariaLabel={tr('Add to list','তালিকায় যোগ করুন')} searchPlaceholder={tr('Search lists','তালিকা খুঁজুন')}
+            options={[{value:'new',label:tr('Create new list','নতুন তালিকা তৈরি')},
+              ...lists.map(list=>({value:list.id,label:list.name}))]}/> 
           {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
         </div>
         <div className="space-y-2 rounded-lg border border-taxpay-border p-3" data-testid="beneficiary-tag-fields">
-          <label htmlFor="beneficiary-tag" className="block text-sm font-semibold text-taxpay-text">{tr('Tag','ট্যাগ')} *</label>
-          <UiSelect id="beneficiary-tag" required value={tag} onChange={event=>{setTag(event.target.value as BeneficiaryTag|'');setRelationship('');setOtherLabel('');setModalError('');}}>
-            <option value="">{tr('Select a tag','ট্যাগ বাছুন')}</option>
-            <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
-            <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
-            <option value="others">{tr('Others','অন্যান্য')}</option>
-          </UiSelect>
-          {tag==='friends_family'&&<>
-            <label htmlFor="beneficiary-relationship" className="block text-sm font-semibold text-taxpay-text">{tr('Relationship','সম্পর্ক')} *</label>
-            <UiSelect id="beneficiary-relationship" required value={relationship} onChange={event=>{setRelationship(event.target.value as BeneficiaryRelation|'');setModalError('');}}>
-              <option value="">{tr('Select a relationship','সম্পর্ক বাছুন')}</option>
-              {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
-            </UiSelect>
-          </>}
+          <label htmlFor="beneficiary-tag" className="block text-sm font-semibold text-taxpay-text">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')} *</label>
+          <SearchableSelect id="beneficiary-tag" required
+            value={beneficiaryChoiceValue(tag,relationship)}
+            onChange={value=>{
+              const choice=beneficiaryChoiceParts(value);
+              setTag(choice.tag);setRelationship(choice.relationship);setOtherLabel('');setModalError('');
+            }}
+            placeholder={tr('Select a tag or relationship','ট্যাগ বা সম্পর্ক বাছুন')}
+            searchPlaceholder={tr('Search by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে খুঁজুন')}
+            options={classificationOptions}/>
           {tag==='others'&&<div className="space-y-1" data-testid="beneficiary-other-label-field">
             <label htmlFor="beneficiary-other-label" className="block text-sm font-semibold text-taxpay-text">{tr('Specify other category','অন্যান্য শ্রেণি লিখুন')} *</label>
             <UiInput id="beneficiary-other-label" required maxLength={80} value={otherLabel}
@@ -699,6 +1021,8 @@ export function Beneficiaries(){
             name={searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin)
               ? (bn ? lookupSampleTaxpayer(tin)!.nameBn : lookupSampleTaxpayer(tin)!.nameEn) : name}
             canSearch={/^\d{12}$/.test(tin)}
+            suggestedTins={SAMPLE_TIN_SUGGESTIONS.filter(candidate=>!existingTins.has(candidate))}
+            hideNameField={Boolean(reviewedBeneficiaryMatch)}
             editableName={!(searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin))}
             onNameChange={setName}
             tinPlaceholder={tr('12-digit TIN','১২ সংখ্যার টিআইএন')}
@@ -707,6 +1031,18 @@ export function Beneficiaries(){
             onSearch={()=>{const found=lookupSampleTaxpayer(tin);setSearchedBeneficiaryTin(tin);if(found)setName(found.nameEn);}}
             status={searchedBeneficiaryTin === tin && tin.length === 12 && !lookupSampleTaxpayer(tin)
               ? <p className="text-sm text-slate-600" role="status">{tr('No sample name found. You may enter a name or leave it empty.','নমুনা তথ্য থেকে নাম পাওয়া যায়নি। নাম লিখতে পারেন অথবা ফাঁকা রাখতে পারেন।')}</p> : undefined} />
+          {reviewedBeneficiary && <TaxpayerTinSearchResultCard
+            key={tin} language={language} tin={tin}
+            name={reviewedBeneficiaryMatch
+              ? (bn ? reviewedBeneficiaryMatch.nameBn : reviewedBeneficiaryMatch.nameEn)
+              : name.trim() || tr('Not provided','দেওয়া হয়নি')}
+            classification={reviewedBeneficiaryMatch
+              ? demoIncomeTaxTypeForTin(tin) === 'COMPANY' ? tr('Company','কোম্পানি')
+                : demoIncomeTaxTypeForTin(tin) === 'NON_COMPANY' ? tr('Individual','ব্যক্তি') : undefined
+              : undefined}
+            testId="searched-taxpayer-card" summaryTestId="searched-taxpayer-summary"
+          />}
+
 
         </form>:phase==='upload'?<div className="space-y-3">
           <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload an Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
@@ -738,36 +1074,37 @@ export function Beneficiaries(){
       </div>
     </TaxPayModal>}
 
-    {editPerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
-      onClose={()=>{if(!busy){setEditPerson(null);setEditTargetList('');setModalError('');}}} initialFocusSelector="#beneficiary-edit-tag"
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
+    {editPerson&&!deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
+      onClose={()=>{if(!busy)closePersonEditor();}} initialFocusSelector="#beneficiary-edit-tag"
+      footer={<div className="beneficiary-list-edit__footer">
+         <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>requestDeletePerson(editPerson)}><Trash2 size={17} aria-hidden="true"/>{tr('Delete beneficiary','উপকারভোগী মুছুন')}</UiButton>
+         <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={closePersonEditor}>{tr('Cancel','বাতিল')}</UiButton>
+           <UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>
+       </div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
         <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
-        <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
-        <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag','ট্যাগ')} {editLegacyMove?tr('(optional for list move)','(তালিকা স্থানান্তরে ঐচ্ছিক)'):'*'}</label>
-          <UiSelect id="beneficiary-edit-tag" required={!editLegacyMove} value={editTag} onChange={event=>{setEditTag(event.target.value as BeneficiaryTag|'');setEditRelationship('');setEditOtherLabel('');setModalError('');}}>
-            <option value="">{tr('Select a tag','ট্যাগ বাছুন')}</option>
-            <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
-            <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
-            <option value="others">{tr('Others','অন্যান্য')}</option>
-          </UiSelect>
+        <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{maskTinForDisplay(editPerson.tin)}</span></p>
+        <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')} {editLegacyMove?tr('(optional for list move)','(তালিকা স্থানান্তরে ঐচ্ছিক)'):'*'}</label>
+          <SearchableSelect id="beneficiary-edit-tag" required={!editLegacyMove}
+            value={beneficiaryChoiceValue(editTag,editRelationship)}
+            onChange={value=>{
+              const choice=beneficiaryChoiceParts(value);
+              setEditTag(choice.tag);setEditRelationship(choice.relationship);setEditOtherLabel('');setModalError('');
+            }}
+            placeholder={tr('Select a tag or relationship','ট্যাগ বা সম্পর্ক বাছুন')}
+            searchPlaceholder={tr('Search by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে খুঁজুন')}
+            options={classificationOptions}/>
         </div>
-        {editTag==='friends_family'&&<div>
-          <label htmlFor="beneficiary-edit-relationship" className="mb-1 block text-sm font-semibold">{tr('Relationship','সম্পর্ক')} *</label>
-          <UiSelect id="beneficiary-edit-relationship" required value={editRelationship} onChange={event=>{setEditRelationship(event.target.value as BeneficiaryRelation|'');setModalError('');}}>
-            <option value="">{tr('Select a relationship','সম্পর্ক বাছুন')}</option>
-            {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
-          </UiSelect>
-        </div>}
         {editTag==='others'&&<div>
           <label htmlFor="beneficiary-edit-other-label" className="mb-1 block text-sm font-semibold">{tr('Specify other category','অন্যান্য শ্রেণি লিখুন')} *</label>
           <UiInput id="beneficiary-edit-other-label" required maxLength={80} value={editOtherLabel} onChange={event=>{setEditOtherLabel(event.target.value);setModalError('');}} placeholder={tr('Enter a description (max 80 characters)','বর্ণনা লিখুন (সর্বোচ্চ ৮০ অক্ষর)')}/>
           <p className="mt-1 text-xs text-taxpay-muted" aria-live="polite">{editOtherLabel.length}/80 {tr('characters','অক্ষর')}</p>
         </div>}
         <div><label htmlFor="beneficiary-edit-list" className="mb-1 block text-sm font-semibold">{tr('Move to list (optional)','তালিকা পরিবর্তন (ঐচ্ছিক)')}</label>
-          <UiSelect id="beneficiary-edit-list" value={editTargetList} onChange={event=>{setEditTargetList(event.target.value);setModalError('');}}>
-            {lists.map(list=><option key={list.id} value={list.id}>{list.name}{list.id===editPerson.list_id?tr(' (current)',' (বর্তমান)'):''}</option>)}
-          </UiSelect>
+          <SearchableSelect id="beneficiary-edit-list" value={editTargetList}
+            onChange={value=>{setEditTargetList(value);setModalError('');}}
+            ariaLabel={tr('Move to list','তালিকা পরিবর্তন')} searchPlaceholder={tr('Search lists','তালিকা খুঁজুন')}
+            options={lists.map(list=>({value:list.id,label:list.name+(list.id===editPerson.list_id?tr(' (current)',' (বর্তমান)'):'')}))}/>
         </div>
         {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
       </form>
@@ -775,9 +1112,9 @@ export function Beneficiaries(){
 
     {bulkRemoveIds&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove selected beneficiaries?','নির্বাচিত উপকারভোগীদের সরাবেন?')}
       ariaLabel={tr('Confirm bulk beneficiary removal','একাধিক উপকারভোগী সরানো নিশ্চিত করুন')}
-      onClose={()=>{if(!busy){setBulkRemoveIds(null);setModalError('');}}}
+      onClose={closeBulkRemove}
       footer={<div className="flex w-full justify-end gap-2">
-        <UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setBulkRemoveIds(null);setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton>
+        <UiButton type="button" variant="outline" disabled={busy} onClick={closeBulkRemove}>{tr('Cancel','বাতিল')}</UiButton>
         <UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmBulkRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove selected','নির্বাচিতদের সরান')}</UiButton>
       </div>}>
       <p className="py-2 text-sm text-slate-700">{tr(`Remove ${bulkRemoveIds.length} selected beneficiaries from this list? Payment and tax records will not change.`,`এই তালিকা থেকে নির্বাচিত ${bulkRemoveIds.length} জন উপকারভোগী সরাবেন? পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
@@ -785,10 +1122,10 @@ export function Beneficiaries(){
     </TaxPayModal>}
 
     {deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
-      onClose={()=>{if(!busy)setDeletePerson(null);}}
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setDeletePerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
-      <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${deletePerson.tin}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${deletePerson.tin})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
-      {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
+      onClose={closeDeleteConfirmation}
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={closeDeleteConfirmation}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
+      <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${maskTinForDisplay(deletePerson.tin)}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${maskTinForDisplay(deletePerson.tin)})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
+      {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
   </section>;
 }

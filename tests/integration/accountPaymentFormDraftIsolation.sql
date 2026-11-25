@@ -38,13 +38,19 @@ BEGIN
 
   created := public.taxpay_demo_payment_form_drafts(
     hash_a, 'create', NULL, 'TRAVEL_TAX',
-    '{"schemaVersion":1,"passengers":[{"name":"Rollback only","passport":""}],"phone":"01700000000"}'::jsonb,
+    '{"schemaVersion":1,"step":1,"mode":"LAND","port":"Benapole","destination":"India","travelDate":"","phone":"01700000000","passengers":[{"id":"first","name":"Rollback only","passport":"","birthDate":"1992-04-18","nationality":"BD"},{"id":"second","name":"Rollback passenger two","passport":"","birthDate":"1988-11-10","nationality":"BD"}]}'::jsonb,
     NULL
   );
   id := (created->>'id')::uuid;
   IF id IS NULL OR created->>'service' <> 'TRAVEL_TAX'
-     OR (created->>'revision')::integer <> 1 THEN
-    RAISE EXCEPTION 'Preview draft creation did not return exact persisted identity';
+     OR (created->>'revision')::integer <> 1
+     OR created->'form_payload'->>'step' <> '1'
+     OR created->'form_payload'->>'mode' <> 'LAND'
+     OR created->'form_payload'->>'port' <> 'Benapole'
+     OR created->'form_payload'->>'destination' <> 'India'
+     OR jsonb_array_length(created->'form_payload'->'passengers') <> 2
+     OR created->'form_payload'->'passengers'->1->>'name' <> 'Rollback passenger two' THEN
+    RAISE EXCEPTION 'Travel Tax draft did not preserve exact safe step, route and passenger list';
   END IF;
 
   restored := public.taxpay_demo_payment_form_drafts(hash_a, 'get', id);
@@ -106,5 +112,116 @@ BEGIN
   END IF;
   RAISE NOTICE 'PASS: owner-scoped create, read, list, conflict, update, delete and other-account isolation';
 END $draft$;
+
+-- Auth-backed signed-in draft acceptance. This uses disposable synthetic Auth users
+-- and exercises the table's actual RLS and revision trigger under authenticated role.
+-- It does not create a payment/receipt and rolls back with the preview checks above.
+INSERT INTO auth.users(id,instance_id,aud,role,email,email_confirmed_at,created_at,updated_at)
+VALUES
+ ('86000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000',
+  'authenticated','authenticated','draft-owner-a@example.invalid',now(),now(),now()),
+ ('86000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000',
+  'authenticated','authenticated','draft-owner-b@example.invalid',now(),now(),now());
+
+CREATE TEMP TABLE auth_draft_fixture (id uuid NOT NULL, owner_a uuid NOT NULL, owner_b uuid NOT NULL)
+  ON COMMIT DROP;
+CREATE TEMP TABLE auth_draft_payment_count (row_count bigint NOT NULL) ON COMMIT DROP;
+INSERT INTO auth_draft_payment_count SELECT count(*) FROM public.sim_payment_transactions;
+GRANT SELECT,INSERT ON auth_draft_fixture TO authenticated;
+
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','86000000-0000-4000-8000-000000000001',true);
+WITH inserted AS (
+  INSERT INTO public.taxpay_account_payment_form_drafts(owner_uid,service,form_payload)
+  VALUES(
+    '86000000-0000-4000-8000-000000000001','OTHER_TAX_PAYMENT',
+    '{"schemaVersion":1,"paymentHead":"68A","amount":"1250","assessmentYear":"2026-27"}'::jsonb
+  )
+  RETURNING id
+)
+INSERT INTO auth_draft_fixture(id,owner_a,owner_b)
+SELECT id,'86000000-0000-4000-8000-000000000001','86000000-0000-4000-8000-000000000002'
+FROM inserted;
+
+DO $auth_draft_owner$
+DECLARE
+  v_id uuid;
+  v_revision integer;
+  v_payload jsonb;
+  v_rows integer;
+BEGIN
+  SELECT id INTO v_id FROM auth_draft_fixture;
+  SELECT revision,form_payload INTO v_revision,v_payload
+    FROM public.taxpay_account_payment_form_drafts WHERE id=v_id;
+  IF v_revision IS DISTINCT FROM 1
+     OR v_payload IS DISTINCT FROM '{"schemaVersion":1,"paymentHead":"68A","amount":"1250","assessmentYear":"2026-27"}'::jsonb
+  THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_CREATE_READBACK_MISMATCH'; END IF;
+
+  UPDATE public.taxpay_account_payment_form_drafts
+    SET form_payload='{"schemaVersion":1,"paymentHead":"68B","amount":"1500","assessmentYear":"2026-27"}'::jsonb
+    WHERE id=v_id AND revision=1;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_OWNER_UPDATE_FAILED'; END IF;
+
+  UPDATE public.taxpay_account_payment_form_drafts
+    SET form_payload='{"schemaVersion":1,"paymentHead":"STALE"}'::jsonb
+    WHERE id=v_id AND revision=1;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_STALE_REVISION_OVERWROTE_OWNER'; END IF;
+
+  SELECT revision,form_payload INTO v_revision,v_payload
+    FROM public.taxpay_account_payment_form_drafts WHERE id=v_id;
+  IF v_revision IS DISTINCT FROM 2
+     OR v_payload IS DISTINCT FROM '{"schemaVersion":1,"paymentHead":"68B","amount":"1500","assessmentYear":"2026-27"}'::jsonb
+  THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_REVISION_TRIGGER_OR_READBACK_FAILED'; END IF;
+END $auth_draft_owner$;
+
+SELECT set_config('request.jwt.claim.sub','86000000-0000-4000-8000-000000000002',true);
+DO $auth_draft_isolation$
+DECLARE
+  v_id uuid;
+  v_visible integer;
+  v_rows integer;
+BEGIN
+  SELECT id INTO v_id FROM auth_draft_fixture;
+  SELECT count(*) INTO v_visible FROM public.taxpay_account_payment_form_drafts WHERE id=v_id;
+  IF v_visible <> 0 THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_CROSSACCOUNT_READ_SUCCEEDED'; END IF;
+
+  UPDATE public.taxpay_account_payment_form_drafts
+    SET form_payload='{"schemaVersion":1,"paymentHead":"FORGED"}'::jsonb WHERE id=v_id;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_CROSSACCOUNT_UPDATE_SUCCEEDED'; END IF;
+
+  DELETE FROM public.taxpay_account_payment_form_drafts WHERE id=v_id;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_CROSSACCOUNT_DELETE_SUCCEEDED'; END IF;
+
+  BEGIN
+    INSERT INTO public.taxpay_account_payment_form_drafts(owner_uid,service,form_payload)
+    VALUES('86000000-0000-4000-8000-000000000001','OTHER_TAX_PAYMENT','{"forged":true}'::jsonb);
+    RAISE EXCEPTION 'SIGNED_IN_DRAFT_FORGED_OWNER_INSERT_SUCCEEDED';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+END $auth_draft_isolation$;
+RESET ROLE;
+
+DO $auth_draft_final$
+DECLARE
+  v_id uuid;
+  v_revision integer;
+  v_payload jsonb;
+BEGIN
+  SELECT id INTO v_id FROM auth_draft_fixture;
+  SELECT revision,form_payload INTO v_revision,v_payload
+    FROM public.taxpay_account_payment_form_drafts WHERE id=v_id;
+  IF v_revision IS DISTINCT FROM 2
+     OR v_payload IS DISTINCT FROM '{"schemaVersion":1,"paymentHead":"68B","amount":"1500","assessmentYear":"2026-27"}'::jsonb
+  THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_OWNER_DATA_CHANGED_BY_OTHER_ACCOUNT'; END IF;
+  IF (SELECT count(*) FROM public.sim_payment_transactions)
+     IS DISTINCT FROM (SELECT row_count FROM auth_draft_payment_count)
+  THEN RAISE EXCEPTION 'SIGNED_IN_DRAFT_CREATED_OR_CHANGED_PAYMENT_TRANSACTION'; END IF;
+  RAISE NOTICE 'PASS: signed-in Auth draft create/read/update, revision conflict, owner-only RLS, forged-owner denial, and no payment transaction';
+END $auth_draft_final$;
 
 ROLLBACK;

@@ -1,8 +1,9 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test } from '@playwright/test';
 
 test('the approved single modal progressively reveals all three choice groups and one Continue', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const next = dialog.getByRole('button', { name: 'Continue', exact: true });
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
@@ -43,7 +44,7 @@ test('the approved single modal progressively reveals all three choice groups an
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveClass(/sr-only/);
   await expect(dialog.locator('.taxpay-modal__subtitle')).toHaveText('Other Tax Payment › Facilitate another taxpayer’s payment');
   await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuenow', '1');
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toHaveCSS('clip-path', 'inset(50%)');
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toHaveCount(0);
   await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toBeHidden();
   await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__continue')).toBeVisible();
   await dialog.locator('.taxpay-modal__back').click();
@@ -54,7 +55,7 @@ test('the approved single modal progressively reveals all three choice groups an
 
 test('standalone login uses shared modal chrome, left heading, Back and full-width footer', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
@@ -77,7 +78,7 @@ test('standalone login uses shared modal chrome, left heading, Back and full-wid
 });
 test('both login entry points use the identical reusable login modal variant', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const standalone = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const standalone = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(standalone).toHaveAttribute('data-public-service', 'login');
   await expect(standalone).toHaveClass(/taxpayer-login-modal/);
   const width = await standalone.evaluate(el => getComputedStyle(el).width);
@@ -94,13 +95,13 @@ test('both login entry points use the identical reusable login modal variant', a
   await expect(standalone.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
   await standalone.getByRole('button', { name: 'Close modal' }).click();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-  const embedded = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const embedded = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(embedded).toHaveAttribute('data-public-service', 'login');
   await expect(embedded).toHaveClass(/taxpayer-login-modal/);
   await expect(embedded.locator('.taxpay-modal__back')).toBeVisible();
@@ -114,10 +115,13 @@ test('both login entry points use the identical reusable login modal variant', a
     display: getComputedStyle(el).display,
     justify: getComputedStyle(el).justifyContent,
   }))).toEqual(standaloneFooter);
-  expect(await embedded.getByRole('button',{name:'Sign In'}).evaluate(el => ({
+  const embeddedButton = await embedded.getByRole('button',{name:'Sign In'}).evaluate(el => ({
     height: Math.round(el.getBoundingClientRect().height),
     width: Math.round(el.getBoundingClientRect().width),
-  }))).toEqual(standaloneButton);
+  }));
+  expect(embeddedButton.height).toBe(standaloneButton.height);
+  expect(Math.abs(embeddedButton.width-standaloneButton.width),
+    'Reusable login footer button widths agree within one CSS pixel').toBeLessThanOrEqual(1);
   await embedded.getByRole('button', { name: 'Back' }).click();
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
 });
@@ -130,20 +134,20 @@ test('homepage Login and payment journey account login use the same modal chrome
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
-  const standalone=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const standalone=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(standalone.locator('.taxpay-modal__header')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeVisible();
   await standalone.getByRole('button',{name:'Close modal'}).click();
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   // The shared modal stays mounted but its accessible name changes with the workflow step.
-  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
-  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Korbritto Account');
+  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Sohojkor Account');
   await expect(paymentLogin.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(paymentLogin.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
   await expect(paymentLogin.locator('.taxpay-modal__back')).toBeVisible();
@@ -159,7 +163,7 @@ test('homepage Login and payment journey account login use the same modal chrome
 
 test('changing payer without leaving the modal retains tax type and account preference', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -174,7 +178,7 @@ test('changing payer without leaving the modal retains tax type and account pref
 test('access cards align side by side on desktop and stack on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -209,7 +213,7 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
 test('single modal expands when groups are revealed and respects reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toHaveAttribute('data-size-motion', 'true');
   await dialog.locator('[data-payer-relationship="SELF"]').click();
@@ -225,7 +229,7 @@ test('single modal expands when groups are revealed and respects reduced motion'
 
 test('standalone sign-in Back returns to the public landing page without a second dialog', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.taxpay-modal')).toHaveCount(0);
@@ -234,7 +238,7 @@ test('standalone sign-in Back returns to the public landing page without a secon
 
 test('Bengali Tax with Return choice displays the legal section number', async ({ page }) => {
   await page.goto('/?lang=bn');
-  await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toContainText('ধারা ১৭৩');

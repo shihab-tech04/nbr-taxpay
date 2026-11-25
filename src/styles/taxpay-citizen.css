@@ -252,14 +252,6 @@
 #citizen-sample-role { width:100%; min-height:44px; border:1px solid var(--citizen-border); border-radius:.6rem; padding:.5rem; background:white; }
 .citizen-dialog__notice { display:flex; align-items:flex-start; gap:.5rem; margin-top:1rem; font-size:.8rem; color:var(--citizen-muted); line-height:1.45; }
 .citizen-dialog__notice svg { flex-shrink:0; }
-.citizen-account-gate { background:white; border:1px solid var(--citizen-border); border-radius:1rem; padding:2rem 1.25rem; max-width:40rem; margin:2rem auto; }
-.citizen-account-gate h1 { font-size:1.35rem; font-weight:750; margin-bottom:.75rem; }
-.citizen-account-gate p { margin-bottom:1rem; color:var(--citizen-muted); }
-.citizen-account-gate__preview { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:.75rem 1rem; margin-right:.5rem; margin-bottom:.5rem; background:var(--citizen-primary); color:white; border-radius:.5rem; font-weight:650; text-decoration:none; }
-.citizen-account-gate__preview:hover { background:var(--citizen-primary-dark); }
-.citizen-account-gate button { min-height:44px; padding:.75rem 1rem; border:1px solid var(--citizen-primary); color:var(--citizen-primary); border-radius:.5rem; font-weight:650; }
-.citizen-account-gate button:hover { background:var(--citizen-primary-light); }
-.citizen-account-gate__preview:focus-visible,.citizen-account-gate button:focus-visible { outline:3px solid var(--citizen-primary); outline-offset:3px; }
 @media(max-width:900px) {
   .citizen-header__inner { min-height:60px; }
   .citizen-header__links { display:none; }
@@ -630,10 +622,10 @@
 .public-home-brand span {display:flex; flex-direction:column; line-height:1.2;}
 .public-home-brand strong {font-size:1.12rem; font-weight:800;}
 .public-home-nav {display:flex; align-items:center; gap:clamp(.6rem,1.6vw,1.35rem); margin-left:auto;}
-.public-home-nav a {color:white; text-decoration:none; font-size:.8rem; font-weight:650; line-height:1.3; padding:.55rem .1rem; white-space:nowrap;}
+.public-home-nav a {color:white; text-decoration:none; font-size:var(--taxpay-type-body); font-weight:650; line-height:1.3; padding:.55rem .1rem; white-space:nowrap;}
 .public-home-nav a:hover {text-decoration:underline; text-underline-offset:.3rem;}
 .public-home-header__tools {display:flex; align-items:center; gap:.5rem;}
-.public-home-language,.public-home-menu {display:inline-flex; gap:.35rem; align-items:center; justify-content:center; min-height:44px; padding:.55rem .6rem; color:white; border-radius:.6rem; border:1px solid color-mix(in srgb,white 45%,transparent); font-weight:700; font-size:.77rem;}
+.public-home-language,.public-home-menu {display:inline-flex; gap:.35rem; align-items:center; justify-content:center; min-height:44px; padding:.55rem .6rem; color:white; border-radius:.6rem; border:1px solid color-mix(in srgb,white 45%,transparent); font-weight:700; font-size:var(--taxpay-type-body);}
 .public-home-menu {display:none; min-width:44px;}
 .public-information-hub {scroll-margin-top:90px;}
 .public-information-hub [id] {scroll-margin-top:95px;}
@@ -716,7 +708,7 @@
 .public-home-brand strong {color:var(--citizen-primary-dark);font-size:1.15rem;letter-spacing:-.02em;}
 .public-home-seal-fallback {display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);font-size:.8rem;font-weight:850;}
 .public-home-nav {gap:clamp(.4rem,1.2vw,1rem);}
-.public-home-nav a {min-height:44px;display:inline-flex;align-items:center;padding:.55rem .45rem;border-radius:.5rem;color:var(--citizen-text);font-size:.78rem;font-weight:700;}
+.public-home-nav a {min-height:44px;display:inline-flex;align-items:center;padding:.55rem .45rem;border-radius:.5rem;color:var(--citizen-text);font-size:var(--taxpay-type-body);font-weight:700;}
 .public-home-nav a:hover {background:var(--citizen-primary-light);color:var(--citizen-primary-dark);text-decoration:none;}
 .public-home-language,.public-home-menu {background:white;color:var(--citizen-primary-dark);border-color:var(--citizen-border);}
 .public-home-language:hover,.public-home-menu:hover {background:var(--citizen-primary-light);border-color:var(--citizen-primary);}
@@ -800,7 +792,7 @@
   .public-home-brand__copy {flex:1 1 0;}
   .public-home-brand strong {font-size:1rem;}
   .public-home-header__tools {flex:0 0 auto;gap:.3rem;}
-  .public-home-language {min-width:52px;min-height:44px;padding:.45rem .3rem;font-size:.7rem;}
+  .public-home-language {min-width:52px;min-height:44px;padding:.45rem .3rem;font-size:var(--taxpay-type-body);}
   .public-home-menu {min-width:44px;min-height:44px;padding:.35rem;}
   .public-information-hero {gap:0;padding:0;border-radius:1rem;}
   .public-information-hero .citizen-public-hero__copy {padding:1.3rem 1rem .55rem;}
@@ -904,6 +896,124 @@
 /* The same receipt document in guest lookup, payment history and completed payment.
    Reuse citizen tokens, not legacy emerald receipt styling or a second layout system. */
 .receipt-view--embedded{max-width:none;width:100%;min-width:0;color:var(--citizen-text);font-family:inherit;font-size:14px;line-height:1.55}
+/* Signed-in Activity receipt reader only. Source payments, certificate HTML,
+ * public/walk-in readers and @media print document rules stay untouched.
+ * Use four semantic font weights and the existing six-size citizen scale. */
+.taxpay-taxpayer-reference .taxpayer-transaction-detail .receipt-view--account-history {
+  font-size: var(--taxpay-type-body, 16px);
+  line-height: 1.55;
+  color: var(--color-taxpay-text, #172033);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history > .no-print.flex {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+  margin: 0 8px 12px 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history > .receipt-view__action.no-print {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+  margin: 0 0 12px 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__summary {
+  gap: 16px;
+  padding: 8px 0 18px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__eyebrow {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__summary h3 {
+  font-size: var(--taxpay-type-h3, 20px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__summary-subtitle {
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__amount :is(span,small) {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__amount strong {
+  font-size: 28px;
+  font-weight: 700;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__reference-strip {
+  gap: 16px;
+  padding-block: 14px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__reference-strip > div > span:first-child {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__reference-strip .font-mono-plex {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__parties {
+  gap: 18px;
+  padding-block: 18px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__section-title {
+  margin-bottom: 10px;
+  font-size: var(--taxpay-type-h3, 20px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__detail {
+  grid-template-columns: minmax(0,35%) minmax(0,1fr);
+  align-items: start;
+  gap: 10px;
+  padding-block: 6px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__detail > span:first-child {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+  line-height: 1.55;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__detail > span:last-child {
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__table,
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__cards {
+  margin-top: 8px;
+}
+@media(max-width:650px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail
+  .receipt-view--account-history .receipt-view__parties {grid-template-columns:minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail
+  .receipt-view--account-history .receipt-view__detail {grid-template-columns:minmax(0,38%) minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail
+  .receipt-view--account-history .receipt-view__summary {grid-template-columns:minmax(0,1fr);}
+}
 .receipt-view__paper{min-width:0;margin:0;padding:0;background:var(--citizen-surface);color:var(--citizen-text);border:0;border-radius:0;box-shadow:none}
 .receipt-view__summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.5rem;align-items:center;padding:0 0 1.25rem;border-bottom:1px solid var(--citizen-border)}
 .receipt-view__eyebrow{margin:0 0 .35rem;color:var(--citizen-primary-dark);font-size:14px;font-weight:750;letter-spacing:.015em}
@@ -946,6 +1056,11 @@
 .receipt-view__allocation-table{min-width:620px}
 .receipt-view__allocation-table :is(th,td):nth-child(3){text-align:left;white-space:normal}
 .receipt-view__allocation-table tbody td:first-child{min-width:150px;overflow-wrap:anywhere}
+/* A taxpayer can span several payment heads; align by semantic column rather
+   than nth-child, because the row-spanned identity cell is absent on later rows. */
+.receipt-view__allocation-table td.receipt-view__allocation-service{text-align:left;white-space:normal;overflow-wrap:anywhere;min-width:190px}
+.receipt-view__allocation-table td.receipt-view__allocation-year{text-align:left;white-space:normal}
+.receipt-view__allocation-table td.receipt-view__allocation-amount{text-align:right;white-space:nowrap}
 .receipt-view__financial-table td .font-mono-plex{font-size:14px}
 .receipt-view__financial-table tfoot{background:var(--citizen-primary-light);color:var(--citizen-primary-dark)}
 .receipt-view__financial-table tfoot td{border-bottom:0;font-weight:750}
@@ -1204,19 +1319,64 @@
 .public-guide-source p{margin-top:.2rem;font-size:.92rem;line-height:1.6;}
 .public-guide-source a{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px;color:var(--citizen-primary-dark);font-size:.94rem;font-weight:600;text-decoration:underline;text-underline-offset:3px;}
 .public-footer{border-top:1px solid var(--citizen-border);background:var(--citizen-surface);padding-bottom:0!important;}
-.public-footer__inner{max-width:calc(var(--public-content-max) + 4rem);margin:0 auto;padding:.8rem clamp(1rem,3vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:clamp(.8rem,1.8vw,1.5rem);}
+.public-footer__inner{max-width:calc(var(--public-content-max) + 4rem);margin:0 auto;padding:.8rem clamp(1rem,3vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:.65rem;}
 .public-footer__identity{display:flex;align-items:center;gap:.7rem;flex:0 0 auto;min-width:0;}
 .public-footer__identity img.public-footer__wordmark{display:block;width:112px;max-width:100%;height:37px;object-fit:contain;object-position:left center;}
-.public-footer__identity p{max-width:145px;font-size:.69rem;color:var(--citizen-muted);margin:0;line-height:1.45;}
-.public-footer__navs{display:flex;flex:1 1 auto;align-items:center;justify-content:center;flex-wrap:wrap;gap:.1rem clamp(.65rem,1.2vw,1rem);min-width:0;}
-.public-footer__navs a,.public-footer__navs button{display:inline-flex;align-items:center;gap:.25rem;text-align:left;min-height:40px;padding:.35rem 0;font-size:.75rem;color:var(--citizen-muted);white-space:nowrap;}
+.public-footer__identity p{max-width:160px;font-size:var(--taxpay-type-micro);color:var(--citizen-muted);margin:0;line-height:1.45;}
+.public-footer__navs{display:flex;flex:1 1 auto;align-items:center;justify-content:center;flex-wrap:wrap;gap:.1rem .45rem;min-width:0;}
+.public-footer__navs a,.public-footer__navs button{display:inline-flex;align-items:center;gap:.25rem;text-align:left;min-height:40px;padding:.35rem 0;font-size:.875rem;color:var(--citizen-muted);white-space:nowrap;}
 .public-footer__navs a:hover,.public-footer__navs button:hover{text-decoration:underline;color:var(--citizen-primary-dark);}
 .public-footer__bottom{flex:0 0 auto;display:flex;align-items:center;min-height:32px;padding-left:clamp(.7rem,1.5vw,1.25rem);border-left:1px solid var(--citizen-border);}
-.public-footer__bottom p{margin:0;font-size:.71rem;color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
-@media(max-width:1120px){
+.public-footer__bottom p{margin:0;font-size:var(--taxpay-type-micro);color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
+/* Public Home only: keep the 1100px approved page width, but let footer
+   navigation wrap instead of overflowing or touching the identity. */
+@media (min-width: 1121px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 8px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    gap: .5rem;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity img.public-footer__wordmark {
+    width: 96px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    max-width: 180px;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    min-width: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 6px 10px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button {
+    padding-inline: 0;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    padding-left: 10px;
+  }
+}
+@media(max-width:980px){
  .public-footer__inner{flex-wrap:wrap;justify-content:center;gap:.35rem 1rem;}
  .public-footer__navs{justify-content:flex-end;}
  .public-footer__bottom{flex-basis:100%;justify-content:center;min-height:0;margin-top:.2rem;padding:.5rem 0 0;border-left:0;border-top:1px solid var(--citizen-border);}
+}
+/* Keep public footer readable and single-row on compact desktop widths.
+   Do not shrink text or hide links to satisfy the desktop viewport. */
+@media(min-width:981px) and (max-width:1120px) {
+ .public-footer__inner {gap:.35rem;padding-inline:.7rem;}
+ .public-footer__identity {gap:.4rem;}
+  .public-footer__identity img.public-footer__wordmark {width:78px;height:33px;}
+ .public-footer__identity p {max-width:130px;}
+ .public-footer__navs {gap:0 .2rem;flex-wrap:nowrap;}
+ .public-footer__bottom {padding-left:.25rem;}
 }
 .public-help-widget{position:fixed;right:calc(1.1rem + env(safe-area-inset-right));bottom:calc(1.1rem + env(safe-area-inset-bottom));z-index:85;display:flex;align-items:flex-end;flex-direction:column;gap:.55rem;}
 .public-help-launch{display:inline-flex;align-items:center;gap:.45rem;min-height:52px;border-radius:999px;background:var(--citizen-primary);color:white;padding:.75rem 1rem;box-shadow:var(--taxpay-shadow-raised);font-size:.79rem;font-weight:800;}
@@ -1284,6 +1444,100 @@
  .public-help-widget{bottom:calc(4.75rem + env(safe-area-inset-bottom));right:.7rem;}
  .public-help-panel{max-height:70dvh;}
 }
+
+/* Public mobile footer: one compact row, full links behind an accessible
+   disclosure. Leave the floating Pay and the approved bottom dock untouched. */
+.public-footer__mobile-actions { display:none; }
+@media (max-width:900px) {
+  .public-footer__inner {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:center;
+    justify-content:initial;
+    flex-wrap:nowrap;
+    gap:.5rem;
+    padding:.65rem .85rem;
+    /* Keep the single compact footer row clear of the fixed floating Pay control
+       at the bottom of the scroll. The existing footer safe-area pad remains. */
+    margin-bottom:8px;
+  }
+  .public-footer__identity { grid-column:1; min-width:0; }
+  .public-footer__identity img.public-footer__wordmark { width:88px; height:33px; }
+  .public-footer__identity p,
+  .public-footer__navs { display:none; }
+  .public-footer__bottom {
+    grid-column:2;
+    grid-row:1;
+    flex-basis:auto;
+    align-self:center;
+    justify-content:center;
+    width:auto;
+    min-height:0;
+    margin:0;
+    padding:0;
+    border:0;
+  }
+  .public-footer__bottom p { font-size:.875rem; }
+  .public-footer__mobile-actions {
+    display:block;
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    min-width:0;
+  }
+  .public-footer__mobile-more { position:relative; }
+  .public-footer__mobile-more > summary {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:.25rem;
+    min-height:44px;
+    padding:.4rem .5rem;
+    border:1px solid var(--citizen-border);
+    border-radius:.55rem;
+    background:var(--citizen-surface);
+    color:var(--citizen-primary-dark);
+    font-size:.875rem;
+    font-weight:650;
+    cursor:pointer;
+    list-style:none;
+  }
+  .public-footer__mobile-more > summary::-webkit-details-marker { display:none; }
+  .public-footer__mobile-more[open] > summary svg { transform:rotate(180deg); }
+  .public-footer__mobile-menu {
+    position:absolute;
+    right:0;
+    bottom:calc(100% + .4rem);
+    z-index:110;
+    display:flex;
+    flex-direction:column;
+    width:min(270px,calc(100vw - 1.7rem));
+    padding:.35rem;
+    border:1px solid var(--citizen-border);
+    border-radius:.75rem;
+    background:var(--citizen-surface);
+    box-shadow:var(--taxpay-shadow-modal);
+  }
+  .public-footer__mobile-more:not([open]) > .public-footer__mobile-menu { display:none; }
+  .public-footer__mobile-menu button,
+  .public-footer__mobile-menu a {
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+    width:100%;
+    min-height:44px;
+    padding:.65rem .7rem;
+    border-radius:.45rem;
+    color:var(--citizen-text);
+    text-align:left;
+    font-size:.875rem;
+    line-height:1.4;
+    white-space:normal;
+  }
+  .public-footer__mobile-menu button:hover,
+  .public-footer__mobile-menu a:hover { background:var(--citizen-primary-light); }
+}
+
 @media(prefers-reduced-motion:reduce){
  .public-guide-topics button,.public-guide-questions summary svg,.public-guide-result-faq summary svg{transition:none;}
 }
@@ -2305,6 +2559,15 @@
 .receipt-modal .receipt-lookup__found,.receipt-modal .receipt-lookup--embedded .receipt-lookup__found{margin:0}
 .receipt-modal .receipt-lookup__back{display:none}
 .receipt-modal .receipt-view__paper .font-mono-plex{overflow-wrap:anywhere}
+/* Payment confirmation receipt: the approved two-column layout needs room
+   between identity, reference and settlement details, especially with long TINs.
+   Keep mobile, printable receipts and non-payment dialogs unchanged. */
+@media screen and (min-width:651px){
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__summary{padding-bottom:1.6rem}
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__reference-strip{padding-block:1.5rem}
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__parties{column-gap:2.5rem;padding-block:1.75rem}
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__detail{padding-block:.5rem}
+}
 @media(max-width:650px){
  .taxpay-citizen-shell .taxpay-modal.receipt-modal{width:100%;max-width:100%;height:100dvh;max-height:100dvh}
  .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header{min-height:64px;padding:.75rem 1rem}
@@ -2340,6 +2603,39 @@
 /* The same shared TaxPayModal shell also covers login, consent and the route register. */
 .taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal {
   width: min(100%, 640px);
+}
+/* First-login notice action uses the shared modal footer, not payment-step
+   button geometry. Keep the text contained in both languages and viewports. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+  /* A little extra avoids fractional viewport/font rounding below 44px. */
+  min-height: 46px;
+  margin-inline-start: auto;
+  padding: .65rem 1.25rem;
+  border: 1px solid var(--citizen-primary);
+  border-radius: .65rem;
+  background: var(--citizen-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  white-space: normal;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action:hover {
+  background: var(--citizen-primary-dark);
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action {
+    width: 100%;
+    flex: 1 1 auto;
+  }
 }
 .taxpay-citizen-shell .taxpay-modal.taxpay-parity-dialog {
   width: min(100%, 1024px);
@@ -2531,7 +2827,9 @@
 .beneficiary-entry-choice__arrow {flex:0 0 auto;color:var(--citizen-muted);}
 .beneficiary-entry-choice__icon {flex-basis:44px;width:44px;height:44px;}
 .beneficiary-list-picker {position:relative;z-index:1;isolation:isolate;width:min(100%,560px);}
-.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:40;}
+/* The open list must stack above the mobile bottom dock (z-index:45),
+   including its child fixed menu; closed lists keep their original stacking. */
+.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:60;}
 .beneficiary-list-picker__trigger {width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--citizen-border);border-radius:var(--taxpay-radius-input,10px);background:var(--color-taxpay-surface,#fff);color:var(--citizen-text);font:inherit;}
 .beneficiary-list-picker__trigger:hover {border-color:var(--citizen-primary);}
 .beneficiary-list-picker__trigger:focus-visible,.beneficiary-list-picker__row button:focus-visible,.beneficiary-entry-choice__card:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:2px;}
@@ -2570,6 +2868,10 @@
 .beneficiary-directory__list-filter {min-width:0;}
 .beneficiary-directory__list-filter > p {margin:0; font:inherit; color:inherit;}
 .beneficiary-directory__list-filter .beneficiary-list-picker {width:100%;max-width:none;z-index:2;}
+/* Open list menu must clear sticky header (55) and mobile bottom navigation (45).
+   The more-specific closed picker rule previously overrode the open-state z-index,
+   trapping the third list action behind the navigation on narrow screens. */
+.beneficiary-directory__list-filter .beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:70;}
 .beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
 /* Keep the shared Activity search's single focusable outline outside workspace. */
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
@@ -2580,6 +2882,19 @@
 .beneficiary-directory__count {margin:18px 0 10px;}
 .beneficiary-directory__bulk-actions {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
 .beneficiary-directory__selected-count {margin:0;color:var(--color-taxpay-text);font-size:14px;font-weight:600;}
+/* Keep destructive bulk removal accessible but out of the primary payment-action row. */
+.beneficiary-directory__bulk-more {min-width:0;}
+.beneficiary-directory__bulk-more-trigger {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;padding:7px 11px;cursor:pointer;list-style:none;
+  border:1px solid var(--color-taxpay-border);border-radius:9px;
+  background:var(--color-taxpay-surface);color:var(--color-taxpay-text);
+  font-size:14px;font-weight:500;
+}
+.beneficiary-directory__bulk-more-trigger::-webkit-details-marker {display:none;}
+.beneficiary-directory__bulk-more[open] .beneficiary-directory__bulk-more-trigger svg {transform:rotate(180deg);}
+.beneficiary-directory__bulk-more-trigger:focus-visible {outline:2px solid var(--color-taxpay-primary);outline-offset:2px;}
+.beneficiary-directory__bulk-more-content {display:flex;align-items:center;justify-content:flex-end;min-height:44px;padding:6px 0;}
 .beneficiary-directory__select-all {display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;color:var(--color-taxpay-muted);font-size:14px;cursor:pointer;}
 .beneficiary-directory__select-all input,.beneficiary-directory__identity > input {
   flex:none;width:18px;height:18px;accent-color:var(--color-taxpay-primary);cursor:pointer;
@@ -2773,4 +3088,482 @@
 .receipt-view__travel-meta dt { font-size: 14px; }
 @media (max-width:650px) {
  .travel-flow__steps { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+/* Searchable Tag / Relationship: keep a visible neutral focus outline.
+   Only the popup's list-search input is affected, not other modal inputs,
+   buttons, or the primary TaxPay brand colors. */
+.taxpay-citizen-shell .taxpay-modal input[type="search"][role="combobox"][aria-autocomplete="list"]:focus-visible {
+  outline: 2px solid #738196;
+  outline-offset: -2px;
+}
+
+/* Taxpayer-only split Pay popup. The approved mobile dock remains unchanged. */
+.citizen-pay-popover {
+  position:fixed; z-index:51;
+  right:calc(16px + env(safe-area-inset-right));
+  bottom:calc(98px + env(safe-area-inset-bottom));
+  width:min(220px,calc(100vw - 32px)); padding:7px;
+  display:grid; gap:3px; background:var(--citizen-surface,#fff);
+  border:1px solid var(--citizen-border); border-radius:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.12);
+}
+.citizen-pay-popover button {
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:44px; border-radius:9px; padding:9px 12px;
+  text-align:start; font-size:14px; color:var(--citizen-primary-dark);
+}
+.citizen-pay-popover button:hover { background:var(--citizen-primary-light); }
+.citizen-pay-popover button:focus-visible { outline:2px solid var(--citizen-primary); outline-offset:1px; }
+@media(min-width:901px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-pay-popover { display:none; }
+}
+@media print { .citizen-pay-popover { display:none!important; } }
+
+/* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
+   No receipt fields, financial labels, references, or actions are removed. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+  row-gap: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+  column-gap: 16px;
+  row-gap: 6px;
+  line-height: 1.6;
+  padding-block: 9px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail + .receipt-view__detail {
+  border-top: 1px solid var(--citizen-border);
+}
+@media (max-width: 700px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+    padding-block: 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+    grid-template-columns: minmax(0,40%) minmax(0,1fr);
+  }
+}
+
+/* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
+   No receipt fields, financial labels, references, or actions are removed. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+  row-gap: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+  column-gap: 16px;
+  row-gap: 6px;
+  line-height: 1.6;
+  padding-block: 9px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail + .receipt-view__detail {
+  border-top: 1px solid var(--citizen-border);
+}
+@media (max-width: 700px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+    padding-block: 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+    grid-template-columns: minmax(0,40%) minmax(0,1fr);
+  }
+}
+
+/* Account-owned transaction receipts use exactly three footer actions.
+   The existing two-button public/print footer and certificate UI stay intact. */
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+  display:grid;grid-template-columns:repeat(3,minmax(0,max-content));align-items:stretch;gap:.65rem;
+  width:auto;max-width:100%;margin-left:auto;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action{
+  min-width:0;box-sizing:border-box;white-space:normal;text-align:center;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action:disabled{
+  cursor:not-allowed;opacity:.5;
+}
+@media(max-width:650px){
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction,
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    width:100%;min-width:0;flex:1 1 100%;margin:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action{
+    width:100%;min-height:44px;padding:8px 4px;white-space:normal;overflow-wrap:anywhere;
+  }
+}
+@media(max-width:390px){
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action:last-child{
+    grid-column:1/-1;
+  }
+}
+
+/* Walk-in documents use the approved TaxPay modal shell and 4px-based density.
+   This is screen-only: exports retain their full document heading and detail rows. */
+@media screen {
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__documents {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    margin: 0 0 12px;
+    padding: 4px;
+    border: 1px solid var(--citizen-border);
+    border-radius: 10px;
+    background: var(--citizen-bg);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__document-tab {
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--citizen-muted);
+    font: 600 14px/1.4 Poppins, system-ui, sans-serif;
+    background: transparent;
+    text-align: center;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__document-tab--active {
+    background: var(--citizen-surface);
+    border-color: var(--citizen-border);
+    color: var(--citizen-text);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__document-tab:focus-visible {
+    outline: 2px solid var(--citizen-primary);
+    outline-offset: 2px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__record-only-note {
+    margin: 0 0 12px;
+    color: var(--citizen-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--citizen-border);
+  }
+  /* The current document title already appears once in the shared modal header. */
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary h3 { display: none; }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__eyebrow {
+    margin: 0;
+    color: var(--citizen-muted);
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary-subtitle {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--citizen-text);
+    font-weight: 600;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__amount {
+    min-width: 0;
+    padding: 0;
+    justify-items: end;
+    text-align: right;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__amount strong {
+    font-size: 24px;
+    line-height: 1.2;
+    color: var(--citizen-text);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 8px 16px;
+    margin: 0;
+    padding: 12px 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--citizen-border);
+    border-radius: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip > div:first-child {
+    grid-column: 1/-1;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--citizen-border);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip > div > span:first-child {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--citizen-muted);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip .font-mono-plex {
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__parties {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 12px 0;
+    border-bottom: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__parties > div {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--citizen-border);
+    border-radius: 10px;
+    background: var(--citizen-surface);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .payment-certificate-document .receipt-view__parties:has(>div:only-child) {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__section-title {
+    margin: 0 0 8px;
+    padding: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__detail {
+    display: grid;
+    grid-template-columns: minmax(0,38%) minmax(0,1fr);
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__detail > span:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__detail .font-mono-plex { font-size: 12px; }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__breakdown {
+    margin: 0;
+    padding: 12px 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(170px,206px);
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 12px;
+    padding: 12px;
+    border: 1px solid var(--citizen-border);
+    border-radius: 10px;
+    background: var(--citizen-bg);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__copy strong {
+    font-size: 14px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__copy p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--citizen-muted);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions {
+    display: grid;
+    gap: 8px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions button {
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--citizen-border);
+    color: var(--citizen-text);
+    background: var(--citizen-surface);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions button:focus-visible {
+    outline: 2px solid var(--citizen-primary);
+    outline-offset: 2px;
+  }
+}
+@media screen and (max-width:760px) {
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+@media screen and (max-width:480px) {
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary {
+    grid-template-columns: minmax(0,1fr);
+    gap: 8px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__amount {
+    justify-items: start;
+    text-align: left;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__documents {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    width: 100%;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__document-tab {
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+
+
+/* Travel Tax approved-taxpayer component parity (2026-11-24).
+   Only the travel dialog is affected: keep public Pay Tax, Gift Tax,
+   both languages, protected footer and all previous stages unchanged. */
+@media (min-width: 1050px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-flow__summary {padding-inline:20px;}
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-flow__age-breakdown {gap:8px;}
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-flow__age-row {padding:8px 10px;}
+}
+/* Final Preview and payment-channel use the same single-column card
+   composition as the approved unified Taxpayer workflow. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+.travel-flow[data-step="2"] {display:block;min-width:0;}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+.travel-flow[data-step="2"] > .travel-flow__summary {display:none!important;}
+.taxpay-citizen-shell .travel-flow[data-step="2"] .travel-flow__main {
+  width:100%;min-width:0;box-sizing:border-box;
+}
+.taxpay-citizen-shell .travel-flow[data-step="2"]
+:is(.travel-flow__unified-preview,.travel-flow__unified-checkout) {
+  display:block;width:100%;max-width:none;min-width:0;margin:0;
+}
+.taxpay-citizen-shell .travel-flow[data-step="2"]
+.travel-flow__unified-preview .travel-flow__review {
+  border:0;border-bottom:1px solid var(--citizen-border);
+  border-radius:0;margin:0;padding:8px 13px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 18px;
+}
+.taxpay-citizen-shell .travel-flow[data-step="2"]
+.travel-flow__unified-preview .travel-flow__review > div {
+  display:block;min-width:0;padding:6px 0;border:0;
+}
+.taxpay-citizen-shell .travel-flow[data-step="2"]
+.travel-flow__unified-preview .travel-flow__review dd {
+  margin-top:4px;overflow-wrap:anywhere;
+}
+.taxpay-citizen-shell .travel-flow__unified-preview .unified-v3-review__table-wrap {overflow-x:auto;max-width:100%;}
+.taxpay-citizen-shell .travel-flow__unified-preview .unified-v3-review__table {min-width:530px;table-layout:auto;}
+.taxpay-citizen-shell .travel-flow__unified-contact .payment-identity__fields {display:block;min-width:0;}
+.taxpay-citizen-shell .travel-flow__unified-contact input {width:100%;max-width:100%;box-sizing:border-box;}
+@media (min-width:651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-flow[data-step="2"] {height:100%;overflow:hidden;}
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-flow[data-step="2"] > .travel-flow__main {
+    height:100%;overflow-y:auto;padding:20px 24px 24px;
+  }
+}
+@media (max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-flow[data-step="2"] > .travel-flow__main {
+    height:auto;min-height:0;overflow-y:auto;padding:14px 12px 18px;
+  }
+  .taxpay-citizen-shell .travel-flow[data-step="2"]
+  .travel-flow__unified-preview .travel-flow__review {
+    grid-template-columns:minmax(0,1fr);gap:4px;
+  }
+  .taxpay-citizen-shell .travel-flow[data-step="2"]
+  .travel-flow__unified-preview .travel-flow__review > div {padding:3px 0;}
+}
+
+/* The final-stage mobile calculation is a mobile-only disclosure.
+   It must never consume desktop modal-footer space or sit beside the primary CTA. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__mobile-summary {
+    display: none !important;
+  }
+}
+
+/* Standalone Travel Tax is page content, not a constrained modal. Keep
+   review, actions and back in natural document flow; the page scrolls. */
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"],
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] > .travel-flow__main,
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] #travel-tax-form {
+  display:block;position:relative;width:100%;height:auto;min-height:0;max-height:none;min-width:0;overflow:visible;
+}
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] :is(.travel-flow__unified-preview,.travel-flow__unified-checkout,.payment-review__main) {
+  position:static;height:auto;max-height:none;min-height:0;overflow:visible;
+}
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] .travel-flow__standalone-actions {
+  position:relative;display:flex;justify-content:flex-end;clear:both;padding:16px 0 4px;isolation:isolate;z-index:1;
+}
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {
+  position:static;transform:none;width:min(100%,360px);min-height:48px;
+}
+@media (max-width:650px) {
+  .taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {width:100%;}
+}
+/* Final Preview / Payment channel share the modal's body scroll owner.
+   Explicit grid rows keep header and footer out of the content at 320px,
+   including checkout where the progress bar is intentionally absent. */
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) {
+  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
+  height:min(92dvh,830px);max-height:calc(100dvh - 24px);overflow:hidden;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow[data-step="2"]) {
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) > .taxpay-modal__body {
+  display:block;min-height:0;min-width:0;height:auto;max-height:none;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:0;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"] .tax-service-choice--travel:has(> .travel-flow[data-step="2"]),
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"] .travel-flow[data-step="2"],
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"] .tax-service-choice--travel > .travel-flow[data-step="2"] {
+  display:block;height:auto;max-height:none;min-height:0;min-width:0;width:100%;overflow:visible;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"] .travel-flow[data-step="2"] > .travel-flow__main {
+  display:block;height:auto;max-height:none;min-height:0;min-width:0;width:100%;max-width:none;
+  overflow:visible;padding:0;box-sizing:border-box;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"] .travel-flow[data-step="2"] :is(.travel-flow__unified-preview,.travel-flow__unified-checkout) {
+  display:block;width:100%;max-width:none;min-width:0;padding:20px 24px 24px;box-sizing:border-box;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) > .taxpay-modal__footer {
+  position:relative;z-index:2;min-width:0;background:var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .taxpay-modal__footer-actions,
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__footer-content {
+  width:100%;min-width:0;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__footer-content {
+  display:grid;gap:8px;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__footer-actions:not(:has(.payment-journey-footer__leading)) .payment-journey-footer__next,
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__footer-actions:not(:has(.payment-journey-footer__leading)) .travel-flow__primary {
+  width:100%;flex:1 1 100%;min-width:0;
+}
+@media (max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) {
+    height:100dvh;max-height:100dvh;min-height:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"] .travel-flow[data-step="2"] :is(.travel-flow__unified-preview,.travel-flow__unified-checkout) {
+    padding:14px 12px 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__mobile-summary {
+    display:block;width:100%;border:1px solid var(--citizen-border);border-radius:9px;background:var(--citizen-primary-light);
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__mobile-summary > summary {
+    display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;list-style:none;cursor:pointer;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .travel-flow__mobile-summary dl {max-height:100px;overflow-y:auto;}
+}
+/* Travel's combined document title is distinct from the generic result header.
+   Keep it visible in the compact shared reader without changing other receipts. */
+@media screen {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .receipt-view--walkin:has([data-testid="travel-family-challan"]) .receipt-view__summary h3 {
+    display:block;margin:2px 0 0;font-size:14px;line-height:1.45;font-weight:700;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.payment-receipt-details .receipt-view--embedded) .taxpay-modal__body {
+    display:block;overflow-y:auto;overflow-x:hidden;min-height:0;
+  }
 }

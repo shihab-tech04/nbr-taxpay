@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
+import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
+import { demoIncomeTaxTypeForTin } from '../../services/demoIncomeTaxType';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
+import { SAMPLE_TIN_SUGGESTIONS } from '../../data/sampleTinSuggestions';
 import type { OtherTaxTaxpayer, OtherTaxAllocation } from './OtherTaxBatchComposer';
 
 interface Props {
@@ -11,6 +13,7 @@ interface Props {
   lockedPrimary?: boolean;
   singleTaxpayerLayout?: boolean;
   allowAdditional?: boolean;
+  confirmPrimary?: boolean;
   requireConfirmation?: boolean;
   allowSyntheticDemoTin?: boolean;
   confirmedTins: Record<string, string>;
@@ -28,7 +31,7 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, lockedPrimary = false, singleTaxpayerLayout = false, allowAdditional = true, requireConfirmation = false, allowSyntheticDemoTin = false, confirmedTins, onConfirmTaxpayer, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, singleTaxpayerLayout = false, allowAdditional = true, confirmPrimary = true, requireConfirmation = false, allowSyntheticDemoTin = false, confirmedTins, onConfirmTaxpayer, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimarySearch, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
@@ -38,8 +41,8 @@ export function OtherTaxTaxpayerList({
   const canSearch = (tin: string) => (allowSyntheticDemoTin || lockedPrimary ? /^\d{12,13}$/ : /^\d{12}$/).test(tin);
   const notFoundLabel = bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.';
   // Existing lookup fixtures; do not create new taxpayers or change payment data.
-  const suggestedTins = Array.from({length: 10}, (_, index) => String(index).repeat(12));
-  const progressive = requireConfirmation && allowAdditional;
+  const suggestedTins = SAMPLE_TIN_SUGGESTIONS;
+  const progressive = requireConfirmation && confirmPrimary && allowAdditional;
   const revealAddAction = (id: string) => requestAnimationFrame(() => requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>(id === 'primary'
       ? '[data-testid="other-tax-primary-taxpayer"]' : `[data-taxpayer-id="${id}"]`);
@@ -58,30 +61,53 @@ export function OtherTaxTaxpayerList({
   const confirmed = (id: string, tin: string) => Boolean(tin) && confirmedTins[id] === tin;
   const duplicate = (id: string, tin: string) => Boolean(tin) &&
     (id !== 'primary' && primaryTin === tin || additional.some(person => person.id !== id && person.tin === tin));
-  const primaryConfirmed = requireConfirmation && confirmed('primary', primaryTin);
+  const primaryConfirmed = !confirmPrimary || (requireConfirmation && confirmed('primary', primaryTin));
   const count = requireConfirmation
     ? (primaryConfirmed ? 1 : 0) + additional.filter(person => confirmed(person.id, person.tin)).length
     : additional.length + 1;
-  const identityCard = (id: string, tin: string, name: string, isConfirmed: boolean) => {
+  // The identity statement remains visible in the Search > Review > Add state,
+  // but the taxpayer name itself uses the same read-only field as other flows.
+  const identityDisclosure = (tin: string) => {
     const match = lookupSampleTaxpayer(tin);
-    const displayName = match ? (bn ? match.nameBn : match.nameEn) : name || (bn ? 'দেওয়া হয়নি' : 'Not provided');
-    return <section className="taxpay-taxpayer-row__identity-card"
-      aria-label={bn ? 'করদাতার তথ্য' : 'Taxpayer details'} data-testid={isConfirmed ? 'confirmed-taxpayer-card' : 'searched-taxpayer-card'}>
-      <h4>{bn ? 'করদাতার তথ্য' : 'Taxpayer details'}</h4>
-      <dl className="taxpay-taxpayer-row__summary" data-testid={isConfirmed ? 'confirmed-taxpayer-summary' : 'searched-taxpayer-summary'}>
-        <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd>{displayName}</dd></div>
-        <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd>{tin}</dd></div>
-      </dl>
-    </section>;
+    return <>
+      <p className="mt-2 text-xs text-slate-600" data-testid={match ? 'taxpayer-sample-source' : 'taxpayer-unmatched-source'}>
+        {match
+          ? (bn
+            ? 'নমুনা তথ্য — NBR যাচাইকৃত নয়।'
+            : 'Sample only — not NBR verified.')
+          : (bn
+            ? 'নমুনা তথ্য মেলেনি। পরিশোধের আগে টিআইএন নিশ্চিত করুন।'
+            : 'No sample match. Check the TIN before payment.')}
+      </p>
+    </>;
   };
-  // Match Travel Tax: identity preview first, followed by a distinct confirmation
-  // action inside the taxpayer row rather than another button inside the preview.
-  const addTaxpayerAction = (id: string, tin: string) =>
+  const displayNameForTin = (tin: string, name: string) => {
+    const match = lookupSampleTaxpayer(tin);
+    return match ? (bn ? match.nameBn : match.nameEn) : name || (bn ? 'দেওয়া হয়নি' : 'Not provided');
+  };
+  const classificationForTin = (tin: string) => {
+    const type = demoIncomeTaxTypeForTin(tin);
+    return type === 'COMPANY' ? (bn ? 'কোম্পানি' : 'Company')
+      : type === 'NON_COMPANY' ? (bn ? 'ব্যক্তি' : 'Individual') : undefined;
+  };
+  const identityCard = (id: string, tin: string, name: string, isConfirmed: boolean) =>
+    <TaxpayerTinSearchResultCard key={id + ':' + tin} language={language} tin={tin}
+      name={displayNameForTin(tin, name)} classification={classificationForTin(tin)}
+      testId={isConfirmed ? 'confirmed-taxpayer-card' : 'searched-taxpayer-card'}
+      summaryTestId={isConfirmed ? 'confirmed-taxpayer-summary' : 'searched-taxpayer-summary'} />;
+  // Keep the original search -> explicit confirmation transition, with the
+  // approved result details and Add action in one compact shared card.
+  const addTaxpayerAction = (id: string, tin: string, name: string) =>
     <div className="taxpay-taxpayer-row__confirm-add">
-      <button type="button" className="taxpay-taxpayer-row__add"
-        onClick={() => { onConfirmTaxpayer(id, tin); onClearError(); }}>
-        <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
-      </button>
+      <TaxpayerTinSearchResultCard key={id + ':' + tin} language={language} tin={tin}
+        name={displayNameForTin(tin, name)} classification={classificationForTin(tin)}
+        testId="searched-taxpayer-card" summaryTestId="searched-taxpayer-summary"
+        canAdd onAdd={() => {
+          // A sample name is presentation only; the original payer/recipient
+          // and permissions checks continue to run in the owning payment flow.
+          if (!canSearch(tin) || searchedTins[id] !== tin) return;
+          onConfirmTaxpayer(id, tin); onClearError();
+        }} />
     </div>;
   useEffect(() => {
     if (addedId) document.getElementById('other-tax-tin-' + addedId)?.focus();
@@ -102,20 +128,20 @@ export function OtherTaxTaxpayerList({
     {!simpleSelf && <p className="sr-only" role="status" aria-live="polite">
       {bn ? 'মোট ' + count + ' জন করদাতা' : count + ' ' + (count === 1 ? 'taxpayer' : 'taxpayers') + ' added'}
     </p>}
-    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer">
-      <div className="taxpay-taxpayer-row__header">
-        <h3>{simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer Information') : (bn ? 'করদাতা ১' : 'Taxpayer 1')}</h3>
-        {requireConfirmation && allowAdditional && primaryConfirmed && <button type="button" className="taxpay-taxpayer-row__edit"
+    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer" aria-label={simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer information') : undefined}>
+      {!simpleSelf && <div className="taxpay-taxpayer-row__header">
+        <h3>{bn ? 'করদাতা ১' : 'Taxpayer 1'}</h3>
+        {progressive && primaryConfirmed && <button type="button" className="taxpay-taxpayer-row__edit"
           onClick={() => { onConfirmTaxpayer('primary', ''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); }}>
           <Pencil size={15} aria-hidden="true"/>{bn ? 'সম্পাদনা' : 'Edit'}
         </button>}
-      </div>
+      </div>}
       {progressive && primaryConfirmed ? identityCard('primary', primaryTin, primaryName, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
         <TaxpayerTinLookup language={language} tinId="guest-tin" nameId="other-tax-primary-name"
           tin={primaryTin}
-          hideNameField={progressive}
+          hideNameField={progressive && searchedTins.primary === primaryTin && Boolean(lookupSampleTaxpayer(primaryTin))}
           suggestedTins={progressive && !lockedPrimary ? suggestedTins.filter(tin => !additional.some(p => p.tin === tin)) : undefined}
-          name={simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
+          name={searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
             ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
           maxTinLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12}
           tinPlaceholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : (bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN')}
@@ -126,14 +152,18 @@ export function OtherTaxTaxpayerList({
           onClear={() => { if (!lockedPrimary && !primaryAssigned) { onConfirmTaxpayer('primary', ''); onPrimaryTin(''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); } }}
           onSearch={() => { onPrimarySearch(); const match=lookupSampleTaxpayer(primaryTin); if(!lockedPrimary)onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current=>({...current, primary:primaryTin})); onClearError(); revealAddAction('primary'); }}
           helper={primaryAssigned && !lockedPrimary ? <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p> : undefined}
-          status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
-            ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
+          status={Boolean(primaryTin) && searchedTins.primary === primaryTin
+            ? lookupSampleTaxpayer(primaryTin)
+              ? (simpleSelf ? identityDisclosure(primaryTin) : undefined)
+              : <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>
+            : undefined}/>
         {progressive && !primaryConfirmed && searchedTins.primary === primaryTin &&
-          canSearch(primaryTin) && !duplicate('primary', primaryTin) &&
-          <>{identityCard('primary', primaryTin, primaryName, false)}
-            {addTaxpayerAction('primary', primaryTin)}</>}
+          canSearch(primaryTin) &&
+          !duplicate('primary', primaryTin) &&
+          <>{!lookupSampleTaxpayer(primaryTin) && identityDisclosure(primaryTin)}
+            {addTaxpayerAction('primary', primaryTin, primaryName)}</>}
       </div>}
-      {requireConfirmation && allowAdditional && !primaryConfirmed && searchedTins.primary === primaryTin && duplicate('primary', primaryTin) &&
+      {progressive && !primaryConfirmed && searchedTins.primary === primaryTin && duplicate('primary', primaryTin) &&
         <p className="taxpay-taxpayer-row__lookup-status" role="status">{bn ? 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।' : 'Taxpayer already added.'}</p>}
       {tinError && (!invalidId || invalidId === 'primary') &&
         <p id="guest-payment-error-tin" className="payment-form-field-error" role="alert">{tinError}</p>}
@@ -160,7 +190,7 @@ export function OtherTaxTaxpayerList({
         {personConfirmed ? identityCard(person.id, person.tin, person.name, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
           <TaxpayerTinLookup language={language} tinId={'other-tax-tin-' + person.id} nameId={'other-tax-name-' + person.id}
             tin={person.tin}
-            hideNameField={requireConfirmation}
+            hideNameField={requireConfirmation && searchedTins[person.id] === person.tin && Boolean(lookupSampleTaxpayer(person.tin))}
             suggestedTins={requireConfirmation ? suggestedTins.filter(tin => tin !== primaryTin && !additional.some(p => p.id !== person.id && p.tin === tin)) : undefined}
             name={searchedTins[person.id] === person.tin && lookupSampleTaxpayer(person.tin)
               ? (bn ? lookupSampleTaxpayer(person.tin)!.nameBn : lookupSampleTaxpayer(person.tin)!.nameEn) : person.name}
@@ -176,9 +206,10 @@ export function OtherTaxTaxpayerList({
             status={Boolean(person.tin) && searchedTins[person.id] === person.tin && !lookupSampleTaxpayer(person.tin)
               ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined} />
           {requireConfirmation && !personConfirmed && searchedTins[person.id] === person.tin &&
-            canSearch(person.tin) && !duplicate(person.id, person.tin) &&
-            <>{identityCard(person.id, person.tin, person.name, false)}
-              {addTaxpayerAction(person.id, person.tin)}</>}
+            canSearch(person.tin) &&
+            !duplicate(person.id, person.tin) &&
+            <>{!lookupSampleTaxpayer(person.tin) && identityDisclosure(person.tin)}
+              {addTaxpayerAction(person.id, person.tin, person.name)}</>}
         </div>}
         {requireConfirmation && !personConfirmed && searchedTins[person.id] === person.tin && duplicate(person.id, person.tin) &&
           <p className="taxpay-taxpayer-row__lookup-status" role="status">{bn ? 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।' : 'Taxpayer already added.'}</p>}

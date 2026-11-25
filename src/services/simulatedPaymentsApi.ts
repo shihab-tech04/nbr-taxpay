@@ -32,11 +32,17 @@ export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'benefic
  if(!profile||profile.profileId!==user)throw Error('Sign in to the matching demo profile to view its payment activity.');
  // Bind payment history to the server-issued profile capability. The old
  // public RPC accepted any User ID from its caller and is no longer exposed.
+ const assertCurrentProfile=()=>{
+   const current=activePreviewSession();
+   if(current?.profileId!==profile.profileId||current.capability!==profile.capability||
+      current.paymentSessionId!==profile.paymentSessionId)throw Error('Demo account changed.');
+ };
  const rows:SimulationTransaction[]=[];
  const seen=new Set<string>();
  let beforeAt:string|null=null,beforeId:string|null=null;
  let finished=false;
  for(let page=0;page<10000;page++){
+   assertCurrentProfile();
    const query=new URLSearchParams({view,pageSize:'100'});
    if(beforeAt&&beforeId){query.set('beforeCreatedAt',beforeAt);query.set('beforeId',beforeId);}
    const response=await fetch(`${ROOT}/functions/v1/demo-story1-taxpay/profile-history?${query}`,{
@@ -59,6 +65,7 @@ export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'benefic
    beforeAt=last.createdAt;beforeId=last.transactionId;
  }
  if(!finished)throw Error('Demo payment history exceeds safe retrieval limit');
+ assertCurrentProfile();
  return rows.map(tx=>({...tx,allocations:tx.allocations.map((a,index)=>({
    ...a,id:a.id??`${tx.transactionId}-${index+1}`,lineNo:a.lineNo??index+1
  }))}));
@@ -90,8 +97,18 @@ async function signedRpc<T>(functionName:string,args:Record<string,unknown>={}):
  return data as T;
 }
 export const getBoundSimulationUser=()=>signedRpc<SimulationUser>('sim_my_taxpayer_profile');
-export const getPrivateSimulationHistory=(view:'payer'|'beneficiary')=>
- signedRpc<SimulationTransaction[]>('sim_my_payment_history',{p_view:view});
+/** The private RPC may return JSON null for a zero-row SQL aggregate.
+ * Treat only that *successful* empty aggregate as an empty history. Never
+ * swallow HTTP/RLS errors or manufacture payments; reject malformed rows so
+ * the Activity page can show its existing retry state instead of crashing. */
+export const getPrivateSimulationHistory=async(view:'payer'|'beneficiary'):Promise<SimulationTransaction[]>=>{
+ const response=await signedRpc<SimulationTransaction[]|null>('sim_my_payment_history',{p_view:view});
+ if(response===null)return [];
+ if(!Array.isArray(response)||response.some(row=>!row||typeof row!=='object'||
+   typeof row.transactionId!=='string'||!Array.isArray(row.allocations)||!Array.isArray(row.events)))
+   throw Error('Invalid protected payment-history response');
+ return response;
+};
 export const getPrivateSimulationNotices=()=>
  signedRpc<SimulationNotice[]>('sim_my_payment_notices');
 export const submitPrivateSimulationPayment=(lines:SimulationLine[],key:string)=>

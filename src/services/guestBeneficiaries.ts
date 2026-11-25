@@ -5,6 +5,32 @@ import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficia
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
+// Notify mounted guest payment drafts of same-tab capability creation.
+// No bearer token or identifying value is included in the event.
+export const GUEST_DRAFT_OWNER_CHANGED_EVENT = 'taxpay-guest-draft-owner-changed';
+
+// Keep only an opaque UI generation, never any part of the private guest
+// capability, in React owner keys. A guest access key can change in another
+// browser tab while a payment form stays mounted. Even A -> B -> A must be
+// treated as three different UI sessions; the Edge API remains authoritative.
+let lastDraftScopeCapability: string | null = null;
+let draftScopeGeneration = 0;
+export function guestPaymentDraftOwnerScope(): string {
+  let capability: string | null = null;
+  try {
+    const stored = window.localStorage.getItem(capabilityKey);
+    if (stored && capabilityPattern.test(stored)) capability = stored;
+  } catch {
+    // No usable browser storage means there is no verified guest owner.
+  }
+  if (capability !== lastDraftScopeCapability) {
+    lastDraftScopeCapability = capability;
+    draftScopeGeneration += 1;
+  }
+  return capability
+    ? 'guest:session:' + draftScopeGeneration
+    : 'guest:unavailable:' + draftScopeGeneration;
+}
 const pageSize = 500;
 
 /** A guest address book can be recovered only from a browser retaining its capability. */
@@ -68,6 +94,10 @@ function getCapability(source:GuestSource='active'): { value: string; needsRegis
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
+  // Storage events are emitted only in other tabs, so a mounted payment draft
+  // must be notified when its first capability is created in this tab.
+  try { window.dispatchEvent(new Event(GUEST_DRAFT_OWNER_CHANGED_EVENT)); }
+  catch { /* Registration remains valid without a DOM. */ }
   return { value: created, needsRegistration: true };
 }
 
@@ -98,6 +128,10 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}, sou
       if (response.status === 410 || result?.code === 'GUEST_SESSION_UNAVAILABLE') {
         throw new Error('This browser’s saved beneficiary session has expired or is unavailable. Its access key was kept so it will not be replaced silently.');
       }
+      if (nextAction.startsWith('guest-payment-draft-')) {
+        if (response.status === 409) throw new Error('The saved draft was changed in another session. Reload the draft before updating.');
+        if (response.status === 404) throw new Error('The selected payment draft was not found.');
+      }
       if (response.status === 409 && result?.code === 'BENEFICIARY_ALREADY_IN_LIST') {
         throw new Error('This beneficiary is already saved in the destination list.');
       }
@@ -119,7 +153,27 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}, sou
       // The capability itself remains stored; a later request retries registration.
     }
   }
-  return send(action, fields);
+  // Any attempted write invalidates the bounded read cache immediately and
+  // again on settlement. This prevents a pre-write read from populating stale
+  // data after a completed mutation (or a failed write requiring recovery).
+  if (action === 'lists' || action === 'people' || action === 'open')
+    return send(action, fields);
+  invalidatePreviewRead();
+  try { return await send(action, fields); }
+  finally { invalidatePreviewRead(); }
+}
+
+/** Reuse the existing unsigned guest capability, never exposing or rotating its token in UI code. */
+export async function unsignedGuestPaymentDraftRequest<T>(
+  action: 'list'|'get'|'create'|'update'|'delete',
+  fields: Record<string,unknown> = {},
+): Promise<T> {
+  if (activePreviewSession()) throw new Error('Sign out of the preview account before using guest drafts.');
+  const before = getCapability('active').value;
+  const result = await post<T>('guest-payment-draft-'+action,fields);
+  if (activePreviewSession() || getCapability('active').value !== before)
+    throw new Error('Guest payment session changed. Reopen your draft.');
+  return result;
 }
 
 /** Only idempotent reads retry once on transport/service interruption. A failed
@@ -162,9 +216,47 @@ async function loadFromSource(source:GuestSource):Promise<{ lists: GuestList[]; 
   return { lists, people };
 }
 
-/** Active preview reads are always server-issued, profile-specific. */
-export function loadGuestBeneficiaries(){
-  return loadFromSource('active');
+// A very short capability-scoped read reuse avoids duplicate Edge calls while
+// navigating rapidly between Overview, Payments & Activity and Beneficiaries.
+// Never cache non-preview anonymous sessions, failed reads or writes.
+type GuestSnapshot = Awaited<ReturnType<typeof loadFromSource>>;
+const previewReadWindowMs = 3000;
+let previewRead: { capability:string; expires:number; value:GuestSnapshot }|null = null;
+let previewReadPending: { capability:string; generation:number; promise:Promise<GuestSnapshot> }|null = null;
+let previewReadGeneration = 0;
+function invalidatePreviewRead():void {
+  previewReadGeneration++;
+  previewRead = null;
+  previewReadPending = null;
+}
+function detachedSnapshot(data:GuestSnapshot):GuestSnapshot {
+  return {lists:data.lists.map(row=>({...row})),people:data.people.map(row=>({...row}))};
+}
+/** Capability-isolated preview data: refetch after writes or 3s, coalesce simultaneous reads. */
+export function loadGuestBeneficiaries(options:{forceFresh?:boolean}={}):Promise<GuestSnapshot>{
+  const capability=activePreviewSession()?.capability;
+  if(!capability)return loadFromSource('active');
+  // Payment authorization and other critical revalidation must bypass both
+  // the three-second snapshot and any already-pending navigation read.
+  if(options.forceFresh){
+    invalidatePreviewRead();
+    return loadFromSource('active').then(detachedSnapshot);
+  }
+  if(previewRead?.capability===capability&&Date.now()<previewRead.expires)
+    return Promise.resolve(detachedSnapshot(previewRead.value));
+  if(previewReadPending?.capability===capability&&
+     previewReadPending.generation===previewReadGeneration)
+    return previewReadPending.promise.then(detachedSnapshot);
+  const generation=previewReadGeneration;
+  const promise=loadFromSource('active').then(result=>{
+    if(previewReadGeneration===generation&&activePreviewSession()?.capability===capability)
+      previewRead={capability,expires:Date.now()+previewReadWindowMs,value:result};
+    return result;
+  }).finally(()=>{
+    if(previewReadPending?.promise===promise)previewReadPending=null;
+  });
+  previewReadPending={capability,generation,promise};
+  return promise.then(detachedSnapshot);
 }
 /** Old anonymous browser books stay available only for explicit recovery. */
 export function loadLegacyGuestBeneficiaries(){
@@ -177,6 +269,11 @@ export function createGuestBeneficiaryList(name: string): Promise<GuestList> {
 
 export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]): Promise<number> {
   return post('add', { listId, rows });
+}
+
+/** Explicitly restore untagged rows from the retained legacy guest book. */
+export function restoreLegacyGuestBeneficiaries(listId:string,rows:BeneficiaryInput[]):Promise<number>{
+  return post('restore-legacy-add',{listId,rows});
 }
 
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {

@@ -30,10 +30,12 @@ test('Beneficiaries stays in the signed-in taxpayer shell and is absent from gue
   assert.doesNotMatch(page,/Saving a contact does not grant authorization|They do not grant access to tax records or authorize a payment/);
   assert.ok(page.includes('Create list'));
   assert.match(page,/const saved=await reload\(list\.id\)/, 'list creation verifies SQL readback');
-  assert.match(page,/saved\.people\.some\(person=>person\.list_id===id&&person\.tin===tin\)/, 'single add verifies SQL readback');
-  assert.match(page,/chosen\.some\(row=>!savedTins\.has\(row\.tin\)\)/, 'bulk import verifies every requested TIN');
+  assert.match(page,/const savedPerson=saved\.people\.find\(person=>person\.list_id===id&&person\.tin===tin\)/, 'single add reads the exact saved row');
+  assert.match(page,/matchesBeneficiaryClassification\(savedPerson,classification\)/, 'single add verifies the selected classification from SQL readback');
+  assert.match(page,/matchesBeneficiaryClassification\(savedByTin\.get\(row\.tin\),classification\)/, 'bulk add verifies every selected classification from SQL readback');
+  assert.match(page,/chosen\.some\(row=>!savedByTin\.has\(row\.tin\)\)/, 'bulk import verifies every requested TIN');
   assert.doesNotMatch(page,/beneficiaries-account-sync|For lists across devices|Sign in with email/, 'Beneficiaries must not show an unrequested email sign-in banner');
-  assert.ok(page.includes('Search name or TIN'));
+  assert.ok(page.includes("searchPlaceholder={tr('Name or TIN','নাম বা টিআইএন')}"));
   assert.ok(page.includes('Pay Tax for Others'));
   const firstListStart=page.indexOf('!lists.length?');
   const firstListEnd=page.indexOf(':<>',firstListStart);
@@ -84,8 +86,13 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.match(shared,/\.taxpay-citizen-shell\s+\.taxpayer-page-heading/);
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-page-heading/);
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
-  assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
-  assert.doesNotMatch(page,/TaxpayerPageHeading|taxpayer-account-center|taxpayer-account-panel/);
+  assert.ok(page.includes("import {UiButton,UiInput} from '../ui/Controls';"));
+  assert.ok(page.includes("import {SearchableSelect} from '../ui/SearchableSelect';"));
+  assert.match(page,/classificationOptions/);
+  assert.doesNotMatch(page,/id="beneficiary-relationship"/);
+  assert.match(page,/<SearchableSelect id="beneficiary-edit-tag"/);
+  assert.match(page,/<TaxpayerPageHeading/);
+  assert.doesNotMatch(page,/taxpayer-account-center|taxpayer-account-panel/);
   // One column definition supplies semantic desktop columns and accessible
   // mobile cards, without duplicating business logic or losing actions.
   assert.match(page,/taxpayer-transaction-list beneficiary-directory/);
@@ -93,7 +100,8 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.match(page,/beneficiary-directory__tabular-row/);
   assert.match(page,/mobileTestId="beneficiary-directory-mobile"/);
   assert.match(page,/renderMobileCard=\{person=>/);
-  assert.match(page,/taxpayer-transaction-filter__search/);
+  assert.match(page,/<TaxPayOfficeRegisterToolbar/);
+  assert.match(page,/searchLabel=\{tr\('Search this list'/);
   assert.match(page,/Select all visible beneficiaries/);
   assert.doesNotMatch(page,/beneficiary-directory hidden md:block|beneficiary-directory__mobile md:hidden/);
   assert.match(shared,/\.beneficiary-directory__actions/);

@@ -1,65 +1,53 @@
-import React, { useState } from 'react';
+import '../../styles/taxpay-service-choice.css';
+import '../../styles/taxpay-payment-form.css';
+import '../../styles/taxpay-unified-table.css';
+import '../../styles/other-tax-modal.css';
+import React from 'react';
+import {ArrowRight, Gift, Plane} from 'lucide-react';
+import {GiftTaxEntryModal} from './GiftTaxEntryModal';
 import { useTaxState } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptLookup } from './ReceiptLookup';
-import { TravelTax } from './TravelTax';
+import { PaymentServiceChoiceDialog } from './PaymentServiceChoiceDialog';
 
-export type PublicService = 'status' | 'travel';
+export type PublicService = 'status' | 'travel' | 'gift' | 'other';
 
-export function PublicServiceModal({ service, onClose }: { service: PublicService; onClose: () => void }) {
+/** Both public and taxpayer Travel Tax entries use the same modal, form,
+ * stage navigation and draft lifecycle; receipt lookup stays independent. */
+export function PublicServiceModal({ service, onClose, onChooseOther, onBack }: { service: PublicService; onClose: () => void; onChooseOther?: (service: PublicService) => void; onBack?: () => void }) {
   const { language } = useTaxState();
-  const bn = language === 'bn';
-  const [travelStage, setTravelStage] = useState<1 | 2 | 3 | 4>(1);
-  const isTravel = service === 'travel';
-  const travelTitle = bn ? 'ভ্রমণ কর' : 'Travel tax';
-  const travelStages = bn
-    ? ['যাত্রী ও রসিদের তথ্য', 'ভ্রমণের তথ্য', 'পর্যালোচনা ও পেমেন্ট', 'সম্মিলিত চালান']
-    : ['Passengers and receipt details', 'Travel details', 'Review & payment', 'Combined challan'];
-  const title = isTravel
-    ? travelStages[travelStage - 1]
-    : (bn ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt');
+  if (service === 'travel')
+    return <PaymentServiceChoiceDialog initialService="TRAVEL_TAX" onDismiss={onClose} />;
 
-  // The top-left control owns stage navigation, exactly as it does in the
-  // approved Pay Tax wizard. Stage handlers remain inside the travel form.
-  const back = () => {
-    if (travelStage === 1) return;
-    if (travelStage === 4) {
-      // Receipt Back returns to the paid journey review; the X owns dismissal.
-      document.querySelector<HTMLButtonElement>(
-        '.taxpay-modal[data-public-service="travel"] [data-testid="travel-receipt-back"]'
-      )?.click();
-      return;
-    }
-    if (document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
-      document.querySelector<HTMLButtonElement>(
-        '.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary'
-      )?.click();
-      return;
-    }
-    const previous = document.querySelector<HTMLButtonElement>(
-      '.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .tax-service-choice__cancel'
-    );
-    if (previous && !previous.disabled) previous.click();
-  };
+  if (service === 'gift') return <GiftTaxEntryModal onClose={onClose} onBack={() => onChooseOther?.('other')} />;
+  if (service === 'other') return <TaxPayModal
+    title={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other tax payments'}
+    closeIconLabel={language === 'bn' ? 'বন্ধ করুন' : 'Close modal'}
+    service="other-tax" onClose={onClose} onBack={onBack}
+    backLabel={language === 'bn' ? 'পেমেন্ট পদ্ধতি নির্বাচন করতে ফিরুন' : 'Back to payment access'}
+    hideFooter>
+      <div className="space-y-3" data-testid="other-tax-chooser">
+        <p className="mb-3 text-sm text-slate-600">{language === 'bn' ? 'পরবর্তী ধাপে যেতে করের ধরন নির্বাচন করুন।' : 'Select a tax type to continue.'}</p>
+        {([
+          {type: 'travel' as const, Icon: Plane, title: language === 'bn' ? 'ভ্রমণ কর' : 'Travel Tax', detail: language === 'bn' ? 'বিদ্যমান ভ্রমণ কর প্রক্রিয়ায় যান।' : 'Continue through the existing Travel Tax journey.'},
+          {type: 'gift' as const, Icon: Gift, title: language === 'bn' ? 'দানকর' : 'Gift Tax', detail: language === 'bn' ? 'দানকর পরিশোধের তথ্য খুলুন।' : 'Enter Gift Tax payment details.'},
+        ]).map(({type, Icon, title, detail}) => <button key={type} type="button" onClick={() => onChooseOther?.(type)}
+          className={"public-service-option public-service-option--" + type}>
+          <span className="public-service-option__icon"><Icon size={22} aria-hidden="true" /></span>
+          <span className="min-w-0 flex-1"><strong className="block text-base text-slate-900">{title}</strong><span className="block text-sm text-slate-600">{detail}</span></span>
+          <ArrowRight size={18} className="public-service-option__arrow" aria-hidden="true" />
+        </button>)}
+      </div>
+    </TaxPayModal>;
 
-  return (
-    <TaxPayModal
-      title={title}
-      ariaLabel={isTravel ? travelTitle : undefined}
-      progress={isTravel ? { current: travelStage, total: 4, subtitle: travelTitle } : undefined}
-      onBack={isTravel && travelStage > 1 ? back : undefined}
-      backLabel={bn ? 'ফিরুন' : 'Back'}
-      closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
-      className={service === 'status' ? 'receipt-modal' : ''}
-      footer={<></>}
-      service={service}
-      onClose={onClose}
-    >
-      {isTravel ? (
-        <TravelTax embedded onStageChange={setTravelStage} />
-      ) : (
-        <ReceiptLookup embedded />
-      )}
-    </TaxPayModal>
-  );
+  return <TaxPayModal
+    title={language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt'}
+    closeIconLabel={language === 'bn' ? 'বন্ধ করুন' : 'Close modal'}
+    className="receipt-modal"
+    footer={<></>}
+    service="status"
+    onClose={onClose}
+  >
+    <ReceiptLookup embedded />
+  </TaxPayModal>;
 }

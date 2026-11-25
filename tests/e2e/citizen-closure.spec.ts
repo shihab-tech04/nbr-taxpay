@@ -29,7 +29,7 @@ test('root is a public information hub with a header Login and no payment action
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  else await expect(page.locator('.citizen-pay')).toBeHidden();
  await expect(page.locator('.office-auth')).toHaveCount(0);
- await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+ await expect(page.locator('#public-how-it-works')).toBeHidden();
 });
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
@@ -41,7 +41,9 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if(await rail.isVisible()) await expect(rail.getByRole('button',{name:'Pay Tax menu'})).toBeVisible();
+  else await expect(page.locator('.citizen-mobile-menu-trigger')).toBeVisible();
 });
 test('taxpayer mobile home and activity support Bangla without overflows',async({page})=>{
   await page.setViewportSize({width:320,height:740});
@@ -56,6 +58,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.getByRole('button',{name:'লেনদেনের ইতিহাস খুলুন'}).click();
   await expect(page.getByRole('heading',{name:'পেমেন্ট ও লেনদেন'})).toBeVisible();
   await expect(page.getByLabel('পেমেন্ট খুঁজুন')).toBeVisible();
+  await page.getByRole('button',{name:'ফিল্টার',exact:true}).click();
   await expect(page.getByLabel('করবর্ষ')).toBeVisible();
   await expect(page.getByLabel('পেমেন্টের ধরন')).toBeVisible();
 });
@@ -72,28 +75,34 @@ test('sample payment activity retains filtering and does not assert tax-credit o
 });
 
 
-test('public mobile navigation reuses the taxpayer dock with public-only routes and Pay',async({page})=>{
+test('public mobile keeps routes in the menu and uses a top-right Help icon with floating Pay',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header')).toBeHidden();
  await expect(page.locator('.citizen-header')).toBeVisible();
- const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
- await expect(dock).toBeVisible();
- await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
- await expect(dock.getByRole('button',{name:'Help'})).toBeVisible();
- await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+ const publicDock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+ await expect(publicDock).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Home'})).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Payment Status'})).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(publicDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
+ await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveClass(/citizen-pay--guest-floating/);
  await page.getByRole('button',{name:'Open menu'}).click();
- await expect(page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Help'})).toBeVisible();
+ const menu=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(menu.getByRole('button',{name:'Home'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Payment Status'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
  await page.keyboard.press('Escape');
- await expect(page.getByRole('dialog',{name:'Services & menu'})).toHaveCount(0);
+ await expect(menu).toHaveCount(0);
 });
 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
@@ -131,11 +140,13 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal.getByText('Not verified',{exact:true}).first()).toBeVisible();
   await expect(documentModal.locator('.taxpay-modal__footer .receipt-view__actions')).toBeVisible();
   await expect(documentModal.getByRole('button',{name:'Back to search'})).toHaveCount(0);
-  await expect(documentModal.getByRole('button',{name:'Download'})).toBeVisible();
-  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeVisible();
-  const summaryDownload = page.waitForEvent('download');
-  await documentModal.getByRole('button',{name:'Download'}).click();
-  expect((await summaryDownload).suggestedFilename()).toBe('Korbritto-WITHHOLDING_PROOF-summary.html');
+  // A selected preview with no source-backed rows is informational only.
+  // Genuine populated HTML export is covered by receiptDocumentExportBranding.
+  await expect(documentModal.getByRole('button',{name:'Download'})).toBeDisabled();
+  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeDisabled();
+  // Empty readback displays “—”; a failed backend read displays “Unavailable”.
+  // Neither is a zero-value or exportable certificate.
+  await expect(documentModal.locator('.receipt-view__amount strong')).toHaveText(/^(—|Unavailable)$/);
   await documentModal.getByRole('button',{name:'Close modal'}).click();
   await expect(documentModal).toHaveCount(0);
 
@@ -152,10 +163,10 @@ test('certificate previews stay non-official, match the selected type and locali
 });
 
 
-test('home explains the payment stages without an inline transaction form',async({page})=>{
+test('home omits retired payment tutorial while keeping the full guest payment entry',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
- await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
+ await expect(page.locator('#public-how-it-works, #public-faq')).toHaveCount(0);
+ await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(0);
  await expect(page.locator('.public-info-topic')).toHaveCount(0);
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  else await expect(page.locator('.citizen-pay')).toBeHidden();
@@ -164,3 +175,26 @@ test('home explains the payment stages without an inline transaction form',async
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
 
+test('dashboard CSV export keeps Sohojkor branding and localized column labels',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'WS4 desktop/mobile CSV parity');
+  // URL-selected demoUser profiles deliberately cannot read public preview receipts.
+  // Use the existing uncredentialed taxpayer design preview, not user1's isolated scenario.
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  const englishExport=page.getByRole('button',{name:'Export CSV'});
+  await expect(englishExport).toBeEnabled();
+  const [english]=await Promise.all([page.waitForEvent('download'),englishExport.click()]);
+  expect(english.suggestedFilename()).toBe('Sohojkor_transactions.csv');
+  const englishCsv=await (await import('node:fs/promises')).readFile(await english.path(),'utf8');
+  expect(englishCsv).toContain('"Reference","Category","Assessment year","Amount ৳","Treasury status"');
+
+  await switchTaxpayerToBangla(page);
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
+  const banglaExport=page.getByRole('button',{name:'CSV রপ্তানি'});
+  await expect(banglaExport).toBeEnabled();
+  const [bangla]=await Promise.all([page.waitForEvent('download'),banglaExport.click()]);
+  expect(bangla.suggestedFilename()).toBe('Sohojkor_transactions.csv');
+  const banglaCsv=await (await import('node:fs/promises')).readFile(await bangla.path(),'utf8');
+  expect(banglaCsv).toContain('"রেফারেন্স","কর পরিশোধের ধরন","করবর্ষ","পরিমাণ ৳","ট্রেজারি অবস্থা"');
+});

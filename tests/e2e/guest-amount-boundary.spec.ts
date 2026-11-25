@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('payment amount matches the endpoint limit and preserves the last paisa', async ({ page }) => {
+  await mockSubmittedPaymentSqlReadback(page);
   let sentMinor: number | undefined;
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.abort();
@@ -12,8 +14,7 @@ test('payment amount matches the endpoint limit and preserves the last paisa', a
     }) });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');

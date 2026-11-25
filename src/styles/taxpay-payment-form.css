@@ -8,9 +8,9 @@
 .payment-form-section__number{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:9px;background:#edf3ff;color:#2c5ead;font-size:14px;font-weight:800}
 .payment-form-section__heading-copy{flex:1;display:grid;gap:3px}
 .payment-form-section__heading-copy strong{font-size:14px;font-weight:750}
-.payment-form-section__heading-copy small{font-size:14px;color:#566982;font-weight:450}
-.payment-form-section__heading-copy h2{font-size:15px;font-weight:750;line-height:1.4;margin:0}
-.payment-form-section__heading-copy p{font-size:14px;line-height:1.45;color:#566982;margin:0}
+.payment-form-section__heading-copy small{font-size:var(--taxpay-type-body);color:#566982;font-weight:450}
+.payment-form-section__heading-copy h2{font-size:var(--taxpay-type-h3);font-weight:750;line-height:1.4;margin:0}
+.payment-form-section__heading-copy p{font-size:var(--taxpay-type-body);line-height:1.45;color:#566982;margin:0}
 .payment-form-section--static .payment-form-section__heading{cursor:default;border-bottom:1px solid #e6ebf2;min-height:0}
 .payment-form-section__chevron{flex:none;color:#71839e;transition:transform .2s}
 .payment-form-section[open] .payment-form-section__chevron{transform:rotate(180deg)}
@@ -55,9 +55,26 @@
 .payment-form-summary__help{margin:0;padding:4px 18px 16px;font-size:14px;color:#52667f;line-height:1.5}
 .payment-form-summary__rows{margin:0;padding:0 18px 17px;display:grid;gap:13px}
 .payment-form-summary__rows>div{display:grid;gap:3px}
-.payment-form-summary__rows dt{font-size:14px;color:#526880;font-weight:400}
-.payment-form-summary__rows dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
+.payment-form-summary__rows dt{font-size:var(--taxpay-type-body);color:#526880;font-weight:400}
+.payment-form-summary__rows dd{margin:0;font-size:var(--taxpay-type-body);font-weight:600;overflow-wrap:anywhere;line-height:1.45}
 .payment-form-summary__mono{font-family:ui-monospace,monospace}
+.payment-form-summary__tin {display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;max-width:100%}
+.payment-form-summary__tin .payment-form-summary__mono {overflow-wrap:anywhere}
+.payment-form-summary__tin-action {display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--citizen-primary-dark);cursor:pointer}
+.payment-form-summary__tin-action:hover {border-color:var(--citizen-border);background:var(--citizen-primary-light)}
+.payment-form-summary__tin-action:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:2px}
+/* Read-only legal/review blockers must remain legible in EN and BN.
+   This corrects only the presentational 12px Tailwind helper size; do not
+   change source catalogue text or eligibility/disabled-head rules. */
+.payment-flow-embedded [data-head-row] label span.text-rose-700 {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.payment-form-summary__taxpayer-identity {display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;overflow-wrap:anywhere}
+.payment-form-summary__taxpayer-tin-tools {display:flex;justify-content:flex-end;min-width:0;padding:5px 12px;border-top:1px solid var(--citizen-border)}
+
 .payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
 .payment-form-summary__breakdown h3{font-size:14px;font-weight:700;margin:0 0 2px}
 .payment-form-summary__breakdown>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(75px,auto);align-items:start;gap:9px;font-size:14px;line-height:1.5;color:#516681}
@@ -158,12 +175,12 @@
 
 /* Step 4: observable ACS / Treasury / NBR stages, with distinct bank-pending and failed outcomes. */
 .payment-lifecycle{border:1px solid #d8e3f1;border-radius:14px;background:#fff;overflow:hidden;min-width:0;color:#193353}
-.payment-lifecycle__heading{display:flex;gap:12px;align-items:flex-start;background:#f0f6ff;padding:19px 21px;border-bottom:1px solid #dae7f7}
-.payment-lifecycle__heading--complete{background:#eefaf5}
+.payment-lifecycle__heading{display:flex;gap:12px;align-items:center;background:#f7f9fc;padding:16px 20px;border-bottom:1px solid #e4e9f1}
+.payment-lifecycle__heading--complete{background:#f7f9fc}
 .payment-lifecycle__heading--pending{background:#fff9ec}
 .payment-lifecycle__heading--failed{background:#fff0f0}
-.payment-flow-embedded__confirmation-layout{width:min(100%,760px);margin:0 auto}
-.payment-lifecycle__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px 21px}
+.payment-flow-embedded__confirmation-layout{width:100%;min-width:0;max-width:none;margin:0;padding:20px 22px}
+.payment-lifecycle__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:16px 20px}
 .payment-lifecycle__overview>div{display:grid;gap:6px;min-width:0}
 .payment-lifecycle__overview span{font-size:14px;color:#526880}
 .payment-lifecycle__overview strong{font-size:clamp(17px,2vw,23px);font-weight:700;line-height:1.4;color:#1f56a1;overflow-wrap:anywhere}
@@ -174,9 +191,10 @@
 .payment-lifecycle__progress-detail>summary span{font-weight:400;color:#62748d}
 .payment-lifecycle__progress-detail .payment-lifecycle__details{border-top:1px solid #e5edf6}
 .payment-receipt-details{min-width:0;width:min(100%,840px);margin:0 auto}
+.payment-receipt-details.payment-flow-embedded--receipt{width:100%;max-width:none;margin:0}
 .payment-lifecycle__heading h2{font-size:18px;font-weight:850;margin:0;line-height:1.4}
 .payment-lifecycle__heading p{font-size:14px;color:#405a74;margin:6px 0 0;line-height:1.6}
-.payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
+.payment-lifecycle__symbol{display:grid;place-items:center;width:28px;height:28px;color:#2968b2;flex:none}
 .payment-lifecycle__heading--failed .payment-lifecycle__symbol{color:#b64242}
 .payment-lifecycle__heading--complete .payment-lifecycle__symbol{color:#147957}
 .payment-lifecycle__details{display:flex;flex-direction:column-reverse;gap:20px;padding:20px 21px}
@@ -191,16 +209,17 @@
 .payment-lifecycle__event--failed .payment-lifecycle__event-dot{background:#fee4e4;color:#a92424}
 .payment-lifecycle__waiting{color:#405a74!important;font-weight:550!important}
 .payment-lifecycle__waiting .payment-lifecycle__event-dot{background:#edf1f6;color:#728ba7}
-.payment-lifecycle__result{display:flex;align-items:flex-start;gap:10px;margin:0 20px 16px;padding:15px;border-radius:10px;font-size:14px;line-height:1.65}
+.payment-lifecycle__result{display:flex;align-items:flex-start;gap:10px;margin:0 20px 16px;padding:11px 13px;border-radius:9px;font-size:14px;line-height:1.55}
 .payment-lifecycle__result p{margin:0}
 .payment-lifecycle__result strong{display:block;margin-bottom:4px}
 .payment-lifecycle__result svg{flex:none;margin-top:2px}
 .payment-lifecycle__result--pending{color:#75551c;background:#fff6df;border:1px solid #f1e0b0}
 .payment-lifecycle__result--failed{color:#943d3d;background:#fff0f0;border:1px solid #f3d6d6}
-.payment-lifecycle__result--complete{color:#166746;background:#e9f7f0;border:1px solid #bee8d1}
+.payment-lifecycle__result--complete{color:#3e5570;background:#f7f9fc;border:1px solid #dfe6ef}
 .payment-lifecycle__actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 21px 20px}
 @media(max-width:900px){.payment-review{grid-template-columns:minmax(0,1fr)}.payment-review__aside{position:static;grid-row:1}.payment-review__rows{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.payment-radio-card-grid{grid-template-columns:1fr}.payment-radio-card{min-height:56px;padding:11px 12px}.payment-review__method-groups{grid-template-columns:1fr}.payment-review__method-group{justify-content:flex-start;padding:11px 14px;min-height:49px}.payment-review__method-list{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-review__method{flex-wrap:wrap;gap:7px;min-width:0}.payment-review__brand{min-width:40px}.payment-form-summary__breakdown{padding:13px 14px}}
+@media(max-width:800px){.payment-flow-embedded__confirmation-layout{padding:0}}
 @media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{padding:16px;gap:16px}.payment-lifecycle__references{grid-template-columns:minmax(0,1fr)}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{display:none}}
 
 
@@ -214,8 +233,8 @@
 .taxpay-taxpayer-row__header{display:flex;align-items:center;justify-content:space-between;min-height:30px;gap:10px}
 .taxpay-taxpayer-row__header h3{font-size:14px;font-weight:700;color:#172b4d;margin:0;display:flex;align-items:center;gap:8px}
 .taxpay-taxpayer-row__header h3 span{font-size:14px;font-weight:600;color:#466282;background:#eef3fa;border-radius:12px;padding:3px 9px}
-.taxpay-taxpayer-row__fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.taxpay-taxpayer-row__fields>div{min-width:0;display:grid;align-content:start;gap:6px}
+.taxpay-taxpayer-row__fields{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;width:100%}
+.taxpay-taxpayer-row__fields>div{min-width:0;width:100%;display:grid;align-content:start;gap:6px}
 .taxpay-taxpayer-row__fields label{font-size:14px;font-weight:600;color:#334b6c}
 .taxpay-taxpayer-row__fields input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;color:#172b4d;font-size:14px;background:#fff}
 .taxpay-taxpayer-row__fields input:focus-visible{outline:2px solid #2c5ead;outline-offset:2px}
@@ -349,7 +368,16 @@
 
 /* Own-liability Other Tax uses the approved one-taxpayer card and stacked name field. */
 .taxpay-taxpayer-list--single{margin-bottom:16px}
-/* Keep receipt inputs on the same baseline if the longer EN reference label wraps. */
+/* Preserve the approved desktop two-column payer/contact grouping and
+   existing mobile single-column breakpoint. Inputs fill their own grid cell;
+   never shrink because a receipt-reference label wraps in EN/BN. */
+.payment-identity__receipt-row > .payment-identity__email-field--full{grid-column:1/-1;min-width:0;width:100%}
+.payment-flow-embedded__identity .payment-identity__receipt-row > div{
+  min-width:0;width:100%;
+}
+.payment-flow-embedded__identity .payment-identity__receipt-row input{
+  display:block;min-width:0;width:100%;max-width:100%;
+}
 @media (min-width:651px){
   .payment-form-layout__sections:has(.taxpay-taxpayer-list--single) .payment-identity__receipt-row > div{
     display:flex;flex-direction:column;justify-content:flex-end
@@ -368,9 +396,9 @@
 .taxpay-taxpayer-row__tin-clear:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:1px}
 
 /* Lookup stays attached to its own taxpayer TIN in every modal service. */
-.taxpay-taxpayer-row__tin-search{display:flex;align-items:stretch;gap:8px;min-width:0}
-.taxpay-taxpayer-row__tin-search>input{flex:1 1 auto;min-width:0;width:1px}
-.taxpay-taxpayer-row__tin-search>.tin-lookup__search{flex:none;min-height:44px;padding-inline:14px;white-space:nowrap}
+/* Shared search layout has one owner in taxpayer-tin-lookup.css. */
+.taxpay-taxpayer-row__tin-search{min-width:0;width:100%}
+.taxpay-taxpayer-row__tin-search>.tin-lookup__search{min-height:44px;padding-inline:14px;white-space:nowrap}
 .taxpay-taxpayer-row__fields input[readonly]{background:var(--color-taxpay-surface-subtle);cursor:default}
 .taxpay-taxpayer-row__lookup-status{margin:0;font-size:14px;color:var(--color-taxpay-error)}
 /* Keep Add taxpayer attached to the searched taxpayer card, as for Travel Tax passengers. */
@@ -451,3 +479,262 @@
 .taxpay-taxpayer-list__add{background:#fff;border:1px solid var(--color-taxpay-primary,#085587);
   color:var(--color-taxpay-primary,#085587);font-weight:650}
 .taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:var(--color-taxpay-primary,#085587)}
+/* Shared head composer: Pay Tax and Other Tax use the same editor/allocations.
+   Only Return changes the permitted taxpayer/head cardinality. */
+.payment-unified-mode {
+  padding: 1rem;
+  border: 1px solid var(--citizen-border, #e1e6ee);
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 1rem;
+}
+.payment-unified-mode__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: .75rem;
+}
+.payment-unified-mode__option {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 44px;
+  padding: .8rem .9rem;
+  border: 1px solid var(--citizen-border, #e1e6ee);
+  border-radius: 10px;
+  color: var(--citizen-text);
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.payment-unified-mode__option:has(input:checked) {
+  border-color: var(--citizen-primary-dark);
+  background: var(--citizen-primary-light);
+}
+.payment-unified-mode__option input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--citizen-primary-dark);
+}
+.payment-unified-mode__option:focus-within {
+  outline: 2px solid var(--citizen-primary-dark);
+  outline-offset: 2px;
+}
+.payment-unified-return, .payment-unified-return-back button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 1rem;
+  padding: .5rem .8rem;
+  border: 1px solid var(--citizen-primary-dark);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--citizen-primary-dark);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 410px) {
+  .payment-unified-mode__choices { grid-template-columns: minmax(0, 1fr); }
+}
+
+
+/* Payment identity: one field per row at its actual container width.
+   The approved modal, 60:40 desktop rail, footer and Step 2/3 layouts stay
+   unchanged. Avoid half-empty receipt rows on both payer relationships. */
+.payment-flow-embedded__identity .payment-identity__receipt-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.payment-flow-embedded__identity .payment-identity__receipt-row > div,
+.payment-flow-embedded__identity .payment-identity__receipt-row > div > :is(input, select, textarea) {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+.payment-flow-embedded__identity .taxpay-taxpayer-list,
+.payment-flow-embedded__identity .taxpay-taxpayer-row,
+.payment-flow-embedded__identity .taxpay-taxpayer-row__fields,
+.payment-flow-embedded__identity .taxpay-taxpayer-row__fields--shared,
+.payment-flow-embedded__identity .taxpay-taxpayer-row__fields--shared > .taxpayer-tin-lookup,
+.payment-flow-embedded__identity .taxpayer-tin-lookup__field,
+.payment-flow-embedded__identity .taxpayer-tin-lookup__field > input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+/* The search control keeps its approved place but never caps the TIN field. */
+.payment-flow-embedded__identity .taxpayer-tin-lookup__search-row {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  width: 100%;
+  min-width: 0;
+}
+.payment-flow-embedded__identity .taxpayer-tin-lookup__tin-entry,
+.payment-flow-embedded__identity .taxpayer-tin-lookup__tin-entry > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+/* Before any allocation exists, the calculation remains a compact summary
+   rather than painting a misleading full-height empty panel. */
+.payment-flow-embedded__identity .payment-form-summary {
+  align-self: start;
+  height: fit-content;
+}
+/* Do not instruct the user to choose payment heads while they are still
+   entering identity. The same help remains visible in the amount step. */
+.payment-flow-embedded__identity .payment-form-summary__help {
+  display: none;
+}
+@media (max-width: 650px) {
+  .payment-flow-embedded__identity .payment-identity__receipt-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+@media (max-width: 420px) {
+  /* On narrow phones a side-by-side Search button needlessly halves the TIN. */
+  .payment-flow-embedded__identity .taxpayer-tin-lookup__search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .payment-flow-embedded__identity .taxpayer-tin-lookup__search {
+    width: 100%;
+  }
+}
+
+/* Parallel Walk-in Payment Result: the challan is always accessible before
+   the optional account invitation. Original tax and receipt layouts stay intact. */
+.payment-flow-embedded--receipt .walkin-result-challan {
+  padding: 0 20px 16px;
+  display: grid;
+  gap: 10px;
+}
+.payment-flow-embedded--receipt .walkin-result-challan > button {
+  min-height: 44px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  color: var(--citizen-surface);
+  background: var(--citizen-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+.payment-flow-embedded--receipt .walkin-result-challan > button:hover { background: var(--citizen-primary-dark); }
+.payment-flow-embedded--receipt .walkin-result-challan__batch { display: flex; flex-wrap: wrap; gap: 8px; }
+.payment-flow-embedded--receipt .walkin-result-challan__batch button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 8px;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits {
+  border-top: 1px solid var(--citizen-border);
+  padding: 12px 16px 16px;
+  color: var(--citizen-text);
+  background: var(--citizen-surface);
+}
+.payment-flow-embedded--receipt .walkin-result-benefits h3 {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 0 0 8px;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits ul {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits li {
+  position: relative;
+  padding-inline-start: 23px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits li::before {
+  content: '✓';
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--citizen-primary-dark);
+  font-weight: 800;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.payment-flow-embedded--receipt .walkin-result-benefits__actions button {
+  min-height: 44px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits__actions .walkin-postpayment-login__signin {
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  border: 1px solid var(--citizen-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits__actions .walkin-postpayment-login__skip {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--citizen-primary-dark);
+}
+.payment-flow-embedded--receipt .walkin-result-benefits p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 12px 0 0;
+  color: var(--citizen-muted);
+}
+.payment-flow-embedded--unified :is(.walkin-result-challan, .walkin-result-benefits) button:focus-visible {
+  outline: 2px solid var(--citizen-primary);
+  outline-offset: 3px;
+}
+/* The result is a read-only record state; a single primary Challan CTA is enough.
+   Keep payment errors and the original tax workflow's styles unchanged. */
+.taxpay-citizen-shell .taxpay-v5-locked .payment-flow-embedded--receipt .payment-lifecycle {
+  border-color: var(--citizen-border);
+  border-radius: 10px;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .taxpay-v5-locked .payment-flow-embedded--receipt .payment-lifecycle__heading--complete {
+  padding: 12px 16px;
+  background: var(--citizen-surface);
+  border-bottom-color: var(--citizen-border);
+}
+.taxpay-citizen-shell .taxpay-v5-locked .payment-flow-embedded--receipt .payment-lifecycle__overview {
+  padding: 12px 16px;
+  gap: 12px;
+}
+.taxpay-citizen-shell .taxpay-v5-locked .payment-flow-embedded--receipt .payment-lifecycle__overview strong {
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .taxpay-v5-locked .payment-flow-embedded--receipt .payment-lifecycle__progress-detail > summary {
+  padding: 10px 16px;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .taxpay-v5-locked .payment-flow-embedded--receipt .payment-lifecycle__result--complete {
+  margin: 0 16px 12px;
+  border-color: var(--citizen-border);
+  background: var(--citizen-bg);
+  color: var(--citizen-text);
+}
+@media (max-width: 560px) {
+  .payment-flow-embedded--receipt .walkin-result-challan { padding: 0 12px 12px; }
+  .payment-flow-embedded--receipt .walkin-result-challan > button { width: 100%; }
+  .payment-flow-embedded--receipt .walkin-result-benefits { padding: 12px; }
+  .payment-flow-embedded--receipt .walkin-result-benefits__actions { flex-direction: column; }
+  .payment-flow-embedded--receipt .walkin-result-benefits__actions button { width: 100%; justify-content: center; }
+}

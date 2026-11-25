@@ -1,5 +1,5 @@
 import {test,expect,type Locator} from '@playwright/test';
-import {enterTaxPayService} from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function paired(dialog:Locator){
   const fields=['#guest-payer-name','#guest-phone','#guest-receipt-email','#guest-notice-ref'];
@@ -15,8 +15,7 @@ async function paired(dialog:Locator){
 test('guest Other Tax pairs payer and receipt contacts; email stays optional',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280');
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const modal=page.getByRole('dialog',{name:'Pay Tax'});
+  const modal = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(modal,'OTHER_TAX_PAYMENT','OTHER');
   const name=modal.locator('#guest-payer-name');
   const phone=modal.locator('#guest-phone');
@@ -40,9 +39,28 @@ test('guest Other Tax pairs payer and receipt contacts; email stays optional',as
 test('guest Tax with Return uses the same four contact fields',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280');
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog,'TAX_WITH_RETURN','OTHER');
   await expect(dialog.locator('#guest-receipt-email')).toBeVisible();
   await paired(dialog);
+});
+
+test('walk-in SELF keeps phone and notice on one row, email on its own full-width row', async ({page},info)=>{
+  test.skip(info.project.name !== 'desktop-1280');
+  await page.goto('/');
+  const modal = await openLegacyTaxServiceChoice(page);
+  await enterTaxPayService(modal,'OTHER_TAX_PAYMENT','SELF');
+  const phone=modal.locator('#guest-phone');
+  const notice=modal.locator('#guest-notice-ref');
+  const email=modal.locator('#guest-receipt-email');
+  const row=modal.locator('.payment-identity__receipt-row').first();
+  for(const input of [phone,notice,email])await expect(input).toBeVisible();
+  const [phoneBox,noticeBox,emailBox,rowBox]=await Promise.all([
+    phone.locator('..').boundingBox(),notice.locator('..').boundingBox(),
+    email.locator('..').boundingBox(),row.boundingBox()
+  ]);
+  expect(Math.abs(phoneBox!.y-noticeBox!.y)).toBeLessThanOrEqual(3);
+  expect(phoneBox!.x).toBeLessThan(noticeBox!.x);
+  expect(emailBox!.y).toBeGreaterThan(phoneBox!.y+30);
+  expect(emailBox!.width).toBeGreaterThan(rowBox!.width*.94);
 });

@@ -1,3 +1,4 @@
+import {openTaxpayerPayTax} from './taxpayer-travel-menu-helper';
 import {expect,test} from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
@@ -54,7 +55,7 @@ test.describe('read-only citizen screen matrix',()=>{
         await page.getByRole('button',{name:'Open transaction history'}).click();
         await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:choice.button,exact:true}).click();
       } else if(choice.kind==='pay'){
-        await page.getByRole('button',{name:'Pay — select payment type'}).click();
+        await openTaxpayerPayTax(page);
         const services=page.getByRole('dialog',{name:'Pay Tax'});
         await enterTaxPayService(services, 'TAX_WITH_RETURN');
       } else if(choice.kind==='button'){

@@ -142,7 +142,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 pt-4 border-t border-slate-800 text-xs text-slate-400"><p>{language === 'bn' ? '© ২০২৬ করবৃত্ত' : '© 2026 Korbritto'}</p></div>
+        <div className="mt-8 pt-4 border-t border-slate-800 text-xs text-slate-400"><p>{(language === 'bn' ? '© ২০২৬ ' : '© 2026 ') + taxpayerBrandName(language)}</p></div>
       </div>
     </footer>
   );

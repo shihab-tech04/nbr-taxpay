@@ -1,24 +1,42 @@
-import { CATEGORY_LABELS } from '../data/paymentHeads';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import {getStorySessionId,storyApiHeaders} from './simulatedPaymentStory';
+import {activePreviewSession} from './previewAccountSession';
+import {supabase} from './supabaseClient';
+import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
+import { V11_PAYMENT_OPTIONS } from '../data/v11PaymentOptions';
+import { validCertificateTransactionId } from './transactionId';
+export { validCertificateTransactionId } from './transactionId';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
+import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 
-/** Both Office and TaxPay link to this same TaxPay receipt route.
- * It reads SQL-confirmed Office records, never browser-local sample receipts. */
-const OFFICE_API='https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office';
+/** Public receipt reads are restricted to the original Taxpayer SQL owner
+ * or active guest-session capability. The Office API remains officer-only. */
+const TAXPAY_API=TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const serviceCodes=new Set<PaymentCategory>([
  'TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
- 'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX'
+ 'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX','GIFT_TAX'
 ]);
 const methods=new Set<ChallanReceipt['paymentMethod']>([
  'BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD',
  'BEFTN_RTGS','INTERNET_BANKING','VISA','MASTERCARD','BANK_BRANCH','SIMULATED'
 ]);
-export const validCertificateTransactionId=(id:unknown):id is string=>
- typeof id==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+/** Only an auth.uid()-bound SQL receipt read may unlock account transaction actions.
+ * Public references, mobile recovery and preview capabilities are never permission proof. */
+export type VerifiedSqlReceiptOwner = Readonly<{ownerUid:string;paymentTransactionId:string}>;
+export function isVerifiedSqlOwnerReceipt(
+ receipt:ChallanReceipt|null|'NOT_FOUND',proof:VerifiedSqlReceiptOwner|null,
+ currentOwnerUid:string|null|undefined,
+):receipt is ChallanReceipt {
+ return Boolean(receipt&&receipt!=='NOT_FOUND'&&proof&&currentOwnerUid&&
+  receipt.isSimulatedDemo===true&&proof.ownerUid===currentOwnerUid&&
+  validCertificateTransactionId(receipt.paymentTransactionId)&&
+  receipt.paymentTransactionId===proof.paymentTransactionId);
+}
+
 interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
 }
-type StoredPage={items:StoredPayment[];total:number};
 function stringValue(value:unknown):string{return typeof value==='string'?value:'';}
 function numberValue(value:unknown):number{return typeof value==='number'&&Number.isFinite(value)?value:0;}
 function toItems(value:unknown):PaymentLineItem[]{
@@ -40,24 +58,92 @@ const validMinorAmount=(value:unknown):value is number=>
 const validTin=(value:unknown):value is string=>
  typeof value==='string'&&/^[0-9]{12,13}$/.test(value);
 
+/** Older fictional records used a userN/SAVED_TIN synthetic beneficiary
+ * identifier without a separate TIN field. This restores only that exact,
+ * previously approved illustrative mapping, never taxpayer entitlement. */
+function legacySyntheticTin(beneficiary:string):string|undefined {
+ if(beneficiary.startsWith('SAVED_TIN:')){
+  const saved=beneficiary.slice('SAVED_TIN:'.length);
+  return validTin(saved)?saved:undefined;
+ }
+ const match=/^user([1-9]|[12][0-9]|30)$/.exec(beneficiary);
+ if(!match)return undefined;
+ return sampleTinForUserNumber(Number(match[1]))??undefined;
+}
+
 function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  const d=tx.details??{};
+ const contractVersion=d.allocationContractVersion;
+ if(contractVersion!==undefined&&contractVersion!==2&&contractVersion!==3&&contractVersion!==5)return undefined;
+ const version3=contractVersion===3||contractVersion===5;
  const lines=Array.isArray(d.lines)
   ?d.lines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
   :[];
  const explicit=Array.isArray(d.allocations)
   ?d.allocations.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)) as Array<Record<string,unknown>>
   :[];
+ const allocationIds=new Set<string>();
+ if(version3&&(explicit.length===0||explicit.some(allocation=>{
+   const id=allocation.allocationId;
+   if(typeof id!=='string'||!id.trim()||allocationIds.has(id))return true;
+   allocationIds.add(id);
+   return false;
+ })))return undefined;
  const synthetic=lines.some(line=>typeof line.beneficiary==='string');
  let items:ReceiptAllocationItem[]=[];
- if(synthetic){
-  if(explicit.length||lines.some(line=>typeof line.beneficiary!=='string'||
+ if(synthetic && explicit.length){
+  // Combined SQL payment: accounting lines and display allocations must match
+  // one-to-one. Never use an unverified receipt snapshot to infer tax credit.
+  const receiptLines=Array.isArray(d.receiptLines)
+    ?d.receiptLines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+    :[];
+  if(explicit.length!==lines.length||receiptLines.length!==lines.length||
+    explicit.some((allocation,index)=>{
+      const line=lines[index],head=receiptLines[index];
+      return !validTin(allocation.taxpayerTin) ||
+        !validMinorAmount(allocation.amountMinor) ||
+        !Number.isSafeInteger(allocation.headId) ||
+        typeof allocation.assessmentYear!=='string'||!allocation.assessmentYear.trim() ||
+        // Earlier synthetic lines carry beneficiary/category/amount/year, with
+        // TIN and head ID stored in the matched allocation and receipt line.
+        // Preserve that valid historical contract while rejecting any explicit
+        // synthetic TIN/head that disagrees with the durable allocation.
+        (line.taxpayerTin!==undefined && line.taxpayerTin!==allocation.taxpayerTin) ||
+        line.amountMinor!==allocation.amountMinor ||
+        line.assessmentYear!==allocation.assessmentYear ||
+        (line.headId!==undefined && line.headId!==allocation.headId) ||
+        line.category!==tx.service ||
+        head.headId!==allocation.headId ||
+        Math.round(numberValue(head.totalAmount)*100)!==allocation.amountMinor;
+    }))return undefined;
+  items=explicit.map((allocation,index)=>{
+    const head=receiptLines[index];
+    const name=stringValue(allocation.taxpayerName).trim();
+    const serviceEn=stringValue(head.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
+    return {...(version3?{allocationId:stringValue(allocation.allocationId)}:{}),
+      taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
+      taxpayerTin:stringValue(allocation.taxpayerTin),
+      paymentServiceEn:serviceEn,
+      paymentServiceBn:stringValue(head.headNameBn).trim()||
+       (contractVersion===5 && head.headId===125 ? V11_PAYMENT_OPTIONS.find(item=>item.id===125)?.nameBn : undefined)||
+       MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
+      assessmentYear:stringValue(allocation.assessmentYear),
+      amountMinor:allocation.amountMinor as number,
+      ...(stringValue(head.economicCode)?{economicCode:stringValue(head.economicCode)}:{})};
+  });
+ }else if(synthetic){
+  if(lines.some(line=>typeof line.beneficiary!=='string'||
     !validMinorAmount(line.amountMinor)||!serviceCodes.has(line.category as PaymentCategory)))return undefined;
   items=lines.map(line=>{
    const category=line.category as PaymentCategory;
    const label=CATEGORY_LABELS[category];
-   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:undefined;
    const name=stringValue(line.beneficiary).trim();
+   // A single legacy record may carry the exact saved TIN in payment
+   // details even when its synthetic user alias has a different length.
+   // For mixed-recipient records, derive only the fixed fictional ID mapping.
+   const storedSingleTin=lines.length===1&&validTin(d.taxpayerTin)?d.taxpayerTin:undefined;
+   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:
+     storedSingleTin??legacySyntheticTin(name);
    return {taxpayerName:name||'—',paymentServiceEn:label.en,
     paymentServiceBn:label.bn,assessmentYear:stringValue(line.assessmentYear)||stringValue(d.assessmentYear)||'—',
     amountMinor:line.amountMinor as number,...(tin?{taxpayerTin:tin}:{}),
@@ -66,22 +152,87 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  }else if(explicit.length){
   if(explicit.some(item=>!validTin(item.taxpayerTin)||typeof item.headId!=='number'||
     !Number.isSafeInteger(item.headId)||!validMinorAmount(item.amountMinor)||
-    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim()))return undefined;
+    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim())||
+    (version3&&(lines.length!==explicit.length||explicit.some((item,index)=>{
+      const line=lines[index];
+      return !line||line.headId!==item.headId||
+        !validMinorAmount(item.amountMinor)||
+        Math.round(numberValue(line.totalAmount)*100)!==item.amountMinor;
+    }))))return undefined;
   items=explicit.map(item=>{
    const head=lines.find(line=>line.headId===item.headId);
    const name=stringValue(item.taxpayerName);
    const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
-   const serviceBn=stringValue(head?.headNameBn).trim()||serviceEn;
-   return {taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
+   const serviceBn=stringValue(head?.headNameBn).trim()||
+     (contractVersion===5 && head?.headId===125 ? V11_PAYMENT_OPTIONS.find(item=>item.id===125)?.nameBn : undefined)||
+     MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
+   return {...(version3?{allocationId:stringValue(item.allocationId)}:{}),
+    taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
     taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
     assessmentYear:stringValue(item.assessmentYear),amountMinor:item.amountMinor as number,
     ...(stringValue(head?.economicCode)?{economicCode:stringValue(head?.economicCode)}:{})};
   });
  }else return undefined;
  if(!items.length)return undefined;
+ if(version3){
+  const rawSnapshot=d.receiptSnapshot;
+  if(!rawSnapshot||typeof rawSnapshot!=='object'||Array.isArray(rawSnapshot))return undefined;
+  const snapshot=rawSnapshot as Record<string,unknown>;
+  const snapshotItems=snapshot.allocationItems;
+  const savedLines=Array.isArray(d.receiptLines)
+    ?d.receiptLines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+    :lines;
+  if(snapshot.paymentCategory!==tx.service||
+    Math.round(numberValue(snapshot.totalAmount)*100)!==tx.amountMinor||
+    !Array.isArray(snapshot.items)||snapshot.items.length!==savedLines.length||
+    snapshot.items.some((raw,index)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return true;
+      const saved=raw as Record<string,unknown>,line=savedLines[index];
+      return ['headId','headNameEn','economicCode','totalAmount'].some(key=>
+        line[key]!==undefined&&line[key]!==saved[key]);
+    })||!Array.isArray(snapshotItems)||snapshotItems.length!==items.length||
+    snapshotItems.some((raw,index)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return true;
+      const saved=raw as Record<string,unknown>,item=items[index];
+      return saved.allocationId!==item.allocationId||saved.taxpayerTin!==item.taxpayerTin||
+        saved.taxpayerName!==item.taxpayerName||saved.paymentServiceEn!==item.paymentServiceEn||
+        saved.paymentServiceBn!==item.paymentServiceBn||saved.assessmentYear!==item.assessmentYear||
+        saved.amountMinor!==item.amountMinor||saved.economicCode!==item.economicCode;
+    }))return undefined;
+ }
  let total=0;
  for(const item of items){total+=item.amountMinor;if(!Number.isSafeInteger(total))return undefined;}
  return total===tx.amountMinor?items:undefined;
+}
+/** Restore original head IDs only when the saved Taxpayer SQL accounting rows
+ * reconcile to each independently verified allocation. Receipt display still
+ * uses its existing allocation-only projection; this is Pay Again input data,
+ * not a second receipt or a claim of Treasury settlement. */
+function reusableAccountingLines(
+ tx:StoredPayment, allocations:ReceiptAllocationItem[]|undefined,
+):PaymentLineItem[]|undefined{
+ // Older combined records persist a separate receiptLines array; v2/v3
+ // submissions persist the same immutable accounting facts in details.lines.
+ // Never infer head IDs from display labels or allocations alone.
+ const raw=Array.isArray(tx.details?.receiptLines)
+  ?tx.details.receiptLines:tx.details?.lines;
+ if(!allocations?.length||!Array.isArray(raw)||raw.length!==allocations.length||
+    raw.some(item=>!item||typeof item!=='object'||Array.isArray(item)))return undefined;
+ const heads=toItems(raw);
+ if(heads.length!==allocations.length)return undefined;
+ let sum=0;
+ for(let index=0;index<heads.length;index++){
+  const head=heads[index],allocation=allocations[index];
+  const minor=Math.round(head.totalAmount*100);
+  if(!Number.isSafeInteger(head.headId)||head.headId<=0||
+     !head.headNameEn.trim()||!Number.isSafeInteger(minor)||minor<=0||
+     !validTin(allocation.taxpayerTin)||head.headNameEn!==allocation.paymentServiceEn||
+     head.economicCode!==(allocation.economicCode??'')||
+     minor!==allocation.amountMinor)return undefined;
+  sum+=minor;
+  if(!Number.isSafeInteger(sum))return undefined;
+ }
+ return sum===tx.amountMinor?heads:undefined;
 }
 /** Validate snapshot against immutable database transaction identity and amount. */
 export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
@@ -89,8 +240,31 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
     !serviceCodes.has(tx.service as PaymentCategory)||!Number.isSafeInteger(tx.amountMinor)||tx.amountMinor<=0)
    throw new Error('Payment record cannot be certified');
  const d=tx.details??{};
+ // Canonical SQL comments override legacy aliases and stale receipt snapshots.
+ const savedRemarks=typeof d.challanRemarks==='string'?d.challanRemarks:
+  typeof d.paymentRemarks==='string'?d.paymentRemarks:undefined;
  const method=stringValue(d.paymentMethod);
+ if(tx.service==='GIFT_TAX'){
+  const snapshot=d.receiptSnapshot as ChallanReceipt|undefined;
+  const gift=d.giftDetails as ChallanReceipt['giftDetails'];
+  if(!gift||!snapshot||!snapshot.giftDetails||snapshot.paymentCategory!=='GIFT_TAX'||
+    !validTin(gift.donor?.tin)||!validTin(gift.donee?.tin)||gift.donor.tin===gift.donee.tin||
+    d.taxpayerTin!==gift.donor.tin||d.taxpayerName!==gift.donor.name||
+    gift.estimatedTaxMinor!==tx.amountMinor||Math.round(snapshot.totalAmount*100)!==tx.amountMinor||
+    snapshot.taxpayerTin!==gift.donor.tin||snapshot.taxpayerName!==gift.donor.name||
+    snapshot.assessmentYear!==d.assessmentYear||snapshot.paymentMethod!==method||
+    snapshot.paymentRemarks!==savedRemarks||gift.remarks!==savedRemarks||
+    snapshot.challanNo!==d.receiptReference||snapshot.isSimulatedDemo!==true||
+    snapshot.items?.length!==1||snapshot.items[0]?.economicCode!=='SIM-GIFT'||
+    Math.round(snapshot.items[0].totalAmount*100)!==tx.amountMinor)
+    throw Error('Gift Tax receipt does not reconcile to SQL');
+  return {...snapshot,giftDetails:gift,paymentTransactionId:tx.id,createdAt:tx.createdAt,completedAt:tx.createdAt,
+    treasuryStatus:'INITIATED',taxCreditStatus:'NOT_APPLICABLE',isSimulatedDemo:true,
+    allocationItems:[{taxpayerName:gift.donor.name,taxpayerTin:gift.donor.tin,paymentServiceEn:'Gift Tax',paymentServiceBn:'দানকর',assessmentYear:snapshot.assessmentYear,amountMinor:tx.amountMinor}]};
+ }
  const allocationItems=toAllocationItems(tx);
+ const readbackLines=reusableAccountingLines(tx,allocationItems);
+ const allocationContractVersion=d.allocationContractVersion===5&&allocationItems?.length&&readbackLines?.length?5 as const:undefined;
  // Do not allow a saved receipt snapshot to bypass beneficiary/amount reconciliation.
  if(Array.isArray(d.allocations)&&d.allocations.length>0&&!allocationItems)
   throw new Error('Payment allocations could not be reconciled');
@@ -105,14 +279,36 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   const category=raw.paymentCategory;
   if(category===tx.service&&Math.round(numberValue(raw.totalAmount)*100)===tx.amountMinor
     &&Array.isArray(raw.items)){
+    // The receipt snapshot is display data, never an alternative accounting
+    // source. When durable SQL already supplies per-head facts, the snapshot
+    // must retain those exact head identities and amounts before display.
+    const accountingSource=Array.isArray(d.receiptLines)?d.receiptLines:d.lines;
+    const accounting=Array.isArray(accountingSource)&&accountingSource.length>0&&
+      accountingSource.every(line=>line&&typeof line==='object'&&!Array.isArray(line)&&
+        Number.isSafeInteger((line as Record<string,unknown>).headId))
+      ?accountingSource as Array<Record<string,unknown>>:null;
+    // Older combined receipts may have no head items in the snapshot;
+    // their independently reconciled SQL allocations remain authoritative.
+    if(accounting&&raw.items.length>0&&(raw.items.length!==accounting.length||
+      raw.items.some((item,index)=>{
+        if(!item||typeof item!=='object'||Array.isArray(item))return true;
+        const snapshotLine=item as Record<string,unknown>;
+        const sourceLine=accounting[index];
+        return ['headId','headNameEn','economicCode','totalAmount'].some(key=>
+          sourceLine[key]!==undefined&&sourceLine[key]!==snapshotLine[key]);
+      })))throw Error('Payment receipt lines could not be reconciled');
     return {
       ...(raw as unknown as ChallanReceipt),
       paymentTransactionId:tx.id,
+      allocationContractVersion,
       createdAt:tx.createdAt,completedAt:tx.createdAt,
       treasuryStatus:'GATEWAY_SUCCESS',
       isSimulatedDemo:true,
-      ...(allocationItems?{allocationItems}:{}),...batchInfo,
-      taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
+      ...(allocationItems?{allocationItems}:{}),
+      ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),...batchInfo,
+      // Original challan-level remarks come from the saved parent, not a stale display snapshot.
+      ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
+      taxCreditStatus:(tx.service==='SOURCE_TAX_DEPOSIT'||tx.service==='GIFT_TAX')?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
  }
@@ -125,36 +321,201 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   challanNo:stringValue(d.receiptReference)||tx.id,tokenNumber:'—',
   paymentCategory:category,assessmentYear:allocationYears.length?allocationYears.join(', '):stringValue(d.assessmentYear)||'—',
   payerName:stringValue(d.payerName)||'—',payerTin:stringValue(d.payerTin)||'—',
+  taxpayerName:stringValue(d.taxpayerName)||undefined,
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
+  // Preserve Unicode, punctuation and line breaks even for pre-snapshot history records.
+  ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
-  items:allocationItems?[]:toItems(d.lines),...(allocationItems?{allocationItems}:{}),totalAmount:total,
+  allocationContractVersion,
+  items:allocationItems?[]:toItems(d.lines),...(allocationItems?{allocationItems}:{}),
+  ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),totalAmount:total,
   paymentMethod:methods.has(method as ChallanReceipt['paymentMethod'])?
    method as ChallanReceipt['paymentMethod']:'SIMULATED',
   gatewayTransactionId:tx.id,treasuryStatus:'GATEWAY_SUCCESS',
-  taxCreditStatus:category==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
+  taxCreditStatus:(category==='SOURCE_TAX_DEPOSIT'||category==='GIFT_TAX')?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
   createdAt:tx.createdAt,completedAt:tx.createdAt,isSimulatedDemo:true,...batchInfo,
  };
  return fallback;
 }
-export async function getConfirmedReceipt(transactionId:string):Promise<ChallanReceipt>{
- if(!validCertificateTransactionId(transactionId))throw new Error('Invalid transaction reference');
- // The Office feed contains only UI-submitted, SQL-mirrored simulated payments.
- // Page through all rows rather than silently displaying a fixture for a missing record.
- for(let page=1;page<=2000;page++){
-  const response=await fetch(OFFICE_API+'/payments?page='+page+'&perPage=100',{cache:'no-store'});
-  if(!response.ok)throw new Error('Certificate record service unavailable');
-  const envelope=await response.json() as {success:boolean;data:StoredPage};
-  if(!envelope.success||!envelope.data||!Array.isArray(envelope.data.items))
-   throw new Error('Invalid certificate response');
-  const matched=envelope.data.items.find(p=>p.id===transactionId);
-  if(matched)return makeConfirmedReceipt(matched);
-  if(page*100>=envelope.data.total)break;
- }
- throw new Error('No synchronized payment record found for this transaction');
+const isRecord=(value:unknown):value is Record<string,unknown> =>
+ Boolean(value&&typeof value==='object'&&!Array.isArray(value));
+
+function checkedParent(value:unknown,transactionId:string):StoredPayment{
+ if(!isRecord(value)||value.id!==transactionId||
+   typeof value.service!=='string'||typeof value.status!=='string'||
+   typeof value.createdAt!=='string'||!Number.isFinite(Date.parse(value.createdAt))||
+   typeof value.amountMinor!=='number'||!Number.isSafeInteger(value.amountMinor)||
+   value.amountMinor<=0||!isRecord(value.details))
+   throw Error('Invalid Taxpayer payment record');
+ return {id:transactionId,service:value.service,amountMinor:value.amountMinor,
+   status:value.status,createdAt:value.createdAt,details:value.details};
 }
+
+/** Existing Taxpayer Auth RPC projects only this owner’s claimed payments.
+ * Do not fall back to an unrelated browser session when the owner has no row.
+ */
+async function signedInParent(transactionId:string):Promise<StoredPayment|null>{
+ if(!supabase)return null;
+ const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+ if(sessionError)throw Error('Account session could not be verified');
+ const session=sessionData.session;
+ if(!session?.access_token)return null;
+ const {data:identity,error:identityError}=await supabase.auth.getUser();
+ const owner=identity.user?.id;
+ if(identityError||!owner||owner!==session.user.id)
+   throw Error('Account ownership could not be verified');
+ for(let page=1;page<=2000;page++){
+   const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
+     p_page:page,p_per_page:100,
+   });
+   if(error)throw Error('Account payment records are temporarily unavailable');
+   if(!isRecord(data)||!Array.isArray(data.items)||
+     typeof data.total!=='number'||!Number.isSafeInteger(data.total)||
+     data.total<0||data.items.length>100)
+     throw Error('Invalid account payment response');
+   const match=data.items.find(item=>isRecord(item)&&item.id===transactionId);
+   if(match){
+     const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+     if(recheckError||recheck.user?.id!==owner)
+       throw Error('Account changed during payment lookup');
+     return checkedParent(match,transactionId);
+   }
+   if(page*100>=data.total)break;
+   if(data.items.length===0)throw Error('Incomplete account payment history');
+ }
+ throw Error('Payment record is not linked to this account');
+}
+
+/** A UUID is not an ownership proof. The original Taxpayer Edge endpoint
+ * verifies the current session/preview capability before returning one parent.
+ * Never query Office's privileged global payment page from a public browser.
+ */
+export async function getConfirmedReceipt(transactionId:string):Promise<ChallanReceipt>{
+ if(!validCertificateTransactionId(transactionId))
+   throw Error('Invalid transaction reference');
+ const owner=await signedInParent(transactionId);
+ if(owner)return makeConfirmedReceipt(owner);
+ const sessionId=getStorySessionId();
+ const preview=activePreviewSession();
+ const response=await fetch(TAXPAY_API+'/payments/'+encodeURIComponent(transactionId)+
+   '?sessionId='+encodeURIComponent(sessionId),{
+     cache:'no-store',headers:storyApiHeaders(sessionId),
+   });
+ if(!response.ok)throw Error('Payment record unavailable for this session');
+ const payload:unknown=await response.json().catch(()=>null);
+ if(!isRecord(payload)||payload.success!==true||payload.simulationOnly!==true||
+   !isRecord(payload.data)||payload.data.id!==transactionId||
+   !isRecord(payload.data.data)||payload.data.data.origin!=='TAXPAY_UI')
+   throw Error('Unverified Taxpayer payment response');
+ const now=activePreviewSession();
+ if(getStorySessionId()!==sessionId||
+   (now?.capability??null)!==(preview?.capability??null)||
+   (now?.profileId??null)!==(preview?.profileId??null))
+   throw Error('Payment session changed during lookup');
+ const row=payload.data;
+ const data=row.data;
+ if(!isRecord(data))throw Error('Unverified Taxpayer payment response');
+ return makeConfirmedReceipt(checkedParent({
+   id:row.id,status:row.status,createdAt:row.createdAt,
+   service:data.service,amountMinor:data.amountMinor,
+   details:data.details,
+ },transactionId));
+}
+
+/** F-129 / US-050: an authenticated owner may recover a stored original
+ * Taxpayer SQL receipt by challan/token/gateway/parent/certificate reference.
+ * A reference or receipt mobile NEVER grants cross-account authorization.
+ * Guest lookups continue through their original session-bound API.
+ */
+export async function findOwnedReceiptByReference(
+ reference:string,receiptMobile:string
+):Promise<{authenticated:boolean;receipt:ChallanReceipt|null}> {
+ const wanted=reference.trim().toUpperCase();
+ if(!wanted||wanted.length>200)return {authenticated:false,receipt:null};
+ if(!supabase)return {authenticated:false,receipt:null};
+ const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+ if(sessionError)throw Error('Account session could not be verified');
+ const session=sessionData.session;
+ if(!session?.access_token)return {authenticated:false,receipt:null};
+ const {data:identity,error:identityError}=await supabase.auth.getUser();
+ const owner=identity.user?.id;
+ if(identityError||!owner||session.user.id!==owner)
+   throw Error('Account ownership could not be verified');
+ const mobile=receiptMobile.trim();
+ // Prefer Work B's original owner-scoped targeted SQL reference read.
+ // The legacy paged RPC is retained only for an *absent* new migration,
+ // never for an ownership denial, service outage or malformed response.
+ const {data:targeted,error:targetedError}=await supabase.rpc(
+   'taxpay_my_story1_payment_by_reference',{
+     p_reference:wanted,p_receipt_mobile:mobile||null,
+   });
+ if(!targetedError){
+   const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+   if(recheckError||recheck.user?.id!==owner)
+     throw Error('Account changed during payment lookup');
+   if(targeted===null)return {authenticated:true,receipt:null};
+   if(!isRecord(targeted)||!validCertificateTransactionId(targeted.id))
+     throw Error('Invalid account payment response');
+   const id=targeted.id as string;
+   const confirmed=checkedParent(targeted,id);
+   const d=confirmed.details??{};
+   const snapshot=isRecord(d.receiptSnapshot)?d.receiptSnapshot:null;
+   const references=[id,'SK-PC-'+id,d.receiptReference,d.tokenNumber,
+     d.gatewayTransactionId,snapshot?.challanNo,snapshot?.tokenNumber,
+     snapshot?.gatewayTransactionId,snapshot?.paymentTransactionId];
+   if(!references.some(value=>stringValue(value).trim().toUpperCase()===wanted))
+     throw Error('Account payment reference mismatch');
+   if(mobile){
+     const saved=stringValue(snapshot?.receiptMobile)||stringValue(d.receiptMobile);
+     if(!/^01\d{9}$/.test(mobile)||mobile!==saved)
+       throw Error('Account receipt mobile mismatch');
+   }
+   return {authenticated:true,receipt:makeConfirmedReceipt(confirmed)};
+ }
+ // PostgREST uses PGRST202 for a missing function. Any other error is
+ // an original-source failure and must never become NOT_FOUND or a guest read.
+ if(targetedError.code!=='PGRST202')
+   throw Error('Account payment records are temporarily unavailable');
+ for(let page=1;page<=2000;page++){
+   const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
+     p_page:page,p_per_page:100
+   });
+   if(error)throw Error('Account payment records are temporarily unavailable');
+   if(!isRecord(data)||!Array.isArray(data.items)||
+     typeof data.total!=='number'||!Number.isSafeInteger(data.total)||
+     data.total<0||data.items.length>100)
+     throw Error('Invalid account payment response');
+   for(const raw of data.items){
+     if(!isRecord(raw)||!validCertificateTransactionId(raw.id)||!isRecord(raw.details))continue;
+     const id=raw.id as string;
+     const details=raw.details;
+     const snap=isRecord(details.receiptSnapshot)?details.receiptSnapshot:null;
+     const refs=[id,'SK-PC-'+id,details.receiptReference,details.tokenNumber,
+       details.gatewayTransactionId,snap?.challanNo,snap?.tokenNumber,
+       snap?.gatewayTransactionId,snap?.paymentTransactionId];
+     if(!refs.some(value=>stringValue(value).trim().toUpperCase()===wanted))continue;
+     if(mobile){
+       const stored=stringValue(snap?.receiptMobile)||stringValue(details.receiptMobile);
+       if(!/^01\d{9}$/.test(mobile)||stored!==mobile)continue;
+     }
+     const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+     if(recheckError||recheck.user?.id!==owner)
+       throw Error('Account changed during payment lookup');
+     const receipt=makeConfirmedReceipt(checkedParent(raw,id));
+     return {authenticated:true,receipt};
+   }
+   if(page*100>=data.total)break;
+   if(data.items.length===0)throw Error('Incomplete account payment history');
+ }
+ const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+ if(recheckError||recheck.user?.id!==owner)
+   throw Error('Account changed during payment lookup');
+ return {authenticated:true,receipt:null};
+}
+
 export const certificateDocumentUrl=(transactionId:string,action?:'print'|'download')=>{
  const url=new URL(window.location.origin+import.meta.env.BASE_URL);
  url.searchParams.set('action','payment_details');

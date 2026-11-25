@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('all selected payment heads are discoverable for each taxpayer', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
@@ -19,20 +18,22 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
+  const selectableCount=await batch.locator('[data-head-row] input[type="checkbox"]:not(:disabled)').count();
+  expect(selectableCount).toBeGreaterThan(40);
   const select = batch.getByTestId('other-tax-selection-menu');
   await select.locator('summary').click();
   await select.getByRole('button', { name: 'Select all', exact: true }).click();
-  await expect(batch.getByTestId('other-tax-line')).toHaveCount(40);
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(selectableCount);
   const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
   const first = calculation.locator('.payment-form-summary__taxpayer').first();
   const second = calculation.locator('.payment-form-summary__taxpayer').nth(1);
-  await expect(first.locator('summary')).toContainText('40 heads');
+  await expect(first.locator('summary')).toContainText(`${selectableCount} heads`);
   await expect(second.locator('summary')).toContainText('0 heads');
   await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(4);
-  const showAll = first.getByRole('button', { name: 'Show all 40 selected heads' });
+  const showAll = first.getByRole('button', { name: `Show all ${selectableCount} selected heads` });
   await expect(showAll).toBeVisible();
   await showAll.click();
-  await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(40);
+  await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(selectableCount);
   await expect(first).not.toContainText('All heads listed — scroll to review');
   const headList = first.getByTestId('selected-taxpayer-head-list');
   await expect(headList).toHaveAttribute('role', 'region');
@@ -45,6 +46,9 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await headList.evaluate(element => { element.scrollTop = element.scrollHeight; });
   await expect.poll(() => headList.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   const last = first.locator('.payment-form-summary__taxpayer-item').last();
+  // The outer calculation rail and the expanded head list scroll independently.
+  // The final head must remain reachable after both scroll containers are brought into view.
+  await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   await expect(second.locator('summary')).toBeVisible();
   await first.getByRole('button', { name: 'Show first 4 heads' }).click();

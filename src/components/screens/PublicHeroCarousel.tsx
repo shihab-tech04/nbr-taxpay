@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, WalletCards } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ReceiptText, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
 import heroPaymentIllustration from '../../assets/taxpay-hero-intro-v9.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return-v9.webp';
@@ -7,8 +7,10 @@ import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v9.webp';
 import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v9.webp';
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v9.webp';
 import { supabase } from '../../services/supabaseClient';
+import { brandingReadsAllowed, noteBrandingResponse } from '../../services/brandingCmsHealth';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
+const CMS_FALLBACK_POLL_MS = 5 * 60_000;
 const SWIPE_THRESHOLD_PX = 45;
 const SWIPE_DOMINANCE_RATIO = 1.2;
 
@@ -95,13 +97,51 @@ type BannerSlide = {
   mobileHeadingEn: string; mobileHeadingBn: string; descriptionEn: string; descriptionBn: string;
   mobileDescriptionEn: string; mobileDescriptionBn: string; actionEn: string; actionBn: string;
   image: string; mobileImage?: string;
+  backgroundColor?: string | null; headingColor?: string | null;
+  bodyColor?: string | null; outlineColor?: string | null;
 };
 
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
+/**
+ * Last checksum-verified approved publication. Shown while the authoritative
+ * V2 CMS metadata is loading or temporarily restricted; never shipped as
+ * fabricated backend data. SQL remains the publishing authority.
+ */
+const lastVerifiedPublished: Record<string, {
+  file: string; path: string; background: string; heading: string; body: string; outline: string
+}> = {
+  intro: { file: 'banner-intro.jpg', path: 'banners/intro/c6bd8f1e-611d-4691-932f-9b6812f46085.jpg',
+    background: '#F7F5E6', heading: '#65531B', body: '#6D5F31', outline: '#7A651F' },
+  return: { file: 'banner-return.png', path: 'banners/return/ffa907f6-1ee0-4ebb-86a1-f75392849905.png',
+    background: '#ECF8FC', heading: '#1B4D65', body: '#315A6D', outline: '#1F5D7A' },
+  advance: { file: 'banner-advance.png', path: 'banners/advance/4ecafe03-442a-4b58-9da8-ca577d34b3a1.png',
+    background: '#FAF1DD', heading: '#65501B', body: '#6D5C31', outline: '#7A611F' },
+  withholding: { file: 'banner-withholding.png', path: 'banners/withholding/1affb273-1f0e-4cdf-bcb4-e06d5c1e15e8.png',
+    background: '#F8E7F6', heading: '#651B63', body: '#6D316C', outline: '#7A1F78' },
+  travel: { file: 'banner-travel.png', path: 'banners/travel/5a02e106-bcc0-4aba-8021-6520d289c009.png',
+    background: '#ECF8FC', heading: '#07516B', body: '#316078', outline: '#0C6D8D' },
+};
+const publishedBackup: BannerSlide[] = fallbackSlides.map(slide => {
+  const verified = lastVerifiedPublished[slide.id];
+  return { ...slide, image: `${import.meta.env.BASE_URL}branding/published/${verified.file}`,
+    backgroundColor: verified.background, headingColor: verified.heading,
+    bodyColor: verified.body, outlineColor: verified.outline };
+});
+
+
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
-function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
+function BannerPicture({ slide, visible, preload, onVisibleReady }: {
+  slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
+  // Never give the browser a URL for unpublished/inactive artwork at startup.
+  // Once visited or prepared, retain the image through the approved dissolve.
+  const [requested, setRequested] = useState(visible || preload);
+  const shouldRequest = requested || visible || preload;
+  useEffect(() => {
+    if (visible || preload) setRequested(true);
+  }, [visible, preload]);
   // The keyed picture already retries when CMS changes its image URL. Also
   // retry an unchanged URL after a temporary network/storage outage recovers.
   useEffect(() => {
@@ -114,12 +154,17 @@ function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolea
       window.removeEventListener('focus', retry);
     };
   }, [imageFailed]);
-  const fallbackImage = fallbackSlides.find(value =>
+  const fallbackImage = publishedBackup.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
+  const resolvedImage = imageFailed ? fallbackImage : slide.image;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
-    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)"
+      srcSet={shouldRequest ? slide.mobileImage : undefined} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
-      src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
+      src={shouldRequest ? resolvedImage : undefined} data-deferred-src={resolvedImage}
+      alt="" decoding="async" loading={visible || preload ? 'eager' : 'lazy'}
+      fetchPriority={visible ? 'high' : 'low'}
+      onLoad={() => { if (visible) onVisibleReady(); }}
       onError={() => setImageFailed(true)} />
   </picture>;
 }
@@ -131,6 +176,10 @@ function compactAction(actual: string, original: string, compact: string): strin
 
 function publicBannerImage(path: string | null, fallback: string): string {
   if (!path || !supabase) return fallback;
+  // The known published image is already part of the app's immutable, checked
+  // bundle. Avoid repeated 4MB+ Supabase Storage egress on carousel rotation.
+  const snapshot = Object.values(lastVerifiedPublished).find(item => item.path === path);
+  if (snapshot) return `${import.meta.env.BASE_URL}branding/published/${snapshot.file}`;
   return supabase.storage.from('taxpay-banners').getPublicUrl(path).data.publicUrl;
 }
 
@@ -142,8 +191,9 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
     return fallbackSlides;
   }
   if (!supabase) throw new Error('The public banner service is unavailable.');
-  const { data, error } = await supabase.from('taxpay_site_banners').select('*')
+  const { data, error, status } = await supabase.from('taxpay_site_banners').select('*')
     .eq('published', true).order('sort_order', { ascending: true });
+  noteBrandingResponse(status, Boolean(error));
   if (error) throw error;
   return (data || []).map(row => {
     // Banner IDs identify editable records, while service_code identifies the
@@ -159,6 +209,8 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
       actionEn: row.action_en, actionBn: row.action_bn,
       image: publicBannerImage(row.desktop_image_path, categoryImage),
       mobileImage: row.mobile_image_path ? publicBannerImage(row.mobile_image_path, categoryImage) : undefined,
+      backgroundColor: row.background_color, headingColor: row.heading_color,
+      bodyColor: row.body_color, outlineColor: row.outline_color,
     };
   });
 }
@@ -166,18 +218,25 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
   onPayTax: (service?: BannerPaymentService) => void;
+  onOtherTax: () => void;
   paused?: boolean;
 };
 
 export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   language,
   onPayTax,
+  onOtherTax,
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [slides, setSlides] = useState<BannerSlide[]>([]);
-  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [slides, setSlides] = useState<BannerSlide[]>(publishedBackup);
+  const activeBannerId = useRef<string | null>(null);
+  const lastPublishedSignature = useRef<string | null>(null);
+  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('ready');
   const [retryNonce, setRetryNonce] = useState(0);
+  // The next slide may preload only after the visible banner's image finishes.
+  // This prevents five simultaneous images from competing for first paint on 4G.
+  const [visibleImageReady, setVisibleImageReady] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -190,37 +249,55 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % Math.max(slides.length, 1)), [slides.length]);
   const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % Math.max(slides.length, 1)), [slides.length]);
+  useEffect(() => {
+    activeBannerId.current = slides[activeIndex]?.id ?? null;
+  }, [slides, activeIndex]);
 
   useEffect(() => {
     let active = true;
-    const refresh = () => { void fetchPublishedBanners().then(next => {
-      if (!active) return;
-      setSlides(next);
-      setBannerStatus('ready');
-      setActiveIndex(index => Math.min(index, Math.max(0, next.length - 1)));
-    }).catch(() => {
-      if (!active) return;
-      // Do not revive bundled images for banners an administrator may have
-      // unpublished or deleted. Keep payment entrypoints available separately.
-      setSlides([]);
-      setBannerStatus('unavailable');
-    }); };
+    let inFlight = false;
+    let lastRefreshStart = 0;
+    // CMS remains live through bounded reads; no branding WebSocket is opened.
+    // The former socket could reconnect dozens of times per second after 402.
+    const refresh = () => {
+      if (!active || inFlight || !brandingReadsAllowed()) return;
+      const now = Date.now();
+      if (lastRefreshStart && now - lastRefreshStart < 60_000) return;
+      inFlight = true;
+      lastRefreshStart = now;
+      void fetchPublishedBanners().then(next => {
+        if (!active) return;
+        const signature = JSON.stringify(next);
+        if (signature !== lastPublishedSignature.current) {
+          lastPublishedSignature.current = signature;
+          const keepId = activeBannerId.current;
+          setSlides(next);
+          setActiveIndex(index => {
+            const retained = next.findIndex(slide => slide.id === keepId);
+            return retained >= 0 ? retained : Math.min(index, Math.max(0, next.length - 1));
+          });
+        }
+        setBannerStatus(next.length ? 'ready' : 'unavailable');
+      }).catch(() => {
+        if (!active) return;
+        noteBrandingResponse(undefined, true);
+        // Never replace the latest known published artwork with an empty error
+        // panel due to temporary service failure. Healthy SQL can still unpublish.
+        setBannerStatus('ready');
+      }).finally(() => { inFlight = false; });
+    };
     refresh();
-    const channel = supabase?.channel('published-taxpay-banners')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh).subscribe();
-    // Reconcile missed Realtime messages after inactive tabs or intermittent networks.
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
-    window.addEventListener('focus', refresh);
-    window.addEventListener('online', refresh);
+    window.addEventListener('focus', onVisible);
+    window.addEventListener('online', onVisible);
     document.addEventListener('visibilitychange', onVisible);
-    const poll = window.setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 30_000);
+    const poll = window.setInterval(onVisible, CMS_FALLBACK_POLL_MS);
     return () => {
       active = false;
       window.clearInterval(poll);
-      window.removeEventListener('focus', refresh);
-      window.removeEventListener('online', refresh);
+      window.removeEventListener('focus', onVisible);
+      window.removeEventListener('online', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
-      if (channel && supabase) void supabase.removeChannel(channel);
     };
   }, [retryNonce]);
 
@@ -292,13 +369,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   if (!slides.length) {
     // An unverified client fallback must never override SQL publish status.
     // Preserve functional payment entrypoints without showing any banner image.
-    return <div className="public-hero-carousel-shell public-hero-carousel--offline">
+    return <div className="public-hero-carousel-shell  public-hero-carousel--offline">
       <section className="public-hero-carousel" role="region"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
         tabIndex={0}>
         <article className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
           data-banner-service="intro" data-banner-kind="intro">
         <div className="citizen-public-hero__copy">
+          
           <h1 id="public-home-title">{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
           <p role="status">{bannerStatus === 'loading'
             ? (bn ? 'ব্যানার লোড হচ্ছে…' : 'Loading banner information…')
@@ -307,7 +385,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             <button type="button" className="citizen-public-primary public-guest-action"
               onClick={() => onPayTax()}>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
             <button type="button" className="public-guest-action"
-              onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</button>
+              onClick={onOtherTax}>{bn ? 'অন্যান্য কর' : 'Other Tax'}</button>
           </div>
           {bannerStatus === 'unavailable' && <button className="public-hero-carousel__retry"
             type="button" onClick={() => {setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
@@ -318,16 +396,22 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       </section>
     </div>;
   }
-  // The SQL main record owns the stationary copy. Changing the active image
-  // must never change the left-side headline, description, or payment CTAs.
-  const mainBanner = slides.find(slide => slide.id === 'intro' && !slide.serviceCode)
-    ?? slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
-  const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
+  // Keep the approved two primary payment buttons and canonical introductory copy stationary.
+  // SQL still controls each published slide's artwork, ordering, and image palette.
+  const fixedBanner = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
+  // The carousel border follows the currently published service theme,
+  // while the global brand controls and the main Pay Tax CTA remain fixed.
+  const activeSlide = slides[activeIndex];
+  const activeOutline = activeSlide.serviceCode && [
+    activeSlide.backgroundColor, activeSlide.headingColor,
+    activeSlide.bodyColor, activeSlide.outlineColor,
+  ].every(value => typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value))
+    ? activeSlide.outlineColor : null;
 
   return (
     <div
       ref={containerRef}
-      className="public-hero-carousel-shell"
+      className="public-hero-carousel-shell "
       onPointerEnter={onPointerEnter}
       onPointerLeave={event => { if (event.pointerType === 'mouse') setIsHovered(false); }}
       onFocusCapture={() => setHasFocus(true)}
@@ -340,11 +424,13 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'শুধু ডান পাশের ছবি পরিবর্তন করতে সোয়াইপ করুন অথবা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to change the right-side illustration. The payment actions remain fixed.'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। কর পরিশোধ ও অন্যান্য করের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Pay Tax and Other Tax remain available on every slide.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
-        data-image-service={slides[activeIndex].serviceCode}
+        data-payment-service={slides[activeIndex].serviceCode}
+        data-active-palette={activeOutline ? 'image' : undefined}
+        style={activeOutline ? { borderColor: activeOutline } : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
@@ -352,60 +438,105 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         onPointerCancel={cancelSwipe}
         onLostPointerCapture={cancelSwipe}
       >
-        <article
-          className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
-          data-banner-service="intro"
-          data-banner-kind="intro"
-        >
-          <div className="citizen-public-hero__copy">
-            <h1 id="public-home-title">
-              <span className="public-hero-copy--desktop">{bn ? mainBanner.headingBn : mainBanner.headingEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileHeadingBn : mainBanner.mobileHeadingEn}</span>
-            </h1>
-            <p>
-              <span className="public-hero-copy--desktop">{bn ? mainBanner.descriptionBn : mainBanner.descriptionEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileDescriptionBn : mainBanner.mobileDescriptionEn}</span>
-            </p>
-            <div className="citizen-public-hero__actions public-guest-actions">
-              <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? mainBanner.actionBn : mainBanner.actionEn}>
-                <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__pay-full">{bn ? mainBanner.actionBn : mainBanner.actionEn}</span>
-                <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? compactAction(mainBanner.actionBn, fallbackSlides[0].actionBn, 'কর দিন') : compactAction(mainBanner.actionEn, fallbackSlides[0].actionEn, 'Pay Tax')}</span>
-              </button>
-              <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
-                <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__travel-full">{bn ? travelBanner.actionBn : travelBanner.actionEn}</span>
-                <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর') : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}</span>
-              </button>
-            </div>
-          </div>
-          <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-            {slides.map((slide, index) => (
-              <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
-                slide={slide} visible={index === activeIndex} />
-            ))}
-          </div>
-        </article>
+        <div className="public-hero-carousel__track" aria-live="off">
+          {slides.map((slide, index) => {
+            const isActive = index === activeIndex;
+            const intro = !slide.serviceCode;
+            const heading = bn ? fixedBanner.headingBn : fixedBanner.headingEn;
+            const mobileHeading = bn ? fixedBanner.mobileHeadingBn : fixedBanner.mobileHeadingEn;
+            const action = bn ? fixedBanner.actionBn : fixedBanner.actionEn;
+            // NULL palette preserves the existing approved service tokens.
+            const validHex = (value: string | null | undefined) =>
+              typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+            const hasPalette = validHex(slide.backgroundColor) && validHex(slide.headingColor) &&
+              validHex(slide.bodyColor) && validHex(slide.outlineColor);
+            const paletteStyle = hasPalette ? {
+              '--banner-bg': slide.backgroundColor,
+              '--banner-heading': slide.headingColor,
+              '--banner-body': slide.bodyColor,
+              '--banner-outline': slide.outlineColor,
+            } as React.CSSProperties : undefined;
+            return (
+              <article
+                key={slide.id}
+                className="citizen-public-hero public-information-hero public-hero-carousel__slide"
+                data-banner-service={intro ? 'intro' : slide.id}
+                data-banner-kind={intro ? 'intro' : 'service'}
+                data-fixed-left="true"
+                data-active={isActive}
+                data-payment-service={slide.serviceCode}
+                data-banner-palette={hasPalette ? 'image' : undefined}
+                style={paletteStyle}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={bn ? `ব্যানার ${index + 1} / ${slides.length}` : `Slide ${index + 1} of ${slides.length}`}
+                aria-hidden={!isActive}
+                inert={!isActive}
+              >
+                <div className="citizen-public-hero__copy">
+                  
+                  {intro ? (
+                    <h1 id="public-home-title">
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h1>
+                  ) : (
+                    <h2>
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h2>
+                  )}
+                  <p>
+                    <span className="public-hero-copy--desktop">{bn ? fixedBanner.descriptionBn : fixedBanner.descriptionEn}</span>
+                    <span className="public-hero-copy--mobile">{bn ? fixedBanner.mobileDescriptionBn : fixedBanner.mobileDescriptionEn}</span>
+                  </p>
+                  <div className="citizen-public-hero__actions public-guest-actions">
+                    <button className="citizen-public-primary public-guest-action" type="button"
+                      onClick={() => onPayTax()}
+                      aria-label={action}>
+                      <WalletCards size={18} aria-hidden="true" />
+                      <>
+                          <span className="public-hero-carousel__pay-full">{action}</span>
+                          <span className="public-hero-carousel__pay-compact" aria-hidden="true">
+                            {bn ? compactAction(action, fallbackSlides[0].actionBn, 'কর দিন')
+                              : compactAction(action, fallbackSlides[0].actionEn, 'Pay Tax')}
+                          </span>
+                      </>
+                    </button>
+                    <button className="public-guest-action public-hero-carousel__travel" type="button"
+                      onClick={onOtherTax} aria-label={bn ? 'অন্যান্য কর' : 'Other Tax'}>
+                      <ReceiptText size={18} aria-hidden="true" />
+                      <span className="public-hero-carousel__travel-full">{bn ? 'অন্যান্য কর' : 'Other Tax'}</span>
+                      <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'অন্যান্য কর' : 'Other Tax'}</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
+                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
+                    slide={slide} visible={isActive}
+                    preload={visibleImageReady && index === (activeIndex + 1) % slides.length}
+                    onVisibleReady={() => setVisibleImageReady(true)} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
-      <div className="public-hero-carousel__controls" role="group" aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
-        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous" onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
+      {slides.length > 1 && <div className="public-hero-carousel__controls" role="group"
+        aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous"
+          onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
           <ChevronLeft size={21} aria-hidden="true" />
         </button>
-        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next" onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next"
+          onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
           <ChevronRight size={21} aria-hidden="true" />
         </button>
-      </div>
+      </div>}
       <span className="sr-only" role="status" aria-live="polite">
-        <span className="public-hero-copy--desktop">
-          {bn
-            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}. ${slides[activeIndex].descriptionBn}`
-            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}. ${slides[activeIndex].descriptionEn}`}
-        </span>
-        <span className="public-hero-copy--mobile">
-          {bn
-            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].mobileHeadingBn}. ${slides[activeIndex].mobileDescriptionBn}`
-            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].mobileHeadingEn}. ${slides[activeIndex].mobileDescriptionEn}`}
-        </span>
+        {bn
+          ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}`
+          : `Banner ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
       </span>
     </div>
   );

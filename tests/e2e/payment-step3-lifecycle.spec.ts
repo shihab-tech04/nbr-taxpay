@@ -1,9 +1,12 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { expect, test, type Page } from '@playwright/test';
 
 async function openReview(page: Page, category = 'Tax with Return') {
   // This is the disconnected browser/UI suite. Verify the request payload while
   // avoiding hosted synthetic writes; separate disposable-SQL E2E tests cover
   // actual TaxPay → Office persistence, acknowledgments and notification delivery.
+  await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const request = route.request().postDataJSON() as {
@@ -23,7 +26,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   });
   await page.goto('/');
   const initialUrl = page.url();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   if (category === 'Tax with Return') {
@@ -35,7 +38,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -91,11 +94,61 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   }
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
-  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Payment record status' })).toBeVisible();
+  const receiptPaper = dialog.locator('.receipt-view__paper');
+  await expect(receiptPaper).toBeVisible();
+  // Optional after-payment sign-in never blocks accessing the guest receipt.
+  const invitation = dialog.getByTestId('walkin-postpayment-login');
+  await expect(invitation).toBeVisible();
+  await expect(invitation).toContainText('not automatically linked');
+  await expect(dialog.getByTestId('walkin-receipt-toolbar')).toHaveCount(0);
+  await expect(dialog.locator('.taxpay-modal__header').getByRole('button', { name: 'Back to confirmation' })).toBeVisible();
+  // The receipt reads in financial order: summary -> references ->
+  // payer/settlement details -> optional login; Back belongs to modal header.
+  const hierarchyIsCorrect = await receiptPaper.evaluate(paper => {
+    const selectors = [
+      '.receipt-view__summary',
+      '.receipt-view__reference-strip',
+      '.receipt-view__parties',
+      '.walkin-postpayment-login',
+    ];
+    const elements = selectors.map(selector => paper.querySelector(selector));
+    return elements.every((element, index) => element && (index === 0 ||
+      Boolean(elements[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)));
+  });
+  expect(hierarchyIsCorrect).toBe(true);
+  await expect(dialog.locator('.receipt-view__actions .receipt-view__restart')).toHaveCount(0);
+  await invitation.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(invitation).toHaveCount(0);
+  await expect(receiptPaper).toBeVisible();
+  const backToConfirmation = dialog.getByRole('button', { name: 'Back to confirmation', exact: true });
+  await expect(backToConfirmation).toBeVisible();
+  await backToConfirmation.click();
+  await expect(receiptPaper).toHaveCount(0);
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Receipt details', exact: true })).toBeVisible();
   await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
   await expect(dialog.getByText('Simulation only. No actual money transfer, government challan or tax credit has occurred.')).toHaveCount(0);
+});
+
+
+test('after a saved walk-in record, Sign in is optional and opens the existing login route', async ({ page }) => {
+  const dialog = await openReview(page, 'Other Tax');
+  await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Cards' }).click();
+  await dialog.getByRole('radio', { name: 'Visa' }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
+  await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  const invitation = dialog.getByTestId('walkin-postpayment-login');
+  await expect(invitation).toBeVisible();
+  await expect(dialog.locator('.receipt-view__reference-strip')).toBeVisible();
+  await invitation.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page).toHaveURL(/action=taxpayer_login/);
+  await expect(page.getByRole('dialog').getByLabel('User ID')).toBeVisible();
 });
 
 test('bank branch creates an unpaid challan first, then a receipt after simulated settlement', async ({ page }) => {
@@ -114,7 +167,7 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await dialog.locator('.payment-lifecycle__progress-detail summary').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Treasury settlement not verified')).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
 });
 
 test('declined online authorization issues no receipt and allows a new method', async ({ page }) => {
@@ -139,5 +192,5 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
 });
