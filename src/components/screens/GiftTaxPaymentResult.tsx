@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {AlertCircle, ArrowRight, Building2, CheckCircle2, Clock3, FileText} from 'lucide-react';
 import {ReceiptView} from '../common/ReceiptView';
-import type {ChallanReceipt} from '../../types/tax';
+import {resolveGiftTaxReceipt} from '../../services/giftTaxSampleReceipt';
 import {maskTinForDisplay} from '../../services/tinDisplay';
 import type {GiftTaxPaymentInput, GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
 import {validatedGiftTaxSettlement} from '../../services/giftTaxPaymentGateway';
@@ -42,12 +42,14 @@ export function GiftTaxPaymentResult({
   const relationship=beneficiaryFinalTagLabel(input.donee.tag,relation,language,input.donee.otherLabel)
     ??input.donee.otherLabel??input.donee.relationship??'—';
   const officialProof=validatedGiftTaxSettlement(outcome,input);
-  const simulatedSuccess=outcome.kind==='SIMULATED_SUCCESS';
+  const receipt=resolveGiftTaxReceipt(input,outcome,signedIn);
+  const missingSignedReceipt=signedIn&&outcome.kind==='SIMULATED_SUCCESS'&&!receipt;
+  const simulatedSuccess=outcome.kind==='SIMULATED_SUCCESS'&&!!receipt;
   const noTax=outcome.kind==='SIMULATED_NO_TAX';
   const simulatedPending=outcome.kind==='SIMULATED_PENDING';
   const failed=outcome.kind==='FAILED'||outcome.kind==='SIMULATED_FAILED';
   const syncPending=outcome.kind==='SIMULATED_SYNC_PENDING';
-  const pending=outcome.kind==='PENDING'||simulatedPending||syncPending;
+  const pending=outcome.kind==='PENDING'||simulatedPending||syncPending||missingSignedReceipt;
   const completed=Boolean(officialProof)||simulatedSuccess||noTax;
   const reference='reference' in outcome ? outcome.reference : officialProof?.paymentReference;
   const format=(value:number)=>new Intl.NumberFormat(bn?'bn-BD':'en-IN',{maximumFractionDigits:2}).format(value);
@@ -55,6 +57,7 @@ export function GiftTaxPaymentResult({
   const Icon=pending?(simulatedPending?Building2:Clock3):failed?AlertCircle:CheckCircle2;
   const heading=simulatedSuccess?(signedIn ? t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত') : t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত'))
     :noTax?t('No Gift Tax payable','কোনো দানকর পরিশোধযোগ্য নয়')
+    :missingSignedReceipt?t('Payment record not verified','পেমেন্ট রেকর্ড যাচাই হয়নি')
     :syncPending?t('Payment synchronization pending','পেমেন্ট সিঙ্ক অপেক্ষমাণ')
     :simulatedPending?t('Bank payment slip ready','ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত')
     :pending?t('Payment pending','পেমেন্ট অপেক্ষমাণ')
@@ -66,6 +69,7 @@ export function GiftTaxPaymentResult({
       'এই ব্রাউজারে নমুনা পেমেন্ট রেকর্ড সংরক্ষিত; নিষ্পত্তি যাচাই হয়নি। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।'))
     :noTax?t('This review calculates zero Gift Tax. No payment was initiated and no money was charged.',
       'এই হিসাবে দানকর শূন্য। কোনো পেমেন্ট শুরু হয়নি এবং অর্থ কাটা হয়নি।')
+    :missingSignedReceipt?t('The saved receipt could not be verified. Close this result and check Activity before making another payment.','সংরক্ষিত রসিদ যাচাই করা যায়নি। ফলাফল বন্ধ করে নতুন পেমেন্টের আগে কার্যক্রম দেখুন।')
     :syncPending?t('The original transaction is not yet fully verified. Retry synchronization with the same reference; do not submit another payment.','মূল লেনদেনের সিঙ্ক যাচাই হয়নি। একই রেফারেন্সে আবার চেষ্টা করুন; নতুন পেমেন্ট করবেন না।')
     :simulatedPending?t('This is not tax paid yet. Only a sample bank payment slip was created; bank settlement and donor credit remain unverified.',
       'এখনও কর পরিশোধ হয়নি। শুধু নমুনা ব্যাংক-স্লিপ তৈরি হয়েছে; ব্যাংক নিষ্পত্তি ও দাতার কর ক্রেডিট যাচাই হয়নি।')
@@ -75,22 +79,7 @@ export function GiftTaxPaymentResult({
       'স্বতন্ত্রভাবে যাচাইকৃত নিষ্পত্তি ও দাতার কর ক্রেডিটসহ পেমেন্ট নিশ্চিত হয়েছে।')
     :t('No Gift Tax settlement has been initiated. No money or official document was created.',
       'দানকরের কোনো নিষ্পত্তি শুরু হয়নি। অর্থ বা সরকারি নথি তৈরি হয়নি।');
-  const receipt:ChallanReceipt|null=simulatedSuccess&&outcome.kind==='SIMULATED_SUCCESS'?(outcome.receipt??{
-    id:outcome.reference,challanNo:outcome.reference,tokenNumber:'SIMULATION',
-    paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'—',
-    payerName:input.payer?.name||input.donor.name,payerTin:input.payer?.tin||input.donor.tin,
-    taxpayerName:input.donor.name,taxpayerTin:input.donor.tin,
-    receiptMobile:input.payer?.phone,receiptEmail:input.payer?.email,
-    noticeReference:input.payer?.noticeReference,
-    paymentRemarks:input.remarks,isRepresentativePayment:false,
-    taxZone:t('Not verified','যাচাই হয়নি'),taxCircle:t('Not verified','যাচাই হয়নি'),
-    isWithholding:false,items:[{headId:0,economicCode:'SIM-GIFT',
-      headNameEn:'Gift Tax — simulated only',taxAmount:input.estimatedTaxMinor/100,
-      penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:input.estimatedTaxMinor/100}],
-    totalAmount:input.estimatedTaxMinor/100,paymentMethod:outcome.method,
-    gatewayTransactionId:outcome.reference,treasuryStatus:'INITIATED',
-    taxCreditStatus:'NOT_APPLICABLE',createdAt:outcome.createdAt,isSimulatedDemo:true,
-  }):null;
+
 
   if(showReceipt&&receipt) return <div className="gift-tax-simulation-receipt" data-testid="gift-tax-simulation-receipt">
     <p role="note" className="gift-tax-sample-warning">
@@ -116,6 +105,7 @@ export function GiftTaxPaymentResult({
     t('Treasury settlement not verified','ট্রেজারি নিষ্পত্তি যাচাই হয়নি'),
     t('Donor credit not posted','দাতার কর ক্রেডিট পোস্ট হয়নি'),
   ]:noTax?[t('Gift Tax reviewed — no payment due','দানকর পর্যালোচিত — পরিশোধ প্রযোজ্য নয়')]
+    :missingSignedReceipt?[t('Waiting for verified receipt','যাচাইকৃত রসিদের অপেক্ষায়')]
     :syncPending?[t('Simulation submission prepared','নমুনা পেমেন্ট প্রস্তুত'),t('Waiting for Taxpayer SQL and Office readback','করদাতা SQL এবং অফিস যাচাইয়ের অপেক্ষায়')]
     :pending?[t('Sample bank payment slip prepared','নমুনা ব্যাংক পরিশোধ স্লিপ প্রস্তুত'),
       t('Waiting for sample bank confirmation','নমুনা ব্যাংক নিশ্চিতকরণের অপেক্ষায়')]
@@ -185,7 +175,7 @@ export function GiftTaxPaymentResult({
               className="payment-lifecycle__secondary" onClick={onRefresh} disabled={busy}>
               {t('Check status','অবস্থা দেখুন')}
             </button>}
-            {!syncPending&&<button type="button" className="payment-lifecycle__secondary" onClick={onBack}>
+            {!syncPending&&!missingSignedReceipt&&<button type="button" className="payment-lifecycle__secondary" onClick={onBack}>
               {t('Back to Final Preview','চূড়ান্ত পর্যালোচনায় ফিরুন')}
             </button>}
           </div>}

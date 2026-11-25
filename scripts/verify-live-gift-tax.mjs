@@ -148,6 +148,24 @@ try{
       await review.locator('#gift-review-phone').fill('01712345678');
       await review.locator('#gift-review-email').fill('sample@example.com');
       await review.locator('#gift-review-reference').fill('GIFT-UX-ACCEPTANCE');
+      // The approved mobile preview now uses three cells, not the retired th/td table.
+      // Protect actual text geometry, including the full-width label and the date/amount row.
+      if(mobile){
+        const table=review.locator('.gift-tax-approved-table');
+        const rows=table.locator('tbody tr:not(.unified-v3-review__owner)');
+        await expect(rows).toHaveCount(2);
+        for(const row of await rows.all()){
+          const cells=row.locator('td');
+          await expect(cells).toHaveCount(3);
+          const [label,date,amount]=await Promise.all([0,1,2].map(i=>cells.nth(i).boundingBox()));
+          if(!label||!date||!amount||label.width<160||date.width<70||amount.width<55||
+             label.y+label.height>date.y+2||label.y+label.height>amount.y+2||
+             date.x+date.width>amount.x+2||
+             Math.abs(date.y-amount.y)>2){
+            throw new Error('Gift Tax mobile preview unreadable or overlapping cells: '+JSON.stringify({label,date,amount}));
+          }
+        }
+      }
       const previewOverflow=await body.evaluate(element=>element.scrollWidth-element.clientWidth);
       if(previewOverflow>2)throw new Error('Final review horizontal overflow: '+previewOverflow);
       await gift.screenshot({path:'test-results/live-gift-tax-preview-'+sample.name+'.png',
