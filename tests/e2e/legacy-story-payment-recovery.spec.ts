@@ -340,8 +340,13 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await resumed.getByRole('button',{name:'Pay online'}).click();
   await resumed.getByRole('button',{name:'Mobile banking'}).click();
   await resumed.getByRole('radio',{name:'bKash'}).check();
-  await resumed.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
-  await resumed.getByRole('button',{name:'Confirm payment',exact:true}).click();
+  const confirm=resumed.getByRole('button',{name:'Confirm payment',exact:true});
+  await expect(confirm).toBeDisabled();
+  const acknowledgement=resumed.getByRole('checkbox',{name:'I have checked the taxpayers, payment heads, assessment years and total amount.'});
+  await expect(acknowledgement).toBeVisible();
+  await acknowledgement.check();
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
   await expect(resumed.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:12000});
   expect(paymentSubmissions).toHaveLength(1);
   const payAgainSubmission=paymentSubmissions[0];

@@ -55,18 +55,26 @@
     padding-bottom:calc(12px + env(safe-area-inset-bottom));
   }
 
-  /* Travel Tax is a long journey, including payment-channel selection
-     (which deliberately removes the progress bar). Do not let the generic
-     content-sized bottom sheet collapse its scrollable body to zero height.
-     Keep the approved safe-area gap and pinned action footer. */
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:is([data-payment-stage="true"],:has(.travel-flow[data-step="2"])):has(.travel-flow__main) {
+  /* Passenger collection can be long: retain its existing fixed-height
+     workspace. Details and the shared review/checkout use natural height
+     with a viewport cap and an independently scrollable body. */
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow[data-step="0"]) {
     height:calc(100dvh - 12px - env(safe-area-inset-top)) !important;
     max-height:calc(100dvh - 12px - env(safe-area-inset-top));
   }
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow__main):not(:has(.travel-flow[data-step="2"])) .taxpay-modal__body {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow[data-step="0"]) .taxpay-modal__body {
     flex:1 1 auto;
     min-height:0;
     overflow:hidden;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow[data-step="1"]) > .taxpay-modal__body {
+    display:block;flex:0 1 auto;min-height:0;height:auto;
+    overflow-y:auto;overflow-x:hidden;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"][data-payment-stage="true"] .tax-service-choice--travel:has(> .travel-flow[data-step="1"]),
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"][data-payment-stage="true"] .travel-flow[data-step="1"],
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-public-service="travel"][data-payment-stage="true"] .travel-flow[data-step="1"] > .travel-flow__main {
+    height:auto;min-height:0;overflow:visible;
   }
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.travel-flow[data-step="2"]) .taxpay-modal__body {
     min-height:0;
