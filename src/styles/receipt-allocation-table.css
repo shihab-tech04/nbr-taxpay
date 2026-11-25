@@ -1,0 +1,25 @@
+/* One semantic taxpayer allocation table for embedded history, public receipts
+ * and print. Keep other receipt/certificate layouts unchanged. Narrow screens
+ * scroll within the table, never the containing payment modal. */
+.receipt-view .receipt-view__table.receipt-view__allocation-scroll {
+  display:block; max-width:100%; min-width:0; overflow-x:auto;
+  overscroll-behavior-x:contain;
+}
+.receipt-view .receipt-view__allocation-scroll:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:-2px;}
+.receipt-view .receipt-view__allocation-table {width:100%;min-width:620px;table-layout:fixed;}
+.receipt-view .receipt-view__allocation-table th:nth-child(1) {width:29%;}
+.receipt-view .receipt-view__allocation-table th:nth-child(2) {width:36%;}
+.receipt-view .receipt-view__allocation-table th:nth-child(3) {width:16%;}
+.receipt-view .receipt-view__allocation-table th:nth-child(4) {width:19%;}
+.receipt-view .receipt-view__allocation-table :is(th,td) {min-width:0;overflow-wrap:anywhere;white-space:normal;}
+.receipt-view .receipt-view__allocation-table :is(th,td):not(:last-child) {text-align:left;}
+.receipt-view .receipt-view__allocation-table td.receipt-view__allocation-year {text-align:left;}
+.receipt-view .receipt-view__allocation-table td.receipt-view__allocation-service {text-align:left;}
+.receipt-view .receipt-view__allocation-table td.receipt-view__allocation-amount,
+.receipt-view .receipt-view__allocation-table thead th:last-child,
+.receipt-view .receipt-view__allocation-table tfoot td {text-align:right;font-variant-numeric:tabular-nums;}
+.receipt-view .receipt-view__allocation-code {display:block;margin-top:4px;color:var(--citizen-muted);font-size:12px;}
+@media print {
+ .receipt-view .receipt-view__allocation-scroll {overflow:visible!important;}
+ .receipt-view .receipt-view__allocation-table {min-width:0;table-layout:fixed;}
+}

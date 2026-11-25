@@ -41,6 +41,24 @@ export async function downloadDisplayedCertificate(receipt: ChallanReceipt, pape
   const canvas = await renderPaper(paper, {
     backgroundColor: '#fff', logging: false, scale,
     ignoreElements: element => element.matches('button, .no-print'),
+    onclone: (_document, clonedPaper) => {
+      // The on-screen allocation viewport may scroll at narrow widths.
+      // Fit all four columns into the exported paper, rather than capture
+      // only its visible left portion. Do not alter the actual screen DOM.
+      clonedPaper.querySelectorAll<HTMLElement>('.receipt-view__allocation-scroll').forEach(viewport => {
+        viewport.style.overflow = 'visible';
+        const table = viewport.querySelector<HTMLElement>('.receipt-view__allocation-table');
+        if (table) {
+          table.style.minWidth = '0';
+          table.style.width = '100%';
+          table.querySelectorAll<HTMLElement>('th,td').forEach(cell=>{
+            cell.style.minWidth='0';
+            cell.style.whiteSpace='normal';
+            cell.style.overflowWrap='anywhere';
+          });
+        }
+      });
+    },
   });
   if (!canvas.width || !canvas.height) throw new Error('Document is not ready');
 
