@@ -4,16 +4,17 @@ on:
     branches: [ops/mui-v4-pilot-build-bb3fcb77]
 permissions:
   contents: write
+  actions: read
 jobs:
   pilot:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       CI: 'true'
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: bb3fcb774695350e93f00d3fd3c27fadbac56ee0
+      BASE_SHA: 82d3e610cae3a3c37100aa7804d8bbdf29b20421
       FOUNDATION_SHA: 1619a8951c4b0b1ed6e1d70f868c6aff8d343d84
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-remote origin refs/tags/recovery/mui-v4-bb3fcb77 | cut -f1)" = "$BASE_SHA"
+          test "$(git ls-remote origin refs/tags/recovery/mui-v4-82d3e610 | cut -f1)" = "$BASE_SHA"
           git merge-base --is-ancestor "$BASE_SHA" HEAD
           git merge-base --is-ancestor "$FOUNDATION_SHA" HEAD
           git diff --name-only "$BASE_SHA" HEAD
@@ -32,11 +33,19 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+      - uses: actions/download-artifact@v4
+        with:
+          name: mui-v4-glossary-pilot-evidence
+          run-id: 45657043479
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/prior-mui-pilot
       - name: Install pinned free MUI and verify package metadata
         shell: bash
         run: |
           set -euo pipefail
-          npm install --save-exact @mui/material@7.3.11 @emotion/react@11.14.0 @emotion/styled@11.14.1 --no-audit --no-fund
+          cp "$RUNNER_TEMP/prior-mui-pilot/package.json" package.json
+          cp "$RUNNER_TEMP/prior-mui-pilot/package-lock.json" package-lock.json
+          npm ci --no-audit --no-fund
           node --input-type=commonjs <<'JS'
           const fs=require('fs'), assert=require('assert/strict'), child=require('child_process');
           const before=JSON.parse(child.execFileSync('git',['show',process.env.BASE_SHA+':package.json']));
@@ -60,6 +69,26 @@ jobs:
       - run: npx playwright install chromium
       - name: Test actual glossary interactions and protected home routes
         run: npx playwright test tests/e2e/public-guidance-p3.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/mui-v4-glossary-pilot.spec.ts --grep 'glossary|MUI pilot|MUI glossary' --workers=2
+      - name: Compare every protected homepage image against exact Main
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mui-exact-main" "$RUNNER_TEMP/mui-snapshots" pilot-evidence
+          git archive "$BASE_SHA" | tar -x -C "$RUNNER_TEMP/mui-exact-main"
+          cp playwright.mui-protected.config.ts "$RUNNER_TEMP/mui-exact-main/"
+          cp tests/e2e/mui-v4-protected-home.spec.ts "$RUNNER_TEMP/mui-exact-main/tests/e2e/"
+          export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
+          (
+            cd "$RUNNER_TEMP/mui-exact-main"
+            npm ci --no-audit --no-fund
+            npm run build
+            du -sb dist > "$RUNNER_TEMP/base-build-bytes.txt"
+            npx playwright test --config playwright.mui-protected.config.ts --update-snapshots
+          )
+          du -sb dist > pilot-evidence/candidate-build-bytes.txt
+          cp "$RUNNER_TEMP/base-build-bytes.txt" pilot-evidence/
+          npx playwright test --config playwright.mui-protected.config.ts
+          cp -R "$MUI_SNAPSHOT_DIR" pilot-evidence/home-snapshots
       - name: Preserve exact candidate for authorized protected PR review
         shell: bash
         run: |
@@ -95,5 +124,5 @@ jobs:
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_SHA"
           test "$(git ls-remote origin refs/heads/ux/sohojkor-ui-library-foundation-20261124 | cut -f1)" = "$FOUNDATION_SHA"
           gh auth setup-git
-          git push origin HEAD:refs/heads/ops/mui-v4-tested-candidate-bb3fcb77
-          test "$(git ls-remote origin refs/heads/ops/mui-v4-tested-candidate-bb3fcb77 | cut -f1)" = "$(git rev-parse HEAD)"
+          git push origin HEAD:refs/heads/ops/mui-v4-tested-candidate-82d3e610
+          test "$(git ls-remote origin refs/heads/ops/mui-v4-tested-candidate-82d3e610 | cut -f1)" = "$(git rev-parse HEAD)"

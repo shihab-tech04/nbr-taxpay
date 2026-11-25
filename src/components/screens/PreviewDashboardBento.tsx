@@ -9,6 +9,7 @@ import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
+import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import type {DemoUserId} from '../../data/demoUsers';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
@@ -59,6 +60,8 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
   const [year,setYear]=useState('2026-2027');
   const [tab,setTab]=useState<'drafts'|'requests'>('drafts');
   const [draftCount,setDraftCount]=useState<number|null>(null);
+  const correctionRegister=usePreviewCorrectionRegister(profileId);
+  const correctionCount=correctionRegister.count;
   const [snapshot,setSnapshot]=useState<LoadState>({owner:null,phase:'loading',transactions:[],people:[]});
   // Preserve the existing cross-browser Continue Draft journey: once saved drafts
   // load, show their cards without requiring a hidden tab to be opened first.
@@ -207,7 +210,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
             <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests"
               onClick={()=>setTab('requests')}>
               <span className="taxpay-summary-metric__label"><ReceiptText aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span>
-              <strong className="tabular-nums">—</strong>
+              <strong className="tabular-nums">{correctionCount??"—"}</strong>
               <small>{tr('View requests','আবেদন দেখুন')}</small>
             </button>
           </div>
@@ -221,7 +224,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
                   {tr('Drafts','খসড়া')} <span>{draftCount===null?'—':draftCount}</span>
                 </button>
                 <button type="button" aria-pressed={tab==='requests'} onClick={()=>setTab('requests')}>
-                  {tr('Requests','আবেদন')} <span>—</span>
+                  {tr('Requests','আবেদন')} <span>{correctionCount??'—'}</span>
                 </button>
               </div>
             </div>
@@ -232,8 +235,12 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
                 detail={tr('Start a payment and save it to continue later.','পেমেন্ট শুরু করে পরে চালিয়ে যাওয়ার জন্য সংরক্ষণ করুন।')}/>}
             </div>
             {tab==='requests'&&<div className="taxpay-unified-followups__empty">
-              <EmptyIllustration icon="request" title={tr('Check correction requests','সংশোধনের আবেদন দেখুন')}
-                detail={tr('Open your requests to review their current status.','আবেদনগুলোর বর্তমান অবস্থা দেখতে আবেদন বিভাগে যান।')}/>
+              <p className="text-sm text-taxpay-muted">{tr('Correction requests from all assessment years.','সব করবর্ষের সংশোধনের আবেদন।')}</p>
+              {correctionRegister.phase==='loading'?<p role="status" className="text-sm text-taxpay-muted">{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</p>
+                :correctionRegister.phase==='error'?<div role="alert" className="space-y-2 text-sm"><p>{tr('Correction request history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><button type="button" className="taxpay-unified-text-link" onClick={correctionRegister.retry}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>
+                :correctionRegister.rows.length?<ul data-testid="dashboard-recorded-corrections" className="w-full space-y-2">{correctionRegister.rows.slice(0,3).map(request=><li key={request.id} className="rounded-lg border border-taxpay-border p-3 min-w-0"><p className="break-all text-sm font-semibold">{request.originalReference}</p><p className="text-sm">{previewCorrectionStatus(request,language)} · {request.currentAY} → {request.proposedAY}</p><p className="break-words text-sm">{request.reason}</p></li>)}</ul>
+                :<EmptyIllustration icon="request" title={tr('No correction requests yet','এখনো কোনো সংশোধনের আবেদন নেই')}
+                  detail={tr('Open your requests to review their current status.','আবেদনগুলোর বর্তমান অবস্থা দেখতে আবেদন বিভাগে যান।')}/>} 
               <button type="button" className="taxpay-unified-text-link" onClick={()=>onNavigate('corrections')}>
                 {tr('View requests','আবেদন দেখুন')} <ArrowRight size={15} aria-hidden="true"/>
               </button>

@@ -44,9 +44,10 @@ jobs:
           test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
           OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
-          # Check the existing WS3 Office #270 branch, not a stale historical bridge.
-          OFFICE_BRIDGE_REF="ws3/v95-correction-payment-parent-20261112"
-          OFFICE_BRIDGE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
+          # Match the accepted Office-originated correction bridge contract.
+          # Current Office Main (including V2 routing) is separately exercised below.
+          OFFICE_BRIDGE_REF="main"
+          OFFICE_BRIDGE_SHA="b5f5e8f95f952bb191c03f9d9e3caa804d565a11"
           OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
           git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
           git -C "$OFFICE_BRIDGE_DIR" fetch --depth 1 origin "$OFFICE_BRIDGE_SHA"

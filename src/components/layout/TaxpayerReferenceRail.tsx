@@ -1,3 +1,4 @@
+import {useCorrectionNotices} from '../../services/previewCorrections';
 import React from 'react';
 import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, FileCheck2, Gift, Home, LogOut, Plane, UsersRound } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
@@ -23,6 +24,7 @@ const activityRoutes = new Set(['history', 'verify']);
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
   const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, openPaymentServiceChoice, openAllTaxPayments } = useTaxState();
+  const correctionNotices=useCorrectionNotices(previewAccount?.id??null);
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [payMenuOpen, setPayMenuOpen] = React.useState(false);
@@ -105,7 +107,7 @@ export function TaxpayerReferenceRail() {
             <button key={route} type="button" aria-current={(currentRoute === route || (route === 'taxpayer_home' && currentRoute === 'dashboard') || (route === 'history' && activityRoutes.has(currentRoute))) ? 'page' : undefined}
               onClick={() => navigate(route)}>
               <Icon size={20} aria-hidden={true} />
-              <span>{bn ? bnLabel : en}</span>
+              <span>{bn ? bnLabel : en}</span>{route==='account_notifications'&&Boolean(correctionNotices.unreadCount)&&<span aria-label={bn?'অপঠিত সংশোধনের বিজ্ঞপ্তি':'Unread correction notifications'} className="text-xs font-semibold">{correctionNotices.unreadCount}</span>}
             </button>
           ))}
         </nav>
