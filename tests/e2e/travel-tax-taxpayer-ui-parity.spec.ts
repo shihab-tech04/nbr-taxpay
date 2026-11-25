@@ -1,4 +1,26 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
+
+async function assertViewportFit(modal: Locator) {
+  await expect.poll(async()=>modal.evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    const body=el.querySelector('.taxpay-modal__body')!;
+    const footer=el.querySelector('.taxpay-modal__footer');
+    const f=footer?.getBoundingClientRect();
+    const b=body.getBoundingClientRect();
+    return Math.max(0,-r.top,-r.left,r.right-innerWidth,r.bottom-innerHeight,
+      body.scrollWidth-body.clientWidth,
+      footer && getComputedStyle(footer).display!=='none' && f ? b.bottom-f.top : 0);
+  }),{message:'Modal stays within viewport with no horizontal overflow or footer overlap'}).toBeLessThanOrEqual(2);
+}
+
+async function assertCompactContent(modal:Locator, content:Locator, maxGap:number) {
+  await assertViewportFit(modal);
+  await expect.poll(async()=>{
+    const [b,c]=await Promise.all([modal.locator('.taxpay-modal__body').boundingBox(),content.boundingBox()]);
+    if(!b||!c)return Infinity;
+    return Math.max(0,b.y+b.height-c.y-c.height);
+  },{message:'No unused fixed-height region after the last content panel'}).toBeLessThanOrEqual(maxGap);
+}
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { fillTravelDetails } from './travel-tax-test-helper';
 
@@ -18,7 +40,17 @@ async function reachTravelPreview(page: import('@playwright/test').Page, multipl
   }
   await modal.getByRole('button', { name: 'Continue to travel details' }).click();
   await fillTravelDetails(modal);
+  await assertViewportFit(modal);
   if ((page.viewportSize()?.width ?? 0) > 800) {
+    await expect.poll(async()=>{
+      const [body,edit,age]=await Promise.all([
+        modal.locator('.taxpay-modal__body').boundingBox(),
+        modal.locator('.travel-flow__edit-travel').boundingBox(),
+        modal.locator('.travel-flow__age-breakdown').boundingBox()
+      ]);
+      if(!body||!edit||!age)return Infinity;
+      return Math.max(0,body.y+body.height-Math.max(edit.y+edit.height,age.y+age.height));
+    },{message:'Travel Details ends at the taller of its populated columns'}).toBeLessThanOrEqual(48);
     const rail = modal.locator('.travel-flow__summary');
     const list = rail.locator('.travel-flow__age-breakdown');
     await expect(list).toBeVisible();
@@ -91,8 +123,10 @@ test('Travel Tax keeps taxpayer v5 review and checkout components without a sque
   expect(bounds.bottom).toBeGreaterThanOrEqual(-1);
   expect(bounds.height).toBeGreaterThan(150);
   await expect(checkout.locator('.payment-review__method-groups')).toHaveCount(0);
+  await assertCompactContent(modal,checkout.locator('.payment-review__panel'),36);
   await modal.getByRole('button', { name: 'Pay online' }).click();
   await expect(checkout.locator('.payment-review__method-groups')).toBeVisible();
+  await assertCompactContent(modal,checkout.locator('.payment-review__panel'),36);
   await modal.screenshot({path:test.info().outputPath('travel-payment-channel.png'),animations:'disabled'});
   await modal.getByRole('button', { name: 'Mobile banking' }).click();
   await expect(modal.locator('.travel-flow__summary')).toBeHidden();
@@ -116,6 +150,18 @@ test('Travel Tax sample result uses the shared compact walk-in receipt and accou
   await expect(result.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
   await expect(result.locator('.payment-lifecycle__overview')).toContainText('1,000');
   await expect(result.getByTestId('walkin-result-benefits')).toBeVisible();
+  await assertCompactContent(modal,result.locator('.payment-lifecycle'),36);
+  const widths=await result.evaluate(el=>{
+    const body=el.closest('.taxpay-modal__body')!;
+    const layout=el.querySelector('.payment-flow-embedded__confirmation-layout')!;
+    const card=layout.querySelector('.payment-lifecycle')!;
+    const style=getComputedStyle(layout);
+    return {body:body.clientWidth,root:el.getBoundingClientRect().width,card:card.getBoundingClientRect().width,
+      inset:parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)};
+  });
+  expect(Math.abs(widths.body-widths.root)).toBeLessThanOrEqual(2);
+  expect(Math.abs(widths.body-widths.card-widths.inset)).toBeLessThanOrEqual(2);
+  await expect(modal.locator('.taxpay-modal__footer')).toBeHidden();
   await expect(result.locator('.walkin-result-benefits__actions button')).toHaveCount(2);
   await expect(modal.getByTestId('travel-family-challan')).toHaveCount(0);
   await modal.screenshot({path:info.outputPath('travel-payment-result.png'),animations:'disabled'});

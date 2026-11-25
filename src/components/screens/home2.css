@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
 /* Uploaded Figma Make design: unique Home 2 namespace; existing homepage styles untouched. */
-.taxpay-citizen-shell.home2-import-shell{background:#e7eaf0;color:#141b2d;}
+.taxpay-citizen-shell.home2-import-shell{background:#e6eaf1;color:#141b2d;}
 .taxpay-citizen-shell.home2-import-shell > main{width:100%;max-width:none!important;padding:0!important;margin:0;}
 .home2-import-root{font-family:'Poppins','Hind Siliguri',ui-sans-serif,system-ui,sans-serif;color:#141b2d;min-width:0;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
 .home2-import-root[lang=bn]{font-family:'Hind Siliguri','Poppins',sans-serif;}
@@ -22,3 +22,11 @@
 /* Match the standalone ZIP's Tailwind preflight line-height, not the citizen shell's 1.6/1.65. Shared help/payment/login overlays are outside this boundary. */
 .home2-import-root [data-home2-view]{line-height:1.5;font-size:16px;}
 .home2-import-root [data-home2-view] :is(button,input){font-family:inherit;}
+
+/* Source type and monoline artwork are scoped to the redesigned non-hero regions. */
+.home2-import-root .home2-v2-type{font-family:'Plus Jakarta Sans','Hind Siliguri',ui-sans-serif,system-ui,sans-serif;color:#0f1d34;}
+.home2-import-root[lang=bn] .home2-v2-type{font-family:'Hind Siliguri','Plus Jakarta Sans',sans-serif;}
+.home2-import-root .home2-line-art svg{display:block;width:100%;height:100%;}
+.home2-import-root .home2-line-art .la-paper{fill:var(--la-paper,#fff);}
+.home2-import-root .home2-line-art .la-accent{fill:var(--la-accent,#cad8ef);}
+.home2-import-root .home2-v2-type :is(button,a,input):focus-visible{outline:2px solid #2c5ead;outline-offset:3px;}

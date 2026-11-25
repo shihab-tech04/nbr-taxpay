@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, FileCheck2, FolderOpen } from 'lucide-react';
+import '../../styles/taxpay-draft-entry.css';
 import {
   listPaymentFormDrafts, type PaymentDraftActor, type PaymentDraftService,
   type PaymentFormDraft,
