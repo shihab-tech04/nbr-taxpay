@@ -16,7 +16,7 @@ import type {PaymentReuse} from './paymentReuse';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
 import {recordAccountActivity} from './accountActivity';
-import {activePreviewSession,signInPreviewProfile,clearPreviewSession,savePreviewSetting,flushPreviewSettings} from './previewAccountSession';
+import {activePreviewSession,signInPreviewProfile,clearPreviewSession,savePreviewSetting,flushPreviewSettings,pendingPreviewLanguage} from './previewAccountSession';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
@@ -232,8 +232,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ?activePreviewSession()?.language??readBrowserLanguage(previewAccount.id)
         :null;
     const fallback=new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en';
-    applyLanguage(saved??fallback);
+    const pending=!accountUser&&previewAccount?pendingPreviewLanguage():null;
+    applyLanguage(pending??saved??fallback);
     setLanguagePreferenceError(false);
+    // Retry an explicit same-session choice interrupted by refresh. The saved
+    // server preference still controls a newly authenticated preview session.
+    if(pending)void savePreviewSetting('language',pending).catch(()=>setLanguagePreferenceError(true));
     // Only rehydrate on identity changes, never overwrite a language just changed
     // during the same session because Auth emits a USER_UPDATED event.
     // eslint-disable-next-line react-hooks/exhaustive-deps

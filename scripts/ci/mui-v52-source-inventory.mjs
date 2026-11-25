@@ -29,7 +29,7 @@ for(const absolute of sourceFiles){
   items.push({id:stable,file,line:n.loc.start.line,column:n.loc.start.column,tag,importSource:names.get(tag)||null,attributes:keys,family:tagFamily,classification,registered:Boolean(explicit),route:explicit?.route||null});
  });
 }
-for(const item of register.items.filter(x=>x.id.startsWith('MUI-PROPOSAL-')))if(!seen.has(item.id))throw Error('Missing registered consumer '+item.id);
+for(const item of register.items)if(!seen.has(item.id))throw Error('Missing registered consumer '+item.id);
 const groups={};for(const item of items.filter(x=>x.classification==='UNCLASSIFIED')){const key=item.file+' | '+item.family;groups[key]=(groups[key]||0)+1;}
 const summary={sourceFiles:sourceFiles.length,jsxOccurrences:items.length,registeredExplicit:seen.size,homeFrozen:items.filter(x=>x.classification==='HOME-FROZEN').length,unclassifiedCandidates:items.filter(x=>x.classification==='UNCLASSIFIED').length,semanticOrCustomReview:items.filter(x=>x.classification==='SEMANTIC_OR_CUSTOM_REVIEW').length,eligibleDenominator:null,routeCases:[...new Set(routeCases)].sort(),remainingByFileFamily:groups};
 mkdirSync('mui-evidence',{recursive:true});writeFileSync('mui-evidence/source-inventory.json',JSON.stringify({summary,items,importEdges:edges,register},null,2));console.log(JSON.stringify({...summary,remainingByFileFamily:undefined},null,2));

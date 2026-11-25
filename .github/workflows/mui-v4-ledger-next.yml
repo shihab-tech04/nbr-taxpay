@@ -13,7 +13,7 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 594fcca473e3349923c32783aff6817baa98f9e1
+      BASE_SHA: 69e547027bde3ff46cfd5a4d7269de280d2ef5a7
     steps:
       - uses: actions/checkout@v4
         with:

@@ -127,12 +127,12 @@ for (const language of ['en','bn'] as const) {
   const region=page.locator('section[aria-labelledby="source-proposals-title"]');
   await expect(region).toBeVisible();
   const find=(id:string)=>region.locator('[data-mui-coverage="'+id+'"]');
-  const search=find('MUI-PROPOSAL-SEARCH').locator('input'),head=find('MUI-PROPOSAL-HEAD').locator('select'),hash=find('MUI-PROPOSAL-HASH').locator('input'),label=find('MUI-PROPOSAL-LABEL').locator('input'),reason=find('MUI-PROPOSAL-REASON').locator('textarea'),submit=find('MUI-PROPOSAL-SUBMIT');
+  const search=find('MUI-PROPOSAL-SEARCH').locator('input'),head=find('MUI-PROPOSAL-HEAD').locator('select'),hash=find('MUI-PROPOSAL-HASH').locator('input'),label=find('MUI-PROPOSAL-LABEL').locator('input'),reason=find('MUI-PROPOSAL-REASON').locator('textarea:not([aria-hidden="true"])'),submit=find('MUI-PROPOSAL-SUBMIT');
   for(const id of ['SEARCH','HASH','LABEL','REASON'])await expect(find('MUI-PROPOSAL-'+id)).toHaveClass(/MuiInputBase-root/);
   await expect(head).toHaveClass(/MuiNativeSelect-select/);
   await expect(submit).toHaveClass(/MuiButtonBase-root/);
   await expect(hash).toHaveAttribute('minlength','64');await expect(hash).toHaveAttribute('maxlength','64');
-  await expect(reason).toHaveAttribute('minlength','10');await expect(reason).toHaveAttribute('maxlength','1000');
+  await expect(reason).toHaveCount(1);await expect(reason).toBeVisible();await expect(reason).toHaveAttribute('minlength','10');await expect(reason).toHaveAttribute('maxlength','1000');
   await expect(label).toHaveAttribute('maxlength','400');
   await submit.click();expect(writes).toBe(0);
   await search.fill('1');await head.selectOption('1');

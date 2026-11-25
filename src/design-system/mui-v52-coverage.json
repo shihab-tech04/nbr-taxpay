@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "scope": "classified subset; global eligible denominator UNVERIFIED",
-  "base": "594fcca473e3349923c32783aff6817baa98f9e1",
+  "base": "69e547027bde3ff46cfd5a4d7269de280d2ef5a7",
   "items": [
     {
       "id": "MUI-ACCOUNT-ACTIVITY-RETRY",
@@ -18,7 +18,7 @@
       ],
       "role": "verified owner",
       "classification": "GENERIC-MIGRATE",
-      "component": "@mui/material/ButtonBase",
+      "component": "MuiButtonBase",
       "sourceStatus": "IMPLEMENTED",
       "testStatus": "ISOLATED_PASS",
       "liveStatus": "UNVERIFIED",
@@ -46,7 +46,7 @@
       ],
       "role": "verified owner",
       "classification": "GENERIC-MIGRATE",
-      "component": "@mui/material/ButtonBase",
+      "component": "MuiButtonBase",
       "sourceStatus": "IMPLEMENTED",
       "testStatus": "ISOLATED_PASS",
       "liveStatus": "UNVERIFIED",
@@ -75,7 +75,7 @@
       ],
       "role": "verified owner",
       "classification": "GENERIC-MIGRATE",
-      "component": "@mui/material/ButtonBase",
+      "component": "MuiButtonBase",
       "sourceStatus": "IMPLEMENTED",
       "testStatus": "ISOLATED_PASS",
       "liveStatus": "UNVERIFIED",
@@ -104,7 +104,7 @@
       ],
       "role": "verified recipient",
       "classification": "GENERIC-MIGRATE",
-      "component": "@mui/material/ButtonBase",
+      "component": "MuiButtonBase",
       "sourceStatus": "IMPLEMENTED",
       "testStatus": "ISOLATED_PASS",
       "liveStatus": "UNVERIFIED",
@@ -137,9 +137,10 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "UNVERIFIED",
+      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
       "liveStatus": "UNVERIFIED",
-      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
+      "priorRun": 45679439371
     },
     {
       "id": "MUI-PROPOSAL-HEAD",
@@ -162,9 +163,10 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "UNVERIFIED",
+      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
       "liveStatus": "UNVERIFIED",
-      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
+      "priorRun": 45679439371
     },
     {
       "id": "MUI-PROPOSAL-HASH",
@@ -188,9 +190,10 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "UNVERIFIED",
+      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
       "liveStatus": "UNVERIFIED",
-      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
+      "priorRun": 45679439371
     },
     {
       "id": "MUI-PROPOSAL-LABEL",
@@ -213,9 +216,10 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "UNVERIFIED",
+      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
       "liveStatus": "UNVERIFIED",
-      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
+      "priorRun": 45679439371
     },
     {
       "id": "MUI-PROPOSAL-REASON",
@@ -239,9 +243,10 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "UNVERIFIED",
+      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
       "liveStatus": "UNVERIFIED",
-      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
+      "priorRun": 45679439371
     },
     {
       "id": "MUI-PROPOSAL-SUBMIT",
@@ -266,9 +271,10 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "UNVERIFIED",
+      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
       "liveStatus": "UNVERIFIED",
-      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
+      "priorRun": 45679439371
     }
   ],
   "unresolved": [

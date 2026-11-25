@@ -7,6 +7,7 @@ import type {DemoUserId} from '../data/demoUsers';
 export const PREVIEW_USER_KEY='taxpay-taxpayer-preview-user';
 export const GIFT_PENDING_SESSION_KEY='taxpay.gift-tax.pending.v1';
 const PREVIEW_SESSION_KEY='korbritto.demo-profile-session.v1';
+const PENDING_LANGUAGE_KEY='korbritto.demo-pending-language.v1';
 const capabilityPattern=/^[A-Za-z0-9_-]{43}$/;
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const demoIdPattern=/^user(?:[1-9]|[1-4][0-9]|5[0-5])$/;
@@ -35,6 +36,16 @@ export function activePreviewSession():PreviewSession|null {
     return id&&value?.profileId===id?value:null;
   }catch{return null;}
 }
+// A same-tab refresh can interrupt the preference write before SQL confirms it.
+// Retain the user's explicit language choice until acknowledgement; a new login
+// or sign-out clears this session-local value. It grants no account access.
+export function pendingPreviewLanguage():DemoSettings['language']|null {
+  if(!activePreviewSession())return null;
+  try {
+    const value=window.sessionStorage.getItem(PENDING_LANGUAGE_KEY);
+    return value==='en'||value==='bn'?value:null;
+  }catch{return null;}
+}
 /** Reject async results whenever the server-issued session has changed, even for the same profile ID. */
 function samePreviewSession(session:PreviewSession):boolean {
   const active=activePreviewSession();
@@ -54,6 +65,7 @@ export function clearPreviewSession():void {
   try{
     window.sessionStorage.removeItem(PREVIEW_USER_KEY);
     window.sessionStorage.removeItem(PREVIEW_SESSION_KEY);
+    window.sessionStorage.removeItem(PENDING_LANGUAGE_KEY);
     window.sessionStorage.removeItem(GIFT_PENDING_SESSION_KEY);
   }catch{/* private browsing can prevent storage writes */}
 }
@@ -98,6 +110,10 @@ export function savePreviewSetting(key:'language'|'selected-list',value:string):
   if(!session)return Promise.reject(new Error('Sign in to your demo profile again.'));
   if(key==='language'&&value!=='bn'&&value!=='en')return Promise.reject(new Error('Invalid language'));
   if(key==='selected-list'&&value&&!uuidPattern.test(value))return Promise.reject(new Error('Invalid saved list'));
+  if(key==='language'){
+    try{window.sessionStorage.setItem(PENDING_LANGUAGE_KEY,value);}
+    catch{/* Keep the existing server preference write available. */}
+  }
   const profile=session.profileId;
   const values=outstanding.get(profile)??new Map<'language'|'selected-list',string>();
   values.set(key,value);
@@ -113,6 +129,8 @@ export function savePreviewSetting(key:'language'|'selected-list',value:string):
     const current=activePreviewSession()!;
     remember({...current,language:saved.language,selectedListId:saved.selectedListId??null});
     if(values.get(key)===value){
+      if(key==='language'&&pendingPreviewLanguage()===value)
+        window.sessionStorage.removeItem(PENDING_LANGUAGE_KEY);
       values.delete(key);
       if(!values.size)outstanding.delete(profile);
     }
