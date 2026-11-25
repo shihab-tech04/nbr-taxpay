@@ -3061,6 +3061,7 @@
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__draft-actions,.payment-journey-footer__leading) .payment-form-draft-controls__actions {
   display:flex;
   align-items:stretch;
+  align-self:stretch;
   min-width:0;
   max-width:100%;
 }
@@ -3128,6 +3129,9 @@
     padding:8px 10px;
     font-size:var(--taxpay-font-body,16px);
   }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__action-long,.travel-flow__action-long) {display:inline;}
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__action-short,.travel-flow__action-short) {display:none;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__action-long,.travel-flow__action-long) {display:none;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__action-short,.travel-flow__action-short) {display:inline;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > :is(.payment-flow-embedded__draft-actions,.payment-journey-footer__leading) {align-self:stretch;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) .payment-form-draft-controls__save,
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) .travel-flow__primary {align-self:stretch;}
 }
