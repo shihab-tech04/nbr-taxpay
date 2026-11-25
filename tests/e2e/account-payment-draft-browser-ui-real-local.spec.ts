@@ -64,7 +64,20 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(firstCard).toBeVisible();
     const draftId = await firstCard.getAttribute('data-draft-id');
     expect(draftId).toBeTruthy();
-    await firstCard.getByRole('button', { name: 'Continue' }).click();
+    const continueDraft=firstCard.getByRole('button', { name: 'Continue' });
+    await expect(continueDraft).toHaveClass(/MuiButtonBase-root/);
+    await expect(continueDraft).toHaveAttribute('data-mui-coverage','MUI-DASHBOARD-DRAFT-RESUME');
+    await expect(cards.getByRole('button',{name:'Refresh'})).toHaveClass(/MuiButtonBase-root/);
+    const deleteDraft=firstCard.getByRole('button',{name:'Delete',exact:true});
+    await expect(deleteDraft).toHaveClass(/MuiButtonBase-root/);
+    await deleteDraft.click();
+    await expect(firstCard.getByRole('button',{name:'Confirm delete',exact:true})).toHaveClass(/MuiButtonBase-root/);
+    const cancelDelete=firstCard.getByRole('button',{name:'Cancel',exact:true});
+    await expect(cancelDelete).toHaveClass(/MuiButtonBase-root/);
+    await cancelDelete.click();
+    await expect(deleteDraft).toBeVisible();
+    await continueDraft.focus();
+    await continueDraft.press('Enter');
     const restoredModal = dashboard.getByRole('dialog', { name: 'Pay Tax' });
     // The unified account editor revalidates the taxpayer before presenting
     // the restored reference in Final Preview, not in the legacy identity step.

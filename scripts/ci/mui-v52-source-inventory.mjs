@@ -41,7 +41,7 @@ const adj=new Map();for(const e of renderEdges){const set=adj.get(e.from)??new S
 const visit=(roots)=>{const reached=new Set(),todo=[...roots];while(todo.length){const f=todo.pop();if(reached.has(f))continue;reached.add(f);for(const to of adj.get(f)??[])todo.push(to);}return reached;};
 const routesByFile=new Map();for(const root of routeRoots){const reached=visit(root.roots);for(const f of reached){const list=routesByFile.get(f)??[];list.push(root.route);routesByFile.set(f,list);}}
 const frozenReach=visit(['src/components/screens/PublicLanding.tsx','src/components/screens/Home2Layout.tsx','src/components/screens/home3/Home3Layout.tsx']);
-const newFiles=new Set(register.items.filter(i=>i.id.startsWith('MUI-SESSION-NOTICE-')||i.id.startsWith('MUI-CORRECTION-NOTICE-')||i.id.startsWith('MUI-RECOVERED-HISTORY-')||i.id==='MUI-HISTORY-IDENTITY-RETRY'||i.id.startsWith('MUI-JOURNEY-')).map(i=>i.file));
+const newFiles=new Set(register.items.filter(i=>i.id.startsWith('MUI-SESSION-NOTICE-')||i.id.startsWith('MUI-CORRECTION-NOTICE-')||i.id.startsWith('MUI-RECOVERED-HISTORY-')||i.id==='MUI-HISTORY-IDENTITY-RETRY'||(i.id.startsWith('MUI-JOURNEY-')||i.id.startsWith('MUI-DASHBOARD-DRAFT-'))).map(i=>i.file));
 for(const file of newFiles)if(frozenReach.has(file))throw Error('New scoped consumer directly reachable from a frozen homepage root: '+file);
 for(const item of items){item.staticRoutes=routesByFile.get(item.file)??[];item.homeReachable=frozenReach.has(item.file);item.reachabilityStatus=item.staticRoutes.length?'STATIC_ONLY_RUNTIME_UNVERIFIED':'UNRESOLVED_OR_NOT_ROUTED';}
 const groups={};for(const item of items.filter(x=>x.classification==='UNCLASSIFIED')){const key=item.file+' | '+item.family;groups[key]=(groups[key]||0)+1;}

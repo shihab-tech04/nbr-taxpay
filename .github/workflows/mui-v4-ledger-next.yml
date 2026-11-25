@@ -55,6 +55,12 @@ jobs:
         run: npx playwright test tests/e2e/manage-authorization-desktop.spec.ts --workers=2
       - name: Verify integrated public service directory
         run: npx playwright test tests/e2e/citizen-copy-cleanup.spec.ts --workers=2
+      - name: Verify private and preview dashboard layouts and account controls
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/dashboard-unified-preview.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts --workers=2
       - name: Compare unchanged Main and combined candidate across full home matrix
         run: |
           set -euo pipefail

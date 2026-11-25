@@ -117,10 +117,18 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   // Save every control attempt. No masks, no nonzero tolerance, no candidate
   // screenshot may be used to choose the baseline.
   async function stableFrame(){
-   let previous=await page.screenshot(screenshotOptions);
-   for(let attempt=0;attempt<8;attempt++){
+   // Full-page capture may itself cause a layout/paint cycle, especially at 320px.
+   // Require three consecutive exact PNGs across separate animation frames, rather
+   // than returning after the first pair. This is symmetric and stricter; no masks.
+   let previous:Buffer|undefined,consecutive=0;
+   for(let attempt=0;attempt<12;attempt++){
+    await page.evaluate(async()=>{
+     await document.fonts.ready;
+     await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    });
     const next=await page.screenshot(screenshotOptions);
-    if(previous.equals(next))return next;
+    consecutive=previous?.equals(next)?consecutive+1:1;
+    if(consecutive>=3)return next;
     previous=next;
    }
    throw new Error('Screenshot failed to settle: '+name);
@@ -143,6 +151,9 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   // separate capture path (which failed even on unchanged Main).
   // Exact PNG equality is stricter than zero pixel tolerance; retain both files
   // for investigation and never select the reference using a candidate frame.
+  // Persist geometry and the exact extra control even on failure for diagnosis.
+  const geometry=await page.evaluate(()=>({viewport:[innerWidth,innerHeight],scroll:[scrollX,scrollY],document:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime}))}));
+  writeFileSync(join(dir,'main-geometry-'+name+'.json'),JSON.stringify(geometry,null,2));
   const mainControl=await stableFrame();
   writeFileSync(join(dir,'main-control-'+name),mainControl);
   expect(mainControl.equals(reference),'Unchanged Main exact PNG control '+name).toBe(true);

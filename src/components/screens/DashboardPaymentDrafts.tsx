@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {CitizenMuiScope,MuiButtonBase} from '../../design-system/mui';
 import { ArrowRight, FileText, RefreshCw, Trash2 } from 'lucide-react';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
@@ -8,6 +9,13 @@ import {
   type PaymentFormDraft, type PaymentDraftActor, paymentDraftOwnerScope,
 } from '../../services/accountPaymentFormDrafts';
 import { assertResumablePaymentDraft } from './PaymentDraftEntryGate';
+
+// Scope the MUI action reset to this signed-in record family. Keep the approved
+// existing class names and restore the native action metrics explicitly.
+const draftActionSx = {
+  minHeight:'44px',borderRadius:'8px',fontFamily:'inherit',fontSize:'0.875rem',lineHeight:'1.25rem',
+  '&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2},
+} as const;
 
 type Catalog = {
   ownerKey: string;
@@ -154,7 +162,7 @@ export const DashboardPaymentDrafts: React.FC<{
 
   const loading = !catalogOwnerMatches || catalog.status === 'loading';
 
-  return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
+  return <CitizenMuiScope><section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
@@ -165,10 +173,10 @@ export const DashboardPaymentDrafts: React.FC<{
         {!loading && catalog.status === 'ready' &&
           <span className="text-sm text-taxpay-muted">({catalog.rows.length})</span>}
       </div>
-      {!loading && <button type="button" onClick={retry} disabled={Boolean(busyId)}
+      {!loading && <MuiButtonBase data-mui-coverage="MUI-DASHBOARD-DRAFT-REFRESH" disableRipple sx={{...draftActionSx,display:'inline-flex',gap:'8px',padding:'0 12px',fontWeight:500,color:'var(--color-taxpay-primary)', '&:hover':{backgroundColor:'var(--color-taxpay-light)'},'&.Mui-disabled':{opacity:0.6}}} type="button" onClick={retry} disabled={Boolean(busyId)}
         className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
         <RefreshCw size={16} aria-hidden="true" />{tr('Refresh', 'নতুন করে লোড')}
-      </button>}
+      </MuiButtonBase>}
     </div>
     <p className="mt-1 text-sm text-taxpay-muted">{tr('Saved drafts from all assessment years.','সব করবর্ষের সংরক্ষিত খসড়া।')}</p>
     {loading ? <p role="status" className="mt-3 text-sm text-taxpay-muted">
@@ -177,10 +185,10 @@ export const DashboardPaymentDrafts: React.FC<{
       {tr('Drafts could not be loaded. Try again.', 'খসড়াগুলো লোড করা যায়নি। আবার চেষ্টা করুন।')}
     </p> : catalog.rows.length === 0 ? <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-taxpay-border bg-slate-50 p-4" data-testid="dashboard-drafts-empty">
       <p className="text-sm text-taxpay-muted">{tr('No saved payment drafts yet. Start a payment and select Save Draft to continue later.','এখনো কোনো পেমেন্ট খসড়া নেই। পেমেন্ট শুরু করে খসড়া সংরক্ষণ করলে পরে আবার চালু করতে পারবেন।')}</p>
-      {onStartPayment && <button type="button" onClick={onStartPayment}
+      {onStartPayment && <MuiButtonBase data-mui-coverage="MUI-DASHBOARD-DRAFT-START" disableRipple sx={{...draftActionSx,display:'inline-block',padding:'0 16px',fontWeight:600,border:'1px solid var(--color-taxpay-border)',backgroundColor:'white',color:'var(--color-taxpay-primary)','&:hover':{backgroundColor:'var(--color-taxpay-light)'}}} type="button" onClick={onStartPayment}
         className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
         {tr('Start a payment','পেমেন্ট শুরু করুন')} <ArrowRight size={15} className="ml-1 inline" aria-hidden="true"/>
-      </button>}
+      </MuiButtonBase>}
     </div> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
       {catalog.rows.map((draft,index) => {
         const updatedAt = new Date(draft.updated_at);
@@ -214,28 +222,28 @@ export const DashboardPaymentDrafts: React.FC<{
             {tr('Last saved:', 'সর্বশেষ সংরক্ষণ:')} <time dateTime={draft.updated_at}>{updated}</time>
           </p>
           <div className="mt-auto flex flex-wrap gap-2 pt-4">
-            <button type="button" disabled={Boolean(busyId)} onClick={() => void resume(draft)}
+            <MuiButtonBase data-mui-coverage="MUI-DASHBOARD-DRAFT-RESUME" disableRipple sx={{...draftActionSx,display:'inline-flex',gap:'6px',padding:'0 16px',fontWeight:600,border:'1px solid var(--color-taxpay-primary)',backgroundColor:'white',color:'var(--color-taxpay-primary)',transition:'color 150ms, background-color 150ms, border-color 150ms','&:hover':{backgroundColor:'var(--color-taxpay-light)'}}} type="button" disabled={Boolean(busyId)} onClick={() => void resume(draft)}
               className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-taxpay-primary bg-white px-4 text-sm font-semibold text-taxpay-primary transition-colors hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
               {busyId === draft.id ? tr('Opening…', 'খোলা হচ্ছে…') : tr('Continue', 'চালিয়ে যান')}
               {busyId !== draft.id && <ArrowRight size={16} aria-hidden="true" />}
-            </button>
+            </MuiButtonBase>
             {pendingDelete === draft.id ? <>
-              <button type="button" disabled={Boolean(busyId)} onClick={() => void remove(draft)}
+              <MuiButtonBase data-mui-coverage="MUI-DASHBOARD-DRAFT-CONFIRM-DELETE" disableRipple sx={{...draftActionSx,display:'inline-block',padding:'0 12px',fontWeight:500,border:'1px solid var(--color-taxpay-error)',color:'var(--color-taxpay-error)'}} type="button" disabled={Boolean(busyId)} onClick={() => void remove(draft)}
                 className="min-h-11 rounded-lg border border-taxpay-error px-3 text-sm font-medium text-taxpay-error">
                 {tr('Confirm delete', 'মুছে ফেলা নিশ্চিত করুন')}
-              </button>
-              <button type="button" disabled={Boolean(busyId)} onClick={() => setPendingDelete(null)}
+              </MuiButtonBase>
+              <MuiButtonBase data-mui-coverage="MUI-DASHBOARD-DRAFT-CANCEL" disableRipple sx={{...draftActionSx,display:'inline-block',padding:'0 12px',fontWeight:500,color:'var(--color-taxpay-text)'}} type="button" disabled={Boolean(busyId)} onClick={() => setPendingDelete(null)}
                 className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-text">
                 {tr('Cancel', 'বাতিল')}
-              </button>
-            </> : <button type="button" disabled={Boolean(busyId)} onClick={() => void remove(draft)}
+              </MuiButtonBase>
+            </> : <MuiButtonBase data-mui-coverage="MUI-DASHBOARD-DRAFT-DELETE" disableRipple sx={{...draftActionSx,display:'inline-flex',gap:'6px',padding:'0 12px',fontWeight:500,border:'1px solid var(--color-taxpay-border)',color:'var(--color-taxpay-text)','&:hover':{backgroundColor:'var(--color-taxpay-light)'}}} type="button" disabled={Boolean(busyId)} onClick={() => void remove(draft)}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-text hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
               <Trash2 size={16} aria-hidden="true" />{tr('Delete', 'মুছুন')}
-            </button>}
+            </MuiButtonBase>}
           </div>
         </article>;
       })}
     </div>}
     {error && <p role="alert" className="mt-3 text-sm text-taxpay-error">{error}</p>}
-  </section>;
+  </section></CitizenMuiScope>;
 };

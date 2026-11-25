@@ -1406,6 +1406,168 @@
       "test": "tests/e2e/mui-v55-timeline-status.spec.ts",
       "owner": "MUI migration",
       "implementation": "official @mui/material/Chip; existing status label, class, colors and timeline composition retained"
+    },
+    {
+      "id": "MUI-DASHBOARD-DRAFT-REFRESH",
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "symbol": "DashboardPaymentDrafts",
+      "component": "MuiButtonBase",
+      "control": "Refresh drafts",
+      "route": "taxpayer_home / signed-in owner draft register",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing draft owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "keyboard focus",
+        "loading or busy where applicable",
+        "conditional",
+        "error recovery"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
+    },
+    {
+      "id": "MUI-DASHBOARD-DRAFT-START",
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "symbol": "DashboardPaymentDrafts",
+      "component": "MuiButtonBase",
+      "control": "Start payment",
+      "route": "taxpayer_home / signed-in owner draft register",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing draft owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "keyboard focus",
+        "loading or busy where applicable",
+        "conditional",
+        "error recovery"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
+    },
+    {
+      "id": "MUI-DASHBOARD-DRAFT-RESUME",
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "symbol": "DashboardPaymentDrafts",
+      "component": "MuiButtonBase",
+      "control": "Continue saved draft",
+      "route": "taxpayer_home / signed-in owner draft register",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing draft owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "keyboard focus",
+        "loading or busy where applicable",
+        "conditional",
+        "error recovery"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
+    },
+    {
+      "id": "MUI-DASHBOARD-DRAFT-CONFIRM-DELETE",
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "symbol": "DashboardPaymentDrafts",
+      "component": "MuiButtonBase",
+      "control": "Confirm delete",
+      "route": "taxpayer_home / signed-in owner draft register",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing draft owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "keyboard focus",
+        "loading or busy where applicable",
+        "conditional",
+        "error recovery"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
+    },
+    {
+      "id": "MUI-DASHBOARD-DRAFT-CANCEL",
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "symbol": "DashboardPaymentDrafts",
+      "component": "MuiButtonBase",
+      "control": "Cancel delete",
+      "route": "taxpayer_home / signed-in owner draft register",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing draft owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "keyboard focus",
+        "loading or busy where applicable",
+        "conditional",
+        "error recovery"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
+    },
+    {
+      "id": "MUI-DASHBOARD-DRAFT-DELETE",
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "symbol": "DashboardPaymentDrafts",
+      "component": "MuiButtonBase",
+      "control": "Request delete",
+      "route": "taxpayer_home / signed-in owner draft register",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing draft owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "keyboard focus",
+        "loading or busy where applicable",
+        "conditional",
+        "error recovery"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
     }
   ],
   "unresolved": [
@@ -1471,7 +1633,7 @@
     },
     {
       "file": "src/components/screens/DashboardPaymentDrafts.tsx",
-      "reason": "Shared signed-in dashboard / User1 preview context requires explicit frozen-layout and draft-resume contract verification before changing",
+      "reason": "All six direct action sites implemented; shared dashboard native layout, owner isolation, real draft-resume/delete and production evidence remain unverified",
       "status": "UNVERIFIED"
     }
   ]
