@@ -126,7 +126,9 @@
     box-shadow:0 10px 30px -12px rgba(74,61,16,.45);backdrop-filter:blur(8px);
   }
   .home2-import-root .home2-slider2__actions .home2-slider2__pay {width:100%;}
-  .home2-import-root .home2-slider2__actions button {min-height:44px;padding:6px;font-size:14px;border-radius:13px;gap:6px;}
+  /* Reserve two lines for the localized CMS CTA so a label change cannot
+   * change the action rail height or move the button during a dissolve. */
+  .home2-import-root .home2-slider2__actions button {min-height:52px;padding:6px;font-size:14px;line-height:1.35;border-radius:13px;gap:6px;}
   .home2-import-root .home2-slider2__controls {
     position:relative;right:auto;bottom:auto;justify-content:center;margin:4px auto 0;
     width:fit-content;background:transparent;box-shadow:none;max-width:100%;padding:0;

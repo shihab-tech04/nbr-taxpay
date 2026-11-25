@@ -547,7 +547,18 @@ test('Slider 2 mobile fills artwork region without letterboxing on all five bann
       const frame=slider.getByRole('region');
       const art=frame.locator('[data-testid="slider2-artwork"][data-active="true"] img');
       const pay=frame.getByTestId('home2-pay');
-      const before=await pay.boundingBox();
+      await expect(frame).toHaveAttribute('data-banner-count','5');
+      await expect(frame).toHaveAttribute('data-active-slide','0');
+      await page.evaluate(()=>document.fonts.ready);
+      await expect(pay).toBeVisible();
+      // Compare document coordinates, not viewport coordinates: Playwright
+      // can scroll the carousel when it clicks its navigation controls.
+      const geometry=()=>pay.evaluate(el=>{
+        const b=el.getBoundingClientRect();
+        const f=el.closest('.home2-slider2__frame')!.getBoundingClientRect();
+        return {x:b.x+window.scrollX,y:b.y+window.scrollY,relativeY:b.y-f.y,height:b.height,frameHeight:f.height};
+      });
+      const before=await geometry();
       for(let i=1;i<=5;i++){
         await slider.getByRole('button',{name:lang==='en'?'Go to slide '+i:'স্লাইড '+i,exact:true}).click();
         await expect(frame).toHaveAttribute('data-active-slide',String(i-1));
@@ -570,9 +581,12 @@ test('Slider 2 mobile fills artwork region without letterboxing on all five bann
         expect(Math.abs(geom.bottomGap)).toBeLessThanOrEqual(2);
         expect(geom.visibleArtBand).toBeGreaterThan(75);
         expect(geom.copyInside&&geom.actionsInside).toBe(true);
-        const pos=await pay.boundingBox();
-        expect(Math.abs(pos!.x-before!.x)).toBeLessThanOrEqual(1);
-        expect(Math.abs(pos!.y-before!.y)).toBeLessThanOrEqual(1);
+        const pos=await geometry();
+        expect(Math.abs(pos.x-before.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(pos.y-before.y)).toBeLessThanOrEqual(1);
+        expect(Math.abs(pos.relativeY-before.relativeY)).toBeLessThanOrEqual(1);
+        expect(Math.abs(pos.height-before.height)).toBeLessThanOrEqual(1);
+        expect(Math.abs(pos.frameHeight-before.frameHeight)).toBeLessThanOrEqual(1);
         await expect(frame.getByTestId('home2-other')).toHaveCount(0);
         if(width===390)await frame.screenshot({path:'test-results/screenshots/slider2-mobile-'+lang+'-'+i+'.png',animations:'disabled'});
       }
