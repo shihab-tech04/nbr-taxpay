@@ -12,7 +12,8 @@ const sourceFiles=files(resolve(root,'src'));
 const allFiles=new Set(sourceFiles.map(p=>relative(root,p).replaceAll('\\','/')));
 const resolveLocal=(file,request)=>{if(!request?.startsWith('.'))return null;const p=relative(root,resolve(root,dirname(file),request)).replaceAll('\\','/');return [p,p+'.tsx',p+'.ts',p+'.jsx',p+'.js',p+'/index.tsx',p+'/index.ts'].find(x=>allFiles.has(x))??null;};
 for(const absolute of sourceFiles){
- const file=relative(root,absolute).replaceAll('\\','/'),source=readFileSync(absolute,'utf8'),ast=parse(source,{sourceType:'module',plugins:['typescript','jsx']});
+ const file=relative(root,absolute).replaceAll('\\','/'),source=readFileSync(absolute,'utf8');
+ let ast;try{ast=parse(source,{sourceType:'module',plugins:['typescript','jsx']});}catch(error){throw new Error('JSX inventory parse failed in '+file+': '+String(error),{cause:error});}
  const names=new Map(),counts=new Map();
  walk(ast,n=>{if(n.type==='ImportDeclaration'){for(const spec of n.specifiers)names.set(spec.local.name,n.source.value);edges.push({from:file,to:n.source.value,kind:'import'});}
  if(n.type==='CallExpression'&&n.callee.type==='Import'&&n.arguments[0]?.type==='StringLiteral')edges.push({from:file,to:n.arguments[0].value,kind:'lazy'});
