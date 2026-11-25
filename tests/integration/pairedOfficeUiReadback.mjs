@@ -319,12 +319,15 @@ try {
     assert.equal(await remarksField.locator('.drawer-field__label').innerText(),
       language === 'bn' ? 'চালানের মন্তব্য' : 'Challan remarks',
       language + ' Office remarks label must follow the selected language');
-    const rows = visibleDrawer.locator('.office-shared-allocation-list__item');
+    // Office #305 replaced the allocation cards with the shared semantic table.
+    // Keep the same source-backed identity, row count and amount assertions.
+    const table = visibleDrawer.getByTestId('office-allocation-table');
+    await table.waitFor({state:'visible',timeout:10000});
+    assert.equal(await table.getByRole('columnheader').count(),4,'Allocation table must have four shared columns');
+    const rows = table.getByTestId('office-taxpayer-head-row');
     assert.equal(await rows.count(), expectedAllocations.length,
       language + ' drawer must render exactly two source-backed allocation lines');
-    // :has() is relative to each field; a drawer-rooted Playwright has-locator
-    // cannot match descendants when its selector also includes the parent drawer.
-    const field = visibleDrawer.locator('.drawer-field:has(.office-shared-allocation-list__item)');
+    const field = visibleDrawer.locator('.drawer-field:has([data-testid="office-allocation-table"])');
     assert.equal(await field.count(), 1, 'Allocation breakdown must use the approved shared drawer field');
     const expectedLabel = language === 'bn' ? 'করদাতা অনুযায়ী বণ্টন' : 'Taxpayer allocations';
     assert.equal((await field.locator('.drawer-field__label').innerText()).trim(), expectedLabel,
@@ -334,9 +337,10 @@ try {
       const text = await row.innerText();
       for (const value of [expected.name, expected.tin, expected.head, expected.year])
         assert.ok(text.includes(value), language + ' allocation ' + (index + 1) + ' missing ' + value);
-      const amounts = row.locator('strong');
-      assert.equal(await amounts.count(), 2, 'Each allocation must show a party and one amount');
-      assert.equal(parseAmountMinor(await amounts.nth(1).innerText()), expected.minor,
+      assert.equal(await row.getByTestId('office-taxpayer-cell').count(),1,'Each distinct taxpayer in this fixture must have its own grouped cell');
+      const amounts = row.locator('.office-allocation-amount');
+      assert.equal(await amounts.count(), 1, 'Each allocation must show exactly one source amount');
+      assert.equal(parseAmountMinor(await amounts.innerText()), expected.minor,
         language + ' allocation must retain exact immutable source paisa');
     }
     const text = normalizeDigits(await visibleDrawer.innerText());

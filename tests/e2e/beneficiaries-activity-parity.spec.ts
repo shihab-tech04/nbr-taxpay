@@ -57,6 +57,42 @@ for(const language of ['en','bn'] as const){
     await selectList.click();
     const search=screen.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
     await expect(search).toBeVisible();
+    // The shared search is a single 44px control, not a labelled vertical
+    // stack. Verify actual EN/BN rendered geometry on 320/375/desktop.
+    const toolbar=screen.locator('.beneficiary-register-frame > .taxpay-office-register__toolbar');
+    const field=toolbar.locator('.taxpay-record-toolbar__search');
+    const filter=toolbar.getByRole('button',{name:t('Filter','ফিল্টার'),exact:true});
+    const geometry=await toolbar.evaluate(el=>{
+      const field=el.querySelector<HTMLElement>('.taxpay-record-toolbar__search')!;
+      const input=field.querySelector('input')!;
+      const icon=field.querySelector('svg')!;
+      const filter=el.querySelector<HTMLElement>('.taxpay-office-filter-toggle')!;
+      const label=el.querySelector<HTMLElement>('.taxpay-office-register__search-label')!;
+      const rect=(node:Element)=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right};};
+      return {field:rect(field),input:rect(input),icon:rect(icon),filter:rect(filter),label:rect(label),toolbar:rect(el),
+        inputFont:getComputedStyle(input).fontSize,inputBorder:getComputedStyle(input).borderTopWidth};
+    });
+    expect(geometry.label.height).toBeLessThanOrEqual(1);
+    expect(geometry.field.height).toBeCloseTo(44,0);
+    expect(geometry.filter.height).toBeCloseTo(44,0);
+    if(page.viewportSize()!.width>=768){
+      expect(Math.abs(geometry.field.y-geometry.filter.y)).toBeLessThanOrEqual(2);
+      expect(geometry.field.right).toBeLessThanOrEqual(geometry.filter.x-6);
+    }else{
+      expect(geometry.filter.y).toBeGreaterThanOrEqual(geometry.field.y+geometry.field.height+6);
+      expect(Math.abs(geometry.field.x-geometry.filter.x)).toBeLessThanOrEqual(2);
+    }
+    expect(geometry.field.width).toBeGreaterThanOrEqual(page.viewportSize()!.width>=1180?240:200);
+    expect(Math.abs(geometry.icon.y+geometry.icon.height/2-(geometry.input.y+geometry.input.height/2))).toBeLessThanOrEqual(2);
+    expect(geometry.inputFont).toBe('16px');
+    expect(geometry.inputBorder).toBe('0px');
+    expect(geometry.filter.right).toBeLessThanOrEqual(geometry.toolbar.right+1);
+    await search.focus();
+    await expect(field).toHaveCSS('outline-style','solid');
+    await expect(filter).toHaveAttribute('aria-expanded','true');
+    await search.fill('222222222222');
+    await expect(screen.locator('.taxpay-office-register__count')).toContainText('1 / 2');
+    await search.fill('');
     await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
@@ -388,3 +424,51 @@ test('signed-in Activity shows new payments across assessment years immediately 
   await expect(page.getByText('No transactions yet.',{exact:true})).toBeVisible();
   await expect(page.getByTestId('taxpayer-transaction-table')).toHaveCount(0);
 });
+
+
+// Establish the account capability by the actual login journey; demoUser URLs
+// are not authorization. Test row, profile and bulk shortcuts against the same
+// reusable editor. No payment submission is performed.
+for(const entry of ['row','profile','bulk'] as const){
+  test('signed-in beneficiary '+entry+' opens the unified Taxpayer Information editor',async({page})=>{
+    await mountBeneficiaryLists(page);
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+    await page.getByLabel('Password',{exact:true}).fill('user1');
+    await page.getByRole('button',{name:'Sign In',exact:true}).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    await page.goto('/?action=beneficiaries');
+    const screen=page.getByTestId('beneficiaries-page');
+    const rows=screen.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
+    await expect(rows).toHaveCount(2);
+    const recipient=rows.filter({hasText:'User2'});
+    if(entry==='profile'){
+      await recipient.getByRole('link',{name:'Open profile for User2'}).click();
+      await page.getByTestId('beneficiary-profile').getByRole('button',{name:'Make payment',exact:true}).click();
+    }else if(entry==='bulk'){
+      await rows.filter({hasText:'Shihab'}).getByRole('checkbox',{name:'Select Shihab'}).check();
+      await recipient.getByRole('checkbox',{name:'Select User2'}).check();
+      await screen.getByRole('button',{name:'Pay Tax for Others'}).click();
+    }else await recipient.getByRole('button',{name:'Make payment',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Pay Tax',exact:true});
+    await expect(dialog).toHaveClass(/taxpay-v5-locked/);
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
+    await expect(dialog.locator('.taxpay-modal__subtitle')).toHaveText('Signed-in Payment');
+    await expect(dialog.locator('[data-payer-relationship], [data-payment-entry]')).toHaveCount(0);
+    const workspace=dialog.getByTestId('unified-taxpayer-workspace');
+    await expect(workspace).toBeVisible();
+    await expect(workspace.getByTestId('unified-taxpayer-count')).toHaveText(entry==='bulk'?'2':'1');
+    await expect(workspace.locator('.unified-taxpayer-workspace__person').filter({hasText:'User2'})).toHaveCount(1);
+    await expect(workspace.getByTestId('unified-account-own').getByRole('checkbox')).not.toBeChecked();
+    await expect(workspace.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select User2'})).toBeChecked();
+    if(entry==='bulk'){
+      await expect(workspace.locator('.unified-taxpayer-workspace__person').filter({hasText:'Shihab'})).toHaveCount(1);
+      await expect(workspace.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Shihab'})).toBeChecked();
+    }else{
+      await expect(dialog.getByRole('button',{name:'Continue to Payment Head'})).toBeEnabled();
+      await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+      await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+      await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+    }
+  });
+}

@@ -43,10 +43,11 @@ const en = {
     guide: 'Read the guide',
     chat: 'Chat with us',
   },
-  section: { title: 'Everything in one place', body: 'Pay, organise and track your taxes.', cta: 'Log in for your dashboard' },
+  section: { eyebrow: 'Services', title: 'Everything in one place', body: 'Pay, organise and track your taxes.', cta: 'Log in for your dashboard' },
   features: {
     all: {
       title: 'All Tax Payments',
+      badge: 'Start here',
       body: 'Pay taxes for yourself, family or clients.',
       chips: ['Yourself', 'Family', 'Clients'],
       steps: ['Choose tax type', 'Pay securely', 'Get your receipt'],
@@ -71,7 +72,7 @@ const en = {
     help: 'Connecting you to support…',
     opening: (x: string) => `Opening ${x}…`,
   },
-  taxYears: ['2025–26', '2024–25', '2023–24'],
+  taxYears: ['2025–26', '2024–25', '2023–24', '2022–23'],
 }
 
 export type Copy = typeof en
@@ -119,10 +120,11 @@ const bn: Copy = {
     guide: 'নির্দেশিকা পড়ুন',
     chat: 'চ্যাট করুন',
   },
-  section: { title: 'সবকিছু এক জায়গায়', body: 'কর পরিশোধ, সংরক্ষণ ও ট্র্যাক করুন।', cta: 'ড্যাশবোর্ড দেখতে লগইন করুন' },
+  section: { eyebrow: 'সেবাসমূহ', title: 'সবকিছু এক জায়গায়', body: 'কর পরিশোধ, সংরক্ষণ ও ট্র্যাক করুন।', cta: 'ড্যাশবোর্ড দেখতে লগইন করুন' },
   features: {
     all: {
       title: 'সকল কর পরিশোধ',
+      badge: 'এখান থেকে শুরু',
       body: 'নিজের, পরিবারের বা ক্লায়েন্টের জন্য কর দিন।',
       chips: ['নিজের জন্য', 'পরিবার', 'ক্লায়েন্ট'],
       steps: ['করের ধরন বাছুন', 'নিরাপদে পরিশোধ করুন', 'রসিদ নিন'],
@@ -147,7 +149,7 @@ const bn: Copy = {
     help: 'সহায়তার সাথে সংযোগ করা হচ্ছে…',
     opening: (x) => `${x} খোলা হচ্ছে…`,
   },
-  taxYears: ['২০২৫–২৬', '২০২৪–২৫', '২০২৩–২৪'],
+  taxYears: ['২০২৫–২৬', '২০২৪–২৫', '২০২৩–২৪', '২০২২–২৩'],
 }
 
 export const copy: Record<Lang, Copy> = { en, bn }
