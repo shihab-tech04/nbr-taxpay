@@ -133,6 +133,23 @@ try{
   // Verify User2's rendered, owner-scoped workspace before History deep-linking.
   await expect(user2.getByTestId('dashboard-unified-preview')).toHaveAttribute('data-account-id','user2',{timeout:30000});
   await expect(user2.getByText('User ID: user2')).toBeVisible({timeout:30000});
+  // Capture only scoped response shape/count and status, never credentials, TINs or payloads.
+  const historyReads=new Map(), historyErrors=[];
+  user2.on('pageerror',error=>{
+    historyErrors.push({name:error.name,categoryLabelRead:/reading ['"](?:en|bn)['"]/.test(error.message)});
+  });
+  user2.on('response',async response=>{
+    const u=new URL(response.url());
+    if(!/action=history/.test(user2.url())||!u.pathname.endsWith('/demo-story1-taxpay/profile-history')||
+       response.request().method()!=='GET'||!['payer','beneficiary'].includes(u.searchParams.get('view'))||
+       u.searchParams.has('beforeId'))return;
+    const view=u.searchParams.get('view');
+    try{
+      const body=await response.json();
+      const valid=response.ok()&&body.success===true&&body.simulationOnly===true&&Array.isArray(body.data);
+      historyReads.set(view,{status:response.status(),valid,count:valid?body.data.length:null,ids:valid?body.data.map(row=>row.id):[]});
+    }catch{historyReads.set(view,{status:response.status(),valid:false,count:null,ids:[]});}
+  });
   await user2.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
   const historyHeading=user2.getByRole('heading',{name:/^(Payments and transaction history|পেমেন্ট ও লেনদেনের ইতিহাস)$/});
   try{await expect(historyHeading).toBeVisible({timeout:30000});}
@@ -145,11 +162,40 @@ try{
   }
   const activity2=user2.getByTestId('signed-in-payment-activity');
   await expect(activity2.getByRole('searchbox',{name:/^(Search transactions|লেনদেন খুঁজুন)$/})).toBeVisible();
-  await expect.poll(async () => {
-    if(await activity2.getByTestId('signed-in-payment-activity-table').isVisible().catch(()=>false))return true;
-    if(await activity2.getByText(/^(No transactions yet\.|এখনও.*লেনদেন.*নেই[।.]?)$/).isVisible().catch(()=>false))return true;
-    return false;
-  },{timeout:30000}).toBe(true);
+  try{
+    await expect.poll(async () => {
+      if(await activity2.getByTestId('signed-in-payment-activity-table').isVisible().catch(()=>false))return true;
+      if(await activity2.getByText(/^(No transactions yet\.|এখনও.*লেনদেন.*নেই[।.]?)$/).isVisible().catch(()=>false))return true;
+      return false;
+    },{timeout:30000}).toBe(true);
+  }catch(error){
+    const states=await user2.evaluate(()=>({
+      language:document.documentElement.lang,viewport:[innerWidth,innerHeight],
+      register:!!document.querySelector('[data-testid="signed-in-payment-activity"]'),
+      table:!!document.querySelector('[data-testid="signed-in-payment-activity-table"]'),
+      cards:!!document.querySelector('[data-testid="signed-in-payment-activity-cards"]'),
+      loading:document.body.textContent?.includes('Loading transactions…')||document.body.textContent?.includes('লেনদেন লোড হচ্ছে…')||false,
+      readError:document.body.textContent?.includes('Unable to load transactions.')||document.body.textContent?.includes('লেনদেন লোড করা যায়নি।')||false,
+      recovery:!!document.querySelector('[data-testid="history-route-recovery"]')
+    }));
+    const reads=[...historyReads].map(([view,{status,valid,count}])=>({view,status,valid,count}));
+    console.error('User2 redacted History diagnostics '+JSON.stringify({states,reads,historyErrors}));
+    throw error;
+  }
+  // Keep the original table-or-empty assertion and additionally require successful
+  // owner-scoped SQL evidence. Empty is legitimate only after both views read empty.
+  await expect.poll(()=>historyReads.get('payer')?.valid===true,{timeout:30000}).toBe(true);
+  if(historyReads.get('payer').count===0)
+    await expect.poll(()=>historyReads.get('beneficiary')?.valid===true,{timeout:30000}).toBe(true);
+  const selected=historyReads.get('payer').count>0?historyReads.get('payer'):historyReads.get('beneficiary');
+  if(selected.count>0){
+    const table=activity2.getByTestId('signed-in-payment-activity-table');
+    await expect(table).toBeVisible();
+    for(const id of selected.ids)await expect(table.getByText(id,{exact:true})).toBeVisible();
+  }else{
+    await expect(activity2.getByText(/^(No transactions yet\.|এখনো কোনো লেনদেন নেই।|এখনও.*লেনদেন.*নেই[।.]?)$/)).toBeVisible();
+  }
+  console.log('PASS: User2 owner-scoped SQL History response and rendered register reconcile');
   await user2.reload({waitUntil:'domcontentloaded'});
   await expect(user2.getByRole('heading',{name:/^(Payments and transaction history|পেমেন্ট ও লেনদেনের ইতিহাস)$/})).toBeVisible({timeout:30000});
   console.log('PASS: published user2 Activity renders persistent account-scoped History after reload');
