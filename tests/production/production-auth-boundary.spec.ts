@@ -41,6 +41,17 @@ test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',a
 });
 
 test('User ID login continues into the taxpayer workspace and survives refresh',async({page})=>{
+  // The activated recipient modal correctly blocks unrelated background clicks.
+  // Isolate only the unread overlay in this beneficiary/auth journey; all
+  // login, capability, list, navigation and beneficiary checks remain real.
+  // Separate enabled-feature browser and published recipient smoke exercise
+  // the actual notice and report journey without changing hosted read state.
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    let input;try{input=route.request().method()==='POST'?route.request().postDataJSON():null;}catch{}
+    if(input?.action==='received-notices-unread')
+      return route.fulfill({json:{success:true,data:{items:[],total:0,offset:input.offset,limit:input.limit,hasMore:false}}});
+    return route.fallback();
+  });
   await page.goto(site+'?action=taxpayer_login');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
