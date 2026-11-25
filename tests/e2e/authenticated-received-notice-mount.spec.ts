@@ -64,9 +64,9 @@ for (const language of ['en', 'bn'] as const) {
         acknowledged.push(p_event_id);
         return respond({ eventId: p_event_id, isRead: true, acknowledgedAt: receiptDate });
       }
-      expect(p_action).toBe('unread');
-      const items = receivedFixtures.filter(notice => !acknowledged.includes(notice.eventId));
-      completedReads += 1;
+      expect(['unread','list']).toContain(p_action);
+      const items = p_action==='list'?receivedFixtures.map(notice=>({...notice,isRead:acknowledged.includes(notice.eventId),acknowledgedAt:acknowledged.includes(notice.eventId)?receiptDate:null})):receivedFixtures.filter(notice => !acknowledged.includes(notice.eventId));
+      if(p_action==='unread')completedReads += 1;
       return respond({ items, total: items.length, offset: p_offset, limit: p_limit, hasMore: false });
     });
 
@@ -94,6 +94,16 @@ for (const language of ['en', 'bn'] as const) {
     await expect.poll(() => completedReads).toBeGreaterThan(readsBeforeReload);
     await expect(popup).toHaveCount(0);
     expect(acknowledged).toEqual(receivedFixtures.map(fixture => fixture.eventId));
+    const receivedActivity=page.getByTestId('recipient-activity-payments');
+    await expect(receivedActivity).toBeVisible();
+    await expect(receivedActivity).toContainText(receivedFixtures[0].receiptReference);
+    const summary=receivedActivity.getByTestId('recipient-completed-summary');
+    await expect(summary).toContainText(confirmed?(bangla?'৫৬১':'561'):(bangla?'০':'0'));
+    await receivedActivity.getByRole('button',{name:bangla?'বিস্তারিত':'Details',exact:true}).first().click();
+    const details=page.getByRole('dialog',{name:bangla?'পেমেন্টের বিস্তারিত':'Payment details'});
+    await expect(details.locator('dt')).toHaveCount(7);
+    await expect(details.getByRole('button',{name:bangla?'পেমেন্ট রিপোর্ট করুন':'Report Payment',exact:true})).toBeVisible();
+    await details.getByRole('button',{name:bangla?'বন্ধ করুন':'Close',exact:true}).click();
   });
 }
 }
