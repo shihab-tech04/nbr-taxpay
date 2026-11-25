@@ -2,6 +2,7 @@ name: TaxPay Phase 02 - disposable Auth, RLS and draft persistence
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
   push:
     branches: [main]
@@ -21,6 +22,7 @@ jobs:
   # the disposable TaxPay database. Run it alongside the complete SQL/RLS/browser
   # job; both remain mandatory within this workflow and the release check.
   current-office-contract:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Current Office main contract and build
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -62,6 +64,7 @@ jobs:
 
 
   disposable-backend:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Isolated local Supabase acceptance (no hosted credentials)
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -320,12 +323,13 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375 --workers=1
 
+      # Account preferences already passed the dedicated serial owner-isolation check above.
       - name: Verify real saved beneficiaries, account isolation and Pay Tax prefill
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
-        run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts tests/e2e/beneficiary-move-list-real-local.spec.ts tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375
+        run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts tests/e2e/beneficiary-move-list-real-local.spec.ts --project=mobile-375
 
       - name: Verify history beneficiary save with real Auth, SQL persistence and owner isolation
         env:

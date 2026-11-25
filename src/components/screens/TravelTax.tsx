@@ -5,7 +5,7 @@ import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CheckCircle, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
-import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
+import { getStorySessionId, persistSimulatedPayment, type StoryPaymentAcknowledgement } from '../../services/simulatedPaymentStory';
 import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../services/travelPendingPayment';
 import { getConfirmedReceipt } from '../../services/confirmedPaymentCertificate';
 import { matchesConfirmedTravelTaxReceipt } from '../../services/travelTaxReceiptReadback';
@@ -161,6 +161,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [acknowledged, setAcknowledged] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
+  const [officeSyncStatus, setOfficeSyncStatus] = useState<StoryPaymentAcknowledgement['officeSyncStatus'] | null>(null);
   const [zeroTaxReviewFinished, setZeroTaxReviewFinished] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [sourcePaymentId, setSourcePaymentId] = useState<string | null>(null);
@@ -218,7 +219,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setPassportSuggestionsFor(null); setPassengerIssue(null);
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null);
     setAcknowledged(false); setSimulateDecline(false); setCreatedReceipt(null);
-    setBankSlipPending(false); setZeroTaxReviewFinished(false); setReceiptReviewOpen(false); setResultDocument('result'); setProcessing(false);
+    setBankSlipPending(false); setOfficeSyncStatus(null); setZeroTaxReviewFinished(false); setReceiptReviewOpen(false); setResultDocument('result'); setProcessing(false);
     pendingPayment.current = null; setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
   };
   useEffect(() => {
@@ -536,7 +537,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setReceiptReviewOpen(false); setResultDocument('result'); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
-    setZeroTaxReviewFinished(false); setCreatedReceipt(null); setProcessing(false); pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
+    setZeroTaxReviewFinished(false); setCreatedReceipt(null); setOfficeSyncStatus(null); setProcessing(false); pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
   };
 
   const paymentReceipt = (pendingBank: boolean): ChallanReceipt => {
@@ -595,6 +596,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const persistPreview = async (receipt: ChallanReceipt) => {
     // Records are explicitly simulated: no real A-Challan is issued.
     let stored = receipt;
+    let nextOfficeSyncStatus: StoryPaymentAcknowledgement['officeSyncStatus'] | null = null;
     if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
       pendingPayment.current ??= {
         idempotencyKey: paymentNonce,
@@ -625,14 +627,22 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         throw new Error('Travel Tax receipt does not match the saved Taxpayer payment');
       }
       stored = recorded;
-      try { sessionStorage.removeItem(pendingPaymentKey); }
-      catch { /* The saved key can safely replay the same payment. */ }
+      nextOfficeSyncStatus = ack.officeSyncStatus ?? (ack.mirrored ? 'SYNCED' : null);
+      // Source acknowledgement and Office delivery are distinct. Preserve the
+      // exact original request across refresh until a pending mirror is delivered.
+      if (nextOfficeSyncStatus !== 'PENDING') {
+        try { sessionStorage.removeItem(pendingPaymentKey); }
+        catch { /* The saved key can safely replay the same payment. */ }
+      }
     }
     setRecoveringPayment(null);
     addPaymentReceipt(stored);
     setResultDocument('result');
     setCreatedReceipt(stored);
-    pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
+    setOfficeSyncStatus(nextOfficeSyncStatus);
+    if (nextOfficeSyncStatus !== 'PENDING') {
+      pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
+    }
     setBankSlipPending(false);
     stepTo(3);
   };
@@ -678,6 +688,30 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     } finally { setProcessing(false); }
   };
 
+
+  const retryOfficeSync = async () => {
+    const original = pendingPayment.current;
+    if (processing || officeSyncStatus !== 'PENDING' || !original) return;
+    setProcessing(true); setError('');
+    try {
+      await persistPreview(original.details.receiptSnapshot);
+    } catch {
+      setError(tr('Office synchronization is still unavailable. Retry the same payment record.',
+        'অফিস সমন্বয় এখনো সম্ভব হয়নি। একই পেমেন্ট রেকর্ড দিয়ে আবার চেষ্টা করুন।'));
+    } finally { setProcessing(false); }
+  };
+  const officeStatusNotice = (officeSyncStatus === 'PENDING' || officeSyncStatus === 'DISABLED') && (
+    <div data-testid="travel-office-sync-status">
+      <p role="status">{officeSyncStatus === 'PENDING'
+        ? tr('Payment record saved — Office sync pending.', 'পেমেন্ট রেকর্ড সংরক্ষিত — অফিস সমন্বয় অপেক্ষমাণ।')
+        : tr('Payment record saved — Office synchronization is disabled.', 'পেমেন্ট রেকর্ড সংরক্ষিত — অফিস সমন্বয় বন্ধ আছে।')}</p>
+      {officeSyncStatus === 'PENDING' && <button type="button" className="payment-lifecycle__secondary"
+        onClick={retryOfficeSync} disabled={processing || !pendingPayment.current}>
+        {processing ? tr('Processing…', 'প্রক্রিয়াধীন…') : tr('Retry Office sync', 'অফিস সমন্বয় আবার চেষ্টা করুন')}
+      </button>}
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
 
   const confirmCheckedPassenger = (item: TravelPassenger) => {
     const issue = passengerIdentityIssue(item.id);
@@ -1085,6 +1119,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         <div className="payment-lifecycle__result payment-lifecycle__result--complete"><FileText size={18} aria-hidden="true"/>
           <p>{tr('Payment record saved; settlement is not verified.','পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে; নিষ্পত্তি যাচাই হয়নি।')}</p>
         </div>
+        {officeStatusNotice}
         {!authenticatedUser && !previewAccount && <WalkInChallanAction language={language} onOpen={() => setResultDocument('receipt')}/>}
         {!authenticatedUser && !previewAccount && !skipPostPaymentLogin && <WalkInResultBenefits language={language}
           onSignIn={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}
@@ -1353,10 +1388,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </section>}
 
-          {step === 3 && createdReceipt && !bankSlipPending && !embedded && <ReceiptView receipt={createdReceipt} embedded onBack={() => navigate('landing')}
-            transactionActions={ownedReceiptActions}
-            onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
-            onApplyForCorrection={applyReceiptCorrection}/>}
+          {step === 3 && createdReceipt && !bankSlipPending && !embedded && <>
+            {officeStatusNotice}
+            <ReceiptView receipt={createdReceipt} embedded onBack={() => navigate('landing')}
+              transactionActions={ownedReceiptActions}
+              onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
+              onApplyForCorrection={applyReceiptCorrection}/>
+          </>}
           {!embedded && step === 2 && !createdReceipt && <div className="travel-flow__standalone-actions" data-testid="travel-standalone-stage-actions">{primaryAction}</div>}
           {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
             onClick={() => stepTo((step-1) as 0 | 1 | 2 | 3)}>
