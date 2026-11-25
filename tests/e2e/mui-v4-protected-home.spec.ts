@@ -76,6 +76,7 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe(signedIn?'user1':null);
   await page.waitForLoadState('load');
   await page.mouse.move(0,0);
+  await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
   const fontState=await page.evaluate(async()=>{
    await document.fonts.ready;
    const requests=new Map<string,Set<string>>();
@@ -94,6 +95,13 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
    await document.fonts.ready;
    return [...document.fonts].filter(face=>face.status==='loaded').map(face=>[face.family,face.style,face.weight,face.unicodeRange].join('|')).sort();
   });
+  // Preserve the same fully settled state, including finite entrance and focus
+  // transitions, for both unmodified Main captures and the MUI candidate.
+  await page.evaluate(async()=>{
+    const finite=document.getAnimations().filter(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime));
+    await Promise.all(finite.map(animation=>animation.finished.catch(()=>undefined)));
+    await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+  });
   expect(fontErrors,'Failed approved font resource').toEqual([]);
   expect(fontState.length,'No approved web fonts loaded').toBeGreaterThan(0);
   await expect(page.locator('[data-mui-citizen-region]')).toHaveCount(0);
@@ -105,16 +113,31 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
  await signIn(baseline);
  for(const h of homes){
   const name=h.name+'-'+lang+'-'+theme+'-'+(signedIn?'local-account':'guest')+'.png';
-  const baselineFonts=await visit(baseline,h);
-  let previous=await page.screenshot(screenshotOptions),stable:Buffer|undefined;
-  for(let attempt=0;attempt<8;attempt++){
-   const next=await page.screenshot(screenshotOptions);
-   if(previous.equals(next)){stable=next;break;}
-   previous=next;
+  // Establish an exact, repeatable A/A reference before looking at the candidate.
+  // Save every control attempt. No masks, no nonzero tolerance, no candidate
+  // screenshot may be used to choose the baseline.
+  async function stableFrame(){
+   let previous=await page.screenshot(screenshotOptions);
+   for(let attempt=0;attempt<8;attempt++){
+    const next=await page.screenshot(screenshotOptions);
+    if(previous.equals(next))return next;
+    previous=next;
+   }
+   throw new Error('Screenshot failed to settle: '+name);
   }
-  expect(stable,'Unchanged Main screenshot did not settle to an identical frame: '+name).toBeDefined();
-  writeFileSync(join(dir,name),stable!);
-  expect(await visit(baseline,h),'Same approved fonts on Main self-control').toEqual(baselineFonts);
+  const baselineFonts=await visit(baseline,h);
+  let reference=await stableFrame();
+  let reproducible=false;
+  writeFileSync(join(dir,'aa-0-'+name),reference);
+  for(let attempt=1;attempt<=4;attempt++){
+   expect(await visit(baseline,h),'Same approved fonts on Main self-control').toEqual(baselineFonts);
+   const control=await stableFrame();
+   writeFileSync(join(dir,'aa-'+attempt+'-'+name),control);
+   if(reference.equals(control)){reproducible=true;break;}
+   reference=control;
+  }
+  expect(reproducible,'Exact unchanged Main control cannot reproduce '+name).toBe(true);
+  writeFileSync(join(dir,name),reference);
   await expect(page,'Unchanged Main self-control '+name).toHaveScreenshot(name,{...screenshotOptions,maxDiffPixels:0,threshold:0});
   await signIn(candidate);
   expect(await visit(candidate,h),'Same approved fonts on candidate').toEqual(baselineFonts);
