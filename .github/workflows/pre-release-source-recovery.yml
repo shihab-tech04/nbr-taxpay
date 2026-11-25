@@ -1,6 +1,7 @@
 name: Verified pre-release source recovery
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
   workflow_dispatch:
 permissions:
@@ -15,6 +16,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   source-backup:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -58,7 +60,7 @@ jobs:
   candidate-source-backup:
     # Source snapshots stay within GitHub Actions until the verified archive is
     # independently transferred outside GitHub. Never include credentials.
-    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/')
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

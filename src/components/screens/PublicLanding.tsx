@@ -5,6 +5,7 @@ import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
 const Home2Layout = React.lazy(() => import('./Home2Layout').then(m => ({default:m.Home2Layout})));
+const Home3Layout = React.lazy(() => import('./home3/Home3Layout').then(m => ({default:m.Home3Layout})));
 
 // Only publicly shipped fictional fixtures may appear in public autocomplete.
 // Never suggest account receipts or hosted payment records.
@@ -20,7 +21,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
   { value: receipt.gatewayTransactionId, kind: 'transaction' as const },
 ]);
 
-export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
+export const PublicLanding: React.FC<{home2?: boolean; home3?: boolean}> = ({home2 = false, home3 = false}) => {
   const { language, navigate, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [otherTaxEntryOpen, setOtherTaxEntryOpen] = useState(false);
@@ -43,7 +44,7 @@ export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
     setActiveSuggestion(-1);
     setPaymentReference(reference);
     // Preserve existing in-memory navigation; never expose references in the URL.
-    navigate('verify', { initialReference: reference, ...(home2 ? {fromHome2:true} : {}) });
+    navigate('verify', { initialReference: reference, ...(home3 ? {fromHome3:true} : home2 ? {fromHome2:true} : {}) });
   };
   useEffect(() => {
     const handleOutside = (event: PointerEvent) => {
@@ -241,6 +242,7 @@ export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
         onPublicOtherTaxContinue={() => { setOtherTaxEntryOpen(false); setOpenService('other'); }} />
     </React.Suspense>}
     {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onBack={openService === 'other' ? () => { setOpenService(null); setOtherTaxEntryOpen(true); } : undefined} onChooseOther={setOpenService} /></React.Suspense>}</>);
+  if (home3) return <><Home3Layout onSearch={chooseReference} onService={setOpenService} />{serviceOverlays}</>;
   if (home2) return <><Home2Layout onSearch={chooseReference} onOtherTax={()=>setOtherTaxEntryOpen(true)} />{serviceOverlays}</>;
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     {hero}
