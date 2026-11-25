@@ -1,5 +1,5 @@
-import { useCallback, useId, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
-import { ArrowRight, FileCheck2, Repeat2, Search, X } from 'lucide-react'
+import { useCallback, useId, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
+import { ArrowRight, Search, X } from 'lucide-react'
 import type { Copy } from './i18n'
 
 export type Home2Action = 'home' | 'original' | 'pay' | 'other' | 'login' | 'guide' | 'report' | 'help' | 'history' | 'certificates' | 'corrections' | 'again' | 'drafts' | 'status' | 'receipts' | 'security' | 'nbr'
@@ -10,6 +10,7 @@ export type ViewProps = {
   onAction: (action: Home2Action) => void
   onSearch: (reference: string) => void
   signedIn: boolean
+  sliderPaused: boolean
 }
 
 export function useMediaQuery(query: string) {
@@ -22,45 +23,6 @@ export function useMediaQuery(query: string) {
     [query],
   )
   return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches)
-}
-
-/** Promo slides that follow the main hero slide; copy lives in i18n under the same key. */
-export const promoSlides = [
-  {
-    key: 'cert',
-    icon: FileCheck2,
-    tone: 'bg-[#e5e2f0] text-[#152033]',
-    chip: 'bg-white/15 text-[#152033]',
-    cta: 'bg-white text-[#141b2d] hover:bg-white/90',
-  },
-  {
-    key: 'again',
-    icon: Repeat2,
-    tone: 'bg-[#dfeae3] text-[#17402a]',
-    chip: 'bg-[#17402a]/10 text-[#17402a]',
-    cta: 'bg-[#17402a] text-white hover:bg-[#0f2e1d]',
-  },
-] as const
-
-export const slideCount = promoSlides.length + 1
-
-export function useCarousel(count: number) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [index, setIndex] = useState(0)
-
-  const onScroll = () => {
-    const el = ref.current
-    if (el) setIndex(Math.round(el.scrollLeft / el.clientWidth))
-  }
-
-  const goTo = (i: number) => {
-    const el = ref.current
-    if (!el) return
-    const target = (i + count) % count
-    el.scrollTo({ left: target * el.clientWidth, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
-  }
-
-  return { ref, index, onScroll, goTo, next: () => goTo(index + 1), prev: () => goTo(index - 1) }
 }
 
 export function Logo({ size = 'md' }: { size?: 'md' | 'lg' }) {

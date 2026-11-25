@@ -3,7 +3,7 @@ import { Slider2 } from '../Slider2'
 import { LineArt, type LineArtName } from '../lineArt'
 import { Logo, SearchPanel, Tile, type ViewProps, type Home2Action } from '../shared'
 const surface = 'rounded-[20px] ring-1 ring-black/[0.05]'
-export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: ViewProps) {
+export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn, sliderPaused }: ViewProps) {
   const f = c.features
   const open = (action: Home2Action) => () => onAction(action)
 const links=[{action:'status' as const,label:c.links.status,icon:CalendarCheck},{action:'receipts' as const,label:c.links.receipts,icon:FilePen},{action:'security' as const,label:c.links.security,icon:ShieldCheck},{action:'nbr' as const,label:c.links.nbr,icon:ArrowUpRight,external:true}]
@@ -13,7 +13,7 @@ return <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6fa] pb
  <div className="flex items-center gap-1.5">
  <button onClick={onToggleLang} aria-label={c.langSwitchLabel} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[#0f1d34]"><Globe className="size-[15px] text-[#5d697e]" /> {c.langSwitch}</button>
  <button onClick={open('login')} className="home2-press flex h-9 items-center gap-1 rounded-lg bg-white pr-2.5 pl-3 text-[12.5px] font-semibold text-[#1c3d70] ring-1 ring-[#cad8ef]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড' : 'Dashboard') : c.login}<ArrowRight className="size-[15px]" /></button></div></header><section aria-label={c.section.title} className="space-y-3 px-4 pt-3">        {/* Slider 2: existing CMS, Home 2 presentation */}
-          <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction}/></Tile>
+          <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction} paused={sliderPaused}/></Tile>
 
 <Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-[#f4f7fc] p-5 ring-1 ring-[#e6edf8]">
   <LineArt name="search" accent="#cad8ef" className="absolute top-4 right-4 size-14 text-[#162d53]" />

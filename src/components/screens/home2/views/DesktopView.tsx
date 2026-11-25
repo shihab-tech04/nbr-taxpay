@@ -4,7 +4,7 @@ import { LineArt, type LineArtName } from '../lineArt'
 import { Logo, SearchPanel, Tile, type ViewProps, type Home2Action } from '../shared'
 const surface = 'rounded-[20px] ring-1 ring-black/[0.05]'
 const hover = 'transition duration-200 hover:ring-black/10 hover:shadow-[0_12px_28px_-18px_rgba(15,29,52,0.35)]'
-export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: ViewProps) {
+export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn, sliderPaused }: ViewProps) {
   const f = c.features
   const open = (action: Home2Action) => () => onAction(action)
 const links=[{action:'status' as const,label:c.links.status,icon:CalendarCheck},{action:'receipts' as const,label:c.links.receipts,icon:FilePen},{action:'security' as const,label:c.links.security,icon:ShieldCheck},{action:'nbr' as const,label:c.links.nbr,icon:ArrowUpRight,external:true}]
@@ -15,7 +15,7 @@ return <div className="flex min-h-screen flex-col bg-[#f4f6fa]"><header role="ba
  <button onClick={onToggleLang} aria-label={c.langSwitchLabel} className="flex h-10 items-center gap-2 rounded-lg px-3 text-[13.5px] font-semibold text-[#0f1d34] transition hover:bg-[#f4f6fa]"><Globe className="size-4 text-[#5d697e]" /> {c.langSwitch}</button>
  <button onClick={open('login')} className="home2-press flex h-10 items-center gap-1.5 rounded-lg bg-white pr-3.5 pl-4 text-[13.5px] font-semibold text-[#1c3d70] ring-1 ring-[#cad8ef] hover:bg-[#f4f7fc]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড' : 'Dashboard') : c.login}<ArrowRight className="size-4" /></button></div></div></header>
 <section aria-label={c.section.title} className="mx-auto w-full max-w-[1240px] flex-1 px-8 pt-5 pb-14"><section className="grid grid-cols-[minmax(0,1fr)_clamp(320px,30vw,372px)] gap-3">          {/* Slider 2: existing CMS, Home 2 presentation */}
-          <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction}/></Tile>
+          <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction} paused={sliderPaused}/></Tile>
 
 <div className="home2-v2-type flex flex-col gap-4"><Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-[#f4f7fc] p-6 ring-1 ring-[#e6edf8]">
   <LineArt name="search" accent="#cad8ef" className="absolute top-4 right-4 size-16 text-[#162d53]" />

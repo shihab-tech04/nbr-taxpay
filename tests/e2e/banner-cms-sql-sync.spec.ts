@@ -448,3 +448,20 @@ test('Slider 2 uses shared image fallback, autoplay and reduced-motion controls'
   await expect(frame.getByTestId('home2-pay')).toBeVisible();
   await expect(frame.getByTestId('home2-other')).toBeVisible();
 });
+
+// The existing payment dialog's open state must also suspend Slider 2.
+test('Slider 2 pauses during the existing Other Tax modal', async ({page})=>{
+  await page.clock.install();
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.route('**/rest/v1/taxpay_site_banners**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
+  await page.goto('/?action=home-2&lang=en');
+  const frame=page.getByTestId('slider2').getByRole('region');
+  await expect(frame.getByTestId('home2-pay')).toHaveText('Start tax payment');
+  await expect(frame).toHaveAttribute('data-paused','false');
+  await frame.getByTestId('home2-other').click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(frame).toHaveAttribute('data-paused','true');
+  const index=await frame.getAttribute('data-active-slide');
+  await page.clock.fastForward(17000);
+  await expect(frame).toHaveAttribute('data-active-slide',index!);
+});

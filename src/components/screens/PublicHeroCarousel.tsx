@@ -423,7 +423,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
         aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to change banner images and colors.'}
         data-active-slide={index} data-payment-service={current?.serviceCode}
-        data-banner-id={current?.id} data-banner-count={slides.length}
+        data-banner-id={current?.id} data-banner-count={slides.length} data-paused={paused}
         style={slider2Theme(current)}
         onKeyDown={onKeyDown} onPointerDown={onSwipeStart} onPointerUp={onSwipeEnd}
         onPointerCancel={cancelSwipe} onLostPointerCapture={cancelSwipe}>
