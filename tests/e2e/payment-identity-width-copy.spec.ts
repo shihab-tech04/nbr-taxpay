@@ -2,11 +2,26 @@ import { expect, test, type Locator } from '@playwright/test';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function expectFillsParent(input: Locator, container: Locator) {
-  const [fieldBox, parentBox] = await Promise.all([input.boundingBox(), container.boundingBox()]);
-  expect(fieldBox, 'editable field has a visible box').not.toBeNull();
-  expect(parentBox, 'field wrapper has a visible box').not.toBeNull();
-  // Allow subpixel rounding and the control's border while still requiring full cell coverage.
-  expect(fieldBox!.width).toBeGreaterThanOrEqual(parentBox!.width - 4);
+  await expect(input, 'editable field is visible').toBeVisible();
+  await expect(container, 'field wrapper is visible').toBeVisible();
+  const wrapper = await container.elementHandle();
+  try {
+    // Read both rectangles in one browser execution: independent protocol calls
+    // can sample different layout frames while the payment dialog is expanding.
+    const { fieldWidth, fieldHeight, parentWidth, parentHeight } = await input.evaluate((field, parent) => {
+      const fieldBox = field.getBoundingClientRect();
+      const parentBox = parent.getBoundingClientRect();
+      return { fieldWidth: fieldBox.width, fieldHeight: fieldBox.height, parentWidth: parentBox.width, parentHeight: parentBox.height };
+    }, wrapper);
+    expect(fieldWidth).toBeGreaterThan(0);
+    expect(fieldHeight).toBeGreaterThan(0);
+    expect(parentWidth).toBeGreaterThan(0);
+    expect(parentHeight).toBeGreaterThan(0);
+    // Preserve the original four-pixel full-cell-coverage requirement.
+    expect(fieldWidth).toBeGreaterThanOrEqual(parentWidth - 4);
+  } finally {
+    await wrapper.dispose();
+  }
 }
 
 test('self payment uses full-width name, receipt fields and accurate singular heading', async ({ page }) => {

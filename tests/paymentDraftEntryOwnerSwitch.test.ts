@@ -1,3 +1,4 @@
+import { useUnifiedDraftEditor } from '../src/services/paymentDraftEditor';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
@@ -52,4 +53,22 @@ test('dashboard draft cards and counts reject an earlier generation of the same 
   assert.match(source,/onCountChange\?\.\(catalog\.ownerKey === ownerKey && catalog\.generation === requestGeneration/);
   assert.match(source,/if \(sameOwner\(\)\) setCatalog\(previous => previous\.ownerKey === ownerKey && previous\.generation === requestGeneration/);
   assert.match(source,/setCatalog\(previous => previous\.ownerKey === ownerKey && previous\.generation === requestGeneration/);
+});
+
+
+test('dashboard and modern Pay Tax resume compatible Return and Other drafts using the same unified editor',()=>{
+  for(const service of ['TAX_WITH_RETURN','OTHER_TAX_PAYMENT'] as const){
+    const older={service,form_payload:{schemaVersion:1,category:service,forSelf:true,amountInputs:{125:'125.75'}}};
+    const snapshot=JSON.stringify(older);
+    assert.equal(useUnifiedDraftEditor(older,true),true);
+    assert.equal(useUnifiedDraftEditor(older,false),false);
+    const current={...older,form_payload:{...older.form_payload,unifiedFlowVersion:5}};
+    assert.equal(useUnifiedDraftEditor(current,true),true);
+    assert.equal(useUnifiedDraftEditor(current,false),true);
+    assert.equal(JSON.stringify(older),snapshot,'renderer selection must not mutate the stored financial inputs');
+    assert.equal(useUnifiedDraftEditor({...older,form_payload:{...older.form_payload,unifiedFlowVersion:99}},true),false);
+  }
+  for(const service of ['TRAVEL_TAX','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY','SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL'] as const){
+    assert.equal(useUnifiedDraftEditor({service,form_payload:{schemaVersion:1,category:service,unifiedFlowVersion:5}},true),false);
+  }
 });

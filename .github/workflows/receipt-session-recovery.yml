@@ -2,7 +2,7 @@ name: TaxPay receipt session recovery acceptance
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'src/components/screens/ReceiptLookup.tsx'
@@ -30,7 +30,7 @@ permissions:
 
 # Replace only obsolete same-PR checks; Main and manual runs stay independent.
 concurrency:
-  group: taxpay-receipt-session-${{ github.event.pull_request.number || github.run_id }}
+  group: taxpay-receipt-session-${{ github.event.pull_request.number || github.run_id }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

@@ -1,3 +1,22 @@
+\set ON_ERROR_STOP on
+-- Fail closed before any fixture write. Phase02 validates the disposable
+-- Supabase status endpoints and exports the exact per-run database port.
+\getenv taxpay_fixture_db_port TAXPAY_LOCAL_DB_PORT
+\if :{?taxpay_fixture_db_port}
+select :'HOST' in ('localhost','127.0.0.1','::1')
+   and :'DBNAME'='postgres'
+   and :'PORT'=:'taxpay_fixture_db_port'
+   and :'taxpay_fixture_db_port' ~ '^[0-9]{4,5}$'
+   as local_beneficiary_candidate \gset
+\else
+\set local_beneficiary_candidate false
+\endif
+\if :local_beneficiary_candidate
+\else
+\echo 'Refusing beneficiary fixture SQL outside allocated disposable local Supabase'
+select 1/0;
+\endif
+
 begin;
 
 do $$
@@ -251,19 +270,12 @@ rollback;
 \echo 'PASS: guest capabilities persist and isolate beneficiary CRUD and atomic list moves; account-owned RLS and service-role-only RPC boundary remain intact'
 
 
--- Exercise the unreleased migration in the existing disposable Phase02 runner.
--- Never change a database reached through a hosted connection.
-select :'HOST' in ('localhost','127.0.0.1','::1') and :'PORT'='54322' and :'DBNAME'='postgres' as local_beneficiary_candidate \gset
-\if :local_beneficiary_candidate
+-- Exercise the unreleased migration only after the exact allocated loopback guard above.
 \set user1_variant original
 \ir beneficiaryUser1Reconciliation.sql
 \set user1_variant v2
 \ir beneficiaryUser1Reconciliation.sql
 \ir ../../docs/beneficiary-group-cap-candidate.sql
-\else
-\echo 'Refusing candidate SQL outside disposable local Supabase'
-select 1/0;
-\endif
 
 begin;
 do $$
