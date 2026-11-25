@@ -596,6 +596,17 @@ jobs:
           npm ci --prefix "$WS1_DIR" --no-audit --no-fund
           export WS3_BROWSER_ORIGIN_ACCEPTANCE=true
           node tests/integration/pairedTaxpayerOfficeEdgeSql.mjs
+          # Preserve the exact current-Main tests above, then pair v7 with the
+          # separately accepted Office draft source and its candidate SQL.
+          V7_OFFICE_DIR="$RUNNER_TEMP/ws5-v7-office-candidate"
+          V7_OFFICE_SHA="c2e317a1c36ad1badf7b9851d90ad82d2715acad"
+          git clone --depth 1 --branch ws5/recipient-report-immediate-intake-v7-20261126 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$V7_OFFICE_DIR"
+          git -C "$V7_OFFICE_DIR" fetch --depth 1 origin "$V7_OFFICE_SHA"
+          git -C "$V7_OFFICE_DIR" checkout --detach "$V7_OFFICE_SHA"
+          test "$(git -C "$V7_OFFICE_DIR" rev-parse HEAD)" = "$V7_OFFICE_SHA"
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$V7_OFFICE_DIR/tests/integration/officeRecipientImmediateIntakeCandidateMigration.sql"
+          export WS3_V7_OFFICE_SOURCE="$V7_OFFICE_DIR"
+          node tests/integration/pairedRecipientReportEdgeSql.mjs
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           node tests/integration/pairedOfficeUiReadback.mjs
           echo "PASS: current Work A composer matrix, original Taxpayer Edge/SQL, separate current Office SQL/API, same paired record in Office UI, retry and authorized readback"
