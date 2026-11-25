@@ -412,7 +412,7 @@ function Services() {
   const {bn}=useHome3()
   return (
     <section aria-label="Services" className={`${container} mt-3 grid gap-2.5 sm:mt-4 sm:gap-4 lg:mt-5 lg:grid-cols-3 lg:gap-6`}>
-      {services.map(({ icon, title, desc }) => (
+      {services.map(({ icon, action, title, titleBn, desc, descBn }) => (
         <ActionLink key={title} action={action} className={`group flex items-center gap-4 p-4 lg:p-6 ${cardBase} ${cardHover} ${focusRing}`}>
           <IconTile icon={icon} />
           <div className="min-w-0 flex-1">
