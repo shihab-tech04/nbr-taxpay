@@ -150,7 +150,7 @@ try {
       let body;try{body=req.postDataJSON()}catch{}
       const action=body?.action;
       const reads=['demo-login','open','lists','people','snapshot','demo-registration','payment-draft-list','payment-draft-get','guest-payment-draft-list','guest-payment-draft-get','received-notices-list','received-notices-unread'];
-      if(req.method()==='POST' && (reads.includes(action)||(action==='demo-settings'&&body.key==null&&body.value==null)))return route.continue();
+      if(req.method()==='POST' && url.pathname==='/functions/v1/taxpay-guest-beneficiaries' && (reads.includes(action)||(action==='demo-settings'&&body.key==null&&body.value==null)))return route.continue();
       if(req.method()==='POST'&&/\/auth\/v1\/(token|verify)$/.test(url.pathname))return route.continue();
       denied.push(req.method()+' '+url.pathname);
       await route.abort('blockedbyclient');
@@ -206,7 +206,7 @@ try {
         await expect(accordion).toBeVisible({timeout:30000});
         let contact=accordion.getByRole('checkbox').first();
         if(!(await contact.isVisible())){
-          for(const summary of await accordion.locator('summary').all()){
+          for(const summary of await accordion.locator('button[aria-expanded="false"]').all()){
             await summary.click();if(await contact.isVisible())break;
           }
         }
