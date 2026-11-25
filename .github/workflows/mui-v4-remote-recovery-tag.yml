@@ -1,0 +1,30 @@
+name: MUI exact recovery tag
+on:
+  push:
+    branches: [ops/mui-v4-remote-tag-bb3fcb77]
+permissions:
+  contents: write
+jobs:
+  recovery-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bb3fcb774695350e93f00d3fd3c27fadbac56ee0
+          fetch-depth: 0
+      - name: Create exact recovery tag without overwriting existing refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=bb3fcb774695350e93f00d3fd3c27fadbac56ee0
+          tag=recovery/mui-v4-bb3fcb77
+          test "$(git rev-parse HEAD)" = "$expected"
+          current="$(git ls-remote origin "refs/tags/$tag" | cut -f1)"
+          if [ -z "$current" ]; then
+            git push origin "$expected:refs/tags/$tag"
+          else
+            test "$current" = "$expected"
+          fi
+          test "$(git ls-remote origin "refs/tags/$tag" | cut -f1)" = "$expected"
+          echo "REMOTE_RECOVERY_TAG_PASS=$tag:$expected"
