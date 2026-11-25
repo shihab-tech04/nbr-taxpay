@@ -1,5 +1,5 @@
 import '../../styles/taxpay-unified-table.css';
-import {type ComponentPropsWithoutRef,type ComponentType,type ReactNode} from 'react';
+import {createContext,useContext,type ComponentPropsWithoutRef,type ComponentType,type ReactNode} from 'react';
 import {compactRecordItems} from './compactRecordItems';
 import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
@@ -8,6 +8,22 @@ import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
  * its existing data source, filters, sorting, actions, permissions and columns.
  * Never wrap receipt/certificate print tables in these components.
  */
+type RecordButtonProps=ComponentPropsWithoutRef<'button'>;
+type RecordSearchProps=ComponentPropsWithoutRef<'input'>;
+export type TaxPayRecordControlSlots={
+  Action:ComponentType<RecordButtonProps>;
+  Search:ComponentType<RecordSearchProps>;
+};
+export const TaxPayRecordControlContext=createContext<TaxPayRecordControlSlots|null>(null);
+function RecordAction(props:RecordButtonProps){
+  const slots=useContext(TaxPayRecordControlContext);
+  return slots?<slots.Action {...props}/>:<RecordAction data-mui-coverage="MUI-RECORD-FILTER-TOGGLE" {...props}/>;
+}
+function RecordSearch(props:RecordSearchProps){
+  const slots=useContext(TaxPayRecordControlContext);
+  return slots?<slots.Search {...props}/>:<input {...props}/>;
+}
+
 type DivProps=ComponentPropsWithoutRef<'div'>;
 const merge=(base:string,rest:string|undefined)=>rest?`${base} ${rest}`:base;
 
@@ -38,7 +54,7 @@ export function TaxPayTableFilterToggle({expanded,onToggle,label}:{
   return <button type="button" className="taxpay-office-filter-toggle" onClick={onToggle}
     aria-expanded={expanded} aria-label={label}>
     <Filter size={16} aria-hidden="true"/>{label}
-  </button>;
+  </RecordAction>;
 }
 export type TaxPayActiveFilter = {key:string;label:string;onRemove:()=>void};
 export function TaxPayActiveFilterChips({filters,clearLabel,onClear}:{
@@ -47,12 +63,12 @@ export function TaxPayActiveFilterChips({filters,clearLabel,onClear}:{
   if(!filters.length)return null;
   return <div className="taxpay-office-active-filters" aria-label="Active table filters">
     <div className="taxpay-office-active-filters__chips">{filters.map(filter=>
-      <button type="button" key={filter.key} className="taxpay-office-active-filters__chip"
+      <RecordAction data-mui-coverage="MUI-RECORD-CHIP-REMOVE" type="button" key={filter.key} className="taxpay-office-active-filters__chip"
         aria-label={'Remove filter: '+filter.label} onClick={filter.onRemove}>
         <span>{filter.label}</span><X size={13} aria-hidden="true"/>
-      </button>
+      </RecordAction>
     )}</div>
-    <button type="button" className="taxpay-office-active-filters__clear" onClick={onClear}>{clearLabel}</button>
+    <RecordAction data-mui-coverage="MUI-RECORD-CHIP-CLEAR" type="button" className="taxpay-office-active-filters__clear" onClick={onClear}>{clearLabel}</RecordAction>
   </div>;
 }
 
@@ -85,7 +101,7 @@ export function TaxPayOfficeRegisterToolbar({
         <span className="taxpay-office-register__search-label">{searchLabel??'Search'}</span>
         <span className="taxpay-record-toolbar__search" title={searchPlaceholder??searchLabel??'Search'}>
           <Search size={16} aria-hidden="true"/>
-          <input type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
+          <RecordSearch data-mui-coverage="MUI-RECORD-OFFICE-SEARCH" type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
             aria-label={searchLabel??'Search'} title={searchPlaceholder??searchLabel??'Search'}
             placeholder={searchPlaceholder??'Search…'}/>
         </span>
@@ -137,7 +153,7 @@ export function TaxPayRecordToolbar({title,count,total,countLabel,search,searchL
     <div className="taxpay-record-toolbar__controls">
       <label className="taxpay-record-toolbar__search">
         <Search size={17} aria-hidden="true"/>
-        <input type="search" aria-label={searchLabel} placeholder={searchPlaceholder} value={search}
+        <RecordSearch data-mui-coverage="MUI-RECORD-GRID-SEARCH" type="search" aria-label={searchLabel} placeholder={searchPlaceholder} value={search}
           onChange={event=>onSearchChange(event.target.value)}/>
       </label>
       {filters}
@@ -171,19 +187,19 @@ export function TaxPayTablePagination({page,perPage,total,onPageChange,labels}:T
       {text.showing} {from}–{to} {text.of} {total} {text.records}
     </span>
     <div className="taxpay-table-pagination__controls">
-      <button type="button" disabled={current===1} onClick={()=>onPageChange(current-1)}
+      <RecordAction data-mui-coverage="MUI-RECORD-PAGE-PREVIOUS" type="button" disabled={current===1} onClick={()=>onPageChange(current-1)}
         aria-label={text.previous} className="taxpay-table-pagination__button">
         <ChevronLeft size={16} aria-hidden="true"/>{text.previous}
-      </button>
+      </RecordAction>
       {Array.from({length:last-first+1},(_,index)=>first+index).map(value=>
-        <button key={value} type="button" onClick={()=>onPageChange(value)}
+        <RecordAction data-mui-coverage="MUI-RECORD-PAGE-NUMBER" key={value} type="button" onClick={()=>onPageChange(value)}
           aria-label={text.page+' '+value} aria-current={value===current?'page':undefined}
-          className="taxpay-table-pagination__page">{value}</button>
+          className="taxpay-table-pagination__page">{value}</RecordAction>
       )}
-      <button type="button" disabled={current===pages} onClick={()=>onPageChange(current+1)}
+      <RecordAction data-mui-coverage="MUI-RECORD-PAGE-NEXT" type="button" disabled={current===pages} onClick={()=>onPageChange(current+1)}
         aria-label={text.next} className="taxpay-table-pagination__button">
         {text.next}<ChevronRight size={16} aria-hidden="true"/>
-      </button>
+      </RecordAction>
     </div>
   </nav>;
 }
@@ -240,11 +256,11 @@ export function TaxPayCompactCellList<Item>({items,getKey,renderItem,moreLabel,o
     {projection.visible.map(item=><div className="taxpay-compact-cell-list__item" key={getKey(item)}>
       {renderItem(item)}
     </div>)}
-    {hidden>0&&<button type="button" className="taxpay-compact-cell-list__more"
+    {hidden>0&&<RecordAction data-mui-coverage="MUI-RECORD-COMPACT-MORE" type="button" className="taxpay-compact-cell-list__more"
       aria-label={moreLabel(hidden,items.length)}
       onClick={event=>{event.stopPropagation();onShowAll();}}>
       {moreLabel(hidden,items.length)}
-    </button>}
+    </RecordAction>}
   </div>;
 }
 
@@ -320,7 +336,7 @@ export function TaxPayDataGrid<Row>({
     return <>
       {toolbar&&<TaxPayRecordToolbar {...toolbar}/>}
       {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:
-       error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<button type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</button>}</TaxPayTableState>:
+       error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<RecordAction data-mui-coverage="MUI-RECORD-RETRY-TABLE" type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</RecordAction>}</TaxPayTableState>:
        rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:<>
       {variant==='tabular'?<TaxPayTableViewport className="hidden md:block" role="region" aria-label={ariaLabel} tabIndex={0}>{desktopTable}</TaxPayTableViewport>:desktopTable}
     <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
@@ -352,7 +368,7 @@ export function TaxPayDataGrid<Row>({
   return <>
     {toolbar&&<TaxPayRecordToolbar {...toolbar}/>}
     {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:
-     error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<button type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</button>}</TaxPayTableState>:
+     error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<RecordAction data-mui-coverage="MUI-RECORD-RETRY-LIST" type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</RecordAction>}</TaxPayTableState>:
      rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:
     <TaxPayRecordList variant={variant} aria-label={ariaLabel} className={className}
       headers={columns.map(column=>column.header)} data-testid={testId}>

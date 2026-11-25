@@ -1,4 +1,4 @@
-import type {ComponentPropsWithoutRef} from 'react';
+import type {ComponentPropsWithoutRef,PropsWithChildren} from 'react';
 import {useEffect,useId} from 'react';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
@@ -7,8 +7,10 @@ import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
+import ButtonBase from '@mui/material/ButtonBase';
+import InputBase from '@mui/material/InputBase';
 import {X} from 'lucide-react';
-import type {TaxPayDesktopTableSlots} from '../components/ui/TaxPayDataTable';
+import {TaxPayRecordControlContext,type TaxPayRecordControlSlots,type TaxPayDesktopTableSlots} from '../components/ui/TaxPayDataTable';
 import type {TaxPayModalProps} from '../components/ui/TaxPayModal';
 
 /** Route-opt-in adapters, not global replacements. The original register CSS
@@ -23,6 +25,20 @@ export const citizenMuiDesktopTableSlots:TaxPayDesktopTableSlots={
   HeaderCell:({align,...props})=><TableCell {...props} align={align==="char"?undefined:align} component="th" variant="head" sx={{font:'inherit',color:'inherit'}}/>,
   Cell:({align,...props})=><TableCell {...props} align={align==="char"?undefined:align} component="td" variant="body" sx={{font:'inherit',color:'inherit'}}/>,
 };
+
+/** Only migrated record regions opt in. Native renderers remain identical elsewhere. */
+const recordControlSlots:TaxPayRecordControlSlots={
+  Action:({type='button',...props})=><ButtonBase {...props} type={type} disableRipple
+    sx={{font:'inherit','&.Mui-focusVisible':{outline:'2px solid var(--taxpay-table-primary,#2c5ead)',outlineOffset:2},
+      '&.taxpay-record-toolbar__retry':{border:'1px solid var(--taxpay-table-border,#e1e6ee)',minHeight:44,padding:'8px 14px',borderRadius:'8px'}}}/>,
+  Search:({value,onChange,type='search',className,placeholder,...props})=>
+    <InputBase className={className} type={type} value={value} onChange={onChange}
+      placeholder={placeholder} inputProps={props}
+      sx={{flex:1,minWidth:0,font:'inherit','& .MuiInputBase-input':{boxSizing:'border-box',padding:0,width:'100%',font:'inherit'}}}/>,
+};
+export function MuiRecordControlsScope({children}:PropsWithChildren){
+  return <TaxPayRecordControlContext.Provider value={recordControlSlots}>{children}</TaxPayRecordControlContext.Provider>;
+}
 
 /** Only the read-only ledger event dialog opts in. MUI owns escape/backdrop,
  * focus trap/restoration and dialog semantics. Existing payment modals and

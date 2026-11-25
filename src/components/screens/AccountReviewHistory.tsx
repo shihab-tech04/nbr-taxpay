@@ -1,6 +1,6 @@
 import React, {useEffect,useState} from 'react';
 import {CitizenMuiScope,MuiButtonBase,MuiNativeSelect,MuiInputBase} from '../../design-system/mui';
-import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
+import {MuiRecordControlsScope,citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
 import {supabase} from '../../services/supabaseClient';
 import {useTaxState} from '../../services/taxState';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
@@ -67,7 +67,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
         'অ্যাকাউন্টভিত্তিক অ-আর্থিক পরিশোধ পর্যালোচনা। টিআইএন সংযোগের প্রয়োজন নেই।')} />
     {activityTabs && <TaxpayerActivityTabs />}
     <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
-    <CitizenMuiScope><section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={tr('Submitted request history','জমা দেওয়া অনুরোধের ইতিহাস')}>
+    <CitizenMuiScope><MuiRecordControlsScope><section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={tr('Submitted request history','জমা দেওয়া অনুরোধের ইতিহাস')}>
       <p className="text-sm text-taxpay-muted">
         {tr('These are review requests, not payments or government receipts. No Treasury settlement, liability, credit, or tax balance is implied.',
           'এগুলো পর্যালোচনার অনুরোধ, অর্থ পরিশোধ বা সরকারি রসিদ নয়। ট্রেজারি নিষ্পত্তি, দায়, ক্রেডিট বা করের ব্যালেন্স বোঝায় না।')}
@@ -138,6 +138,6 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
         <MuiButtonBase disableRipple sx={{"&.Mui-focusVisible":{outline:"2px solid #2C5EAD",outlineOffset:2}}} type="button" onClick={()=>navigate('corrections')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
           {tr('Correction inquiries','সংশোধনের অনুসন্ধান')}</MuiButtonBase>
       </div>
-    </section></CitizenMuiScope>
+    </section></MuiRecordControlsScope></CitizenMuiScope>
   </div>;
 };

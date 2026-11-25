@@ -67,7 +67,15 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   const directions=authorization.getByRole('navigation',{name:'Authorization direction'});
   await expect(directions.getByRole('button',{name:'I can pay for'})).toBeVisible();
   await expect(directions.getByRole('button',{name:'Can pay for me'})).toBeVisible();
-  await authorization.getByRole('button',{name:'Add'}).click();
+  for(const label of ['I can pay for','Can pay for me','Add taxpayer']){
+    await expect(authorization.getByRole('button',{name:label})).toHaveClass(/MuiButtonBase-root/);
+  }
+  const add=authorization.getByRole('button',{name:'Add'});
+  await add.focus();await page.keyboard.press('Enter');
+  await expect(authorization.getByRole('button',{name:'Request authorization'})).toHaveClass(/MuiButtonBase-root/);
+  await authorization.getByRole('button',{name:'Discard'}).click();
+  await expect(add).toBeFocused();
+  await add.click();
   const lookup=authorization.getByTestId('shared-taxpayer-tin-lookup');
   await expect(lookup.getByTestId('taxpayer-tin-digits').locator('span')).toHaveCount(13);
   const authTin=lookup.locator('#new-auth-tin');
@@ -109,7 +117,14 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await page.getByRole('button',{name:'Sign out'}).click();
 
   await signIn(page,'user1');
-  await authorization.getByRole('textbox',{name:'Four-digit confirmation code'}).fill('7139');
+  const code=authorization.getByRole('textbox',{name:'Four-digit confirmation code'});
+  await expect(code).toHaveClass(/MuiInputBase-input/);
+  await expect(code).toHaveAttribute('maxlength','4');
+  await expect(code).toHaveAttribute('inputmode','numeric');
+  await expect(code).toHaveAttribute('autocomplete','one-time-code');
+  await expect(authorization.getByRole('button',{name:'Complete authorization'})).toBeDisabled();
+  await code.fill('7x');await expect(code).toHaveValue('7');
+  await code.fill('7139');
   await authorization.getByRole('button',{name:'Complete authorization'}).click();
   await expect(authorization.getByText('Active',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Sign out'}).click();
@@ -117,6 +132,9 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await signIn(page,'user2');
   await authorization.getByRole('navigation',{name:'Authorization direction'})
     .getByRole('button',{name:'Can pay for me'}).click();
+  await authorization.getByRole('button',{name:'Remove authorization'}).click();
+  await expect(authorization.getByRole('button',{name:'Confirm removal'})).toHaveClass(/MuiButtonBase-root/);
+  await authorization.getByRole('button',{name:'Keep authorization'}).click();
   await authorization.getByRole('button',{name:'Remove authorization'}).click();
   await authorization.getByRole('button',{name:'Confirm removal'}).click();
   await expect(authorization.getByText('Revoked',{exact:true})).toBeVisible();

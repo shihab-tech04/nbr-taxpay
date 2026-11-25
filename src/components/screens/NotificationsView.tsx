@@ -1,6 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {CitizenMuiScope,MuiButton,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
-import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
+import {MuiRecordControlsScope,citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
 import {AccountCenter} from './AccountCenter';
 import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
@@ -22,7 +22,7 @@ import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedT
 import {simulationCategoryLabels,type SimulationTransaction} from '../../contracts/paymentSimulationContract';
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
-export const NotificationsView:React.FC=()=> <CitizenMuiScope><NotificationsContent/></CitizenMuiScope>;
+export const NotificationsView:React.FC=()=> <CitizenMuiScope><MuiRecordControlsScope><NotificationsContent/></MuiRecordControlsScope></CitizenMuiScope>;
 const NotificationsContent:React.FC=()=>{
   const {demoUser,previewAccount,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();

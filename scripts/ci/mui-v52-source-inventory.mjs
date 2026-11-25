@@ -26,7 +26,7 @@ for(const absolute of sourceFiles){
   let classification=frozen?'HOME-FROZEN':candidate?'UNCLASSIFIED':'SEMANTIC_OR_CUSTOM_REVIEW';
   if(explicit){if(explicit.file!==file||explicit.component!==tag||seen.has(id))throw Error('Invalid or duplicate registered consumer '+id);classification=explicit.classification;seen.add(id);}
   const stable=id||'SCAN-'+createHash('sha256').update(file+'|'+tag+'|'+number).digest('hex').slice(0,16);
-  items.push({id:stable,file,line:n.loc.start.line,column:n.loc.start.column,tag,importSource:names.get(tag)||null,attributes:keys,family:tagFamily,classification,registered:Boolean(explicit),route:explicit?.route||null});
+  items.push({id:stable,file,line:n.loc.start.line,column:n.loc.start.column,tag,importSource:names.get(tag)||null,attributes:keys,family:tagFamily,classification,registered:Boolean(explicit),route:explicit?.route||null,contextStatus:explicit?.contextStatus||null,implementation:explicit?.implementation||null});
  });
 }
 for(const item of register.items)if(!seen.has(item.id))throw Error('Missing registered consumer '+item.id);

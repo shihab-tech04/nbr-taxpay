@@ -1,5 +1,6 @@
 import { maskTinForDisplay } from '../../services/tinDisplay';
 import React, { useEffect, useRef, useState } from 'react';
+import {CitizenMuiScope,MuiButtonBase,MuiInputBase} from '../../design-system/mui';
 import { Clock3, Plus, RefreshCw, ShieldCheck, ShieldX, Trash2, UsersRound } from 'lucide-react';
 import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 import { useTaxState } from '../../services/taxState';
@@ -145,17 +146,17 @@ export function ManageAuthorization() {
   const matchedAuthUser = userIdForHostedTin(tin);
   const matchingAuthName = searchedAuthTin === tin && matchedAuthUser ? (bn ? DEMO_USERS[matchedAuthUser].nameBn : DEMO_USERS[matchedAuthUser].nameEn) : '';
 
-  return <section className="taxpayer-account-center taxpay-authorization" lang={language} aria-labelledby="manage-auth-title" data-testid="manage-authorization">
+  return <CitizenMuiScope><section className="taxpayer-account-center taxpay-authorization" lang={language} aria-labelledby="manage-auth-title" data-testid="manage-authorization">
     <TaxpayerPageHeading id="manage-auth-title" className="taxpayer-account-heading"
       title={tr('Manage Authorization', 'অনুমোদন পরিচালনা')}
       description={tr('Choose who may facilitate income-tax payments for whom.', 'কে কার হয়ে আয়কর পরিশোধে সহায়তা করতে পারবেন, তা পরিচালনা করুন।')} />
     <nav className="taxpayer-account-tabs" aria-label={tr('Authorization direction', 'অনুমোদনের ধরন')}>
-      <button type="button" aria-current={tab === 'outgoing' ? 'page' : undefined} onClick={() => { setTab('outgoing'); setFeedback(null); setAdding(false); }}>
+      <MuiButtonBase data-mui-coverage="MUI-AUTH-OUTGOING" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" aria-current={tab === 'outgoing' ? 'page' : undefined} onClick={() => { setTab('outgoing'); setFeedback(null); setAdding(false); }}>
         <UsersRound size={17} aria-hidden="true"/>{tr('I can pay for', 'আমি যাঁদের জন্য দিতে পারি')}
-      </button>
-      <button type="button" aria-current={tab === 'incoming' ? 'page' : undefined} onClick={() => { setTab('incoming'); setFeedback(null); setRemoveId(null); setDeleteId(null); }}>
+      </MuiButtonBase>
+      <MuiButtonBase data-mui-coverage="MUI-AUTH-INCOMING" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" aria-current={tab === 'incoming' ? 'page' : undefined} onClick={() => { setTab('incoming'); setFeedback(null); setRemoveId(null); setDeleteId(null); }}>
         <ShieldCheck size={17} aria-hidden="true"/>{tr('Can pay for me', 'আমার হয়ে যাঁরা দিতে পারেন')}
-      </button>
+      </MuiButtonBase>
     </nav>
 
     {!actor ? <section className="taxpayer-account-panel taxpay-auth-empty">
@@ -164,7 +165,7 @@ export function ManageAuthorization() {
       <p>{applicationUser
         ? tr('Authorization management is not available for this account yet.', 'এই অ্যাকাউন্টে এখনো অনুমোদন পরিচালনার সুবিধা নেই।')
         : tr('Sign in with an eligible account to manage payment authorizations.', 'পেমেন্টের অনুমোদন পরিচালনা করতে উপযুক্ত অ্যাকাউন্ট দিয়ে সাইন ইন করুন।')}</p>
-      {!applicationUser && <button type="button" className="taxpay-auth-primary" onClick={() => navigate('taxpayer_login')}>{tr('Sign in', 'সাইন ইন')}</button>}
+      {!applicationUser && <MuiButtonBase data-mui-coverage="MUI-AUTH-SIGN-IN" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-primary" onClick={() => navigate('taxpayer_login')}>{tr('Sign in', 'সাইন ইন')}</MuiButtonBase>}
     </section> : <section className="taxpayer-account-panel">
       <div className="taxpay-auth-heading-row">
         <div>
@@ -173,9 +174,9 @@ export function ManageAuthorization() {
             ? tr('Ask a taxpayer for consent or review existing permissions.', 'নতুন সম্মতি চান অথবা বিদ্যমান অনুমোদন দেখুন।')
             : tr('Review incoming requests and remove access whenever necessary.', 'অনুরোধ দেখুন এবং প্রয়োজনে অনুমোদন বাতিল করুন।')}</p>
         </div>
-        {tab === 'outgoing' && !adding && <button ref={addButtonRef} type="button" className="taxpay-auth-primary" onClick={() => { setAdding(true); setFeedback(null); }}>
+        {tab === 'outgoing' && !adding && <MuiButtonBase data-mui-coverage="MUI-AUTH-ADD" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} ref={addButtonRef} type="button" className="taxpay-auth-primary" onClick={() => { setAdding(true); setFeedback(null); }}>
           <Plus size={17} aria-hidden="true"/>{tr('Add taxpayer', 'করদাতা যোগ করুন')}
-        </button>}
+        </MuiButtonBase>}
       </div>
 
       {adding && tab === 'outgoing' && <form id="new-auth-form" className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
@@ -195,17 +196,17 @@ export function ManageAuthorization() {
             /> : searchedAuthTin === tin && tin.length===13 && !matchedAuthUser
             ? <p className="text-sm text-red-700" role="status">{tr('No eligible taxpayer account matches this reference.','এই রেফারেন্সের সঙ্গে কোনো উপযুক্ত করদাতার অ্যাকাউন্ট মেলেনি।')}</p> : undefined} />
         <div className="taxpay-auth-add__actions">
-          <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization','অনুমোদন চান')}</button>
+          <MuiButtonBase data-mui-coverage="MUI-AUTH-REQUEST" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization','অনুমোদন চান')}</MuiButtonBase>
         </div>
         <div className="taxpay-auth-add__footer">
           <p>{tr('The taxpayer accepts from their account, then shares a four-digit code with you to confirm.', 'করদাতা নিজের অ্যাকাউন্ট থেকে গ্রহণ করে আপনার সঙ্গে চার সংখ্যার কোড শেয়ার করবেন।')}</p>
-          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setSearchedAuthTin(null); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Discard', 'বাদ দিন')}</button>
+          <MuiButtonBase data-mui-coverage="MUI-AUTH-DISCARD" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setSearchedAuthTin(null); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Discard', 'বাদ দিন')}</MuiButtonBase>
         </div>
       </form>}
 
       {feedback && <p className={`taxpay-auth-feedback ${feedback.error ? 'taxpay-auth-feedback--error' : ''}`} role="status">{feedback.message}</p>}
-      {syncPending && <button type="button" className="taxpay-auth-outline" disabled={busy}
-        onClick={()=>void runAction(async()=>{await retryHostedAuthorizationSync(syncPending,actor!);setSyncPending(null);},tr('Office synchronization confirmed.','অফিস সিঙ্ক নিশ্চিত হয়েছে।'))}>{tr('Retry Office synchronization','অফিস সিঙ্ক আবার চেষ্টা করুন')}</button>}
+      {syncPending && <MuiButtonBase data-mui-coverage="MUI-AUTH-RETRY-SYNC" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy}
+        onClick={()=>void runAction(async()=>{await retryHostedAuthorizationSync(syncPending,actor!);setSyncPending(null);},tr('Office synchronization confirmed.','অফিস সিঙ্ক নিশ্চিত হয়েছে।'))}>{tr('Retry Office synchronization','অফিস সিঙ্ক আবার চেষ্টা করুন')}</MuiButtonBase>}
       {loading && <p role="status">{tr('Loading shared authorizations…','অনুমোদন লোড হচ্ছে…')}</p>}
       {!shown.length ? <div className="taxpay-auth-empty">
         <UsersRound size={30} strokeWidth={1.6} aria-hidden="true" />
@@ -232,52 +233,54 @@ export function ManageAuthorization() {
             {tab === 'incoming' && status === 'PENDING' && <div className="taxpay-auth-approval">
               <p>{tr('This person wants permission to pay your tax. Accept to receive your private code.', 'এই ব্যক্তি আপনার কর পরিশোধের অনুমতি চাইছেন। কোড পেতে গ্রহণ করুন।')}</p>
               <div className="taxpay-auth-inline">
-                <button type="button" className="taxpay-auth-primary" disabled={busy} onClick={() => changeStatus(record, 'accept')}>{tr('Accept request', 'অনুরোধ গ্রহণ করুন')}</button>
-                <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline', 'প্রত্যাখ্যান')}</button>
+                <MuiButtonBase data-mui-coverage="MUI-AUTH-ACCEPT" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-primary" disabled={busy} onClick={() => changeStatus(record, 'accept')}>{tr('Accept request', 'অনুরোধ গ্রহণ করুন')}</MuiButtonBase>
+                <MuiButtonBase data-mui-coverage="MUI-AUTH-DECLINE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline', 'প্রত্যাখ্যান')}</MuiButtonBase>
               </div>
             </div>}
             {tab === 'incoming' && status === 'CODE_ISSUED' && <div className="taxpay-auth-approval">
               <p>{tr('Your four-digit confirmation code:', 'আপনার চার সংখ্যার নিশ্চিতকরণ কোড:')} <strong className="taxpay-auth-tin">{record.consentCode}</strong></p>
               {(record.codeResends??0)>0 && <p role="status">{tr('A new code was requested. Use this latest code; older codes are invalid.', 'নতুন কোড চাওয়া হয়েছে। সর্বশেষ কোডটি ব্যবহার করুন; আগেরগুলো কার্যকর নয়।')}</p>}
               <p>{tr('Share it with the requester. The code expires in 15 minutes.', 'অনুরোধকারীকে কোডটি দিন। ১৫ মিনিট পরে কোডের মেয়াদ শেষ হবে।')}</p>
-              <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline instead', 'পরিবর্তে প্রত্যাখ্যান করুন')}</button>
+              <MuiButtonBase data-mui-coverage="MUI-AUTH-DECLINE-ISSUED" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline instead', 'পরিবর্তে প্রত্যাখ্যান করুন')}</MuiButtonBase>
             </div>}
             {tab === 'outgoing' && status === 'CODE_ISSUED' && <div className="taxpay-auth-approval">
               <p>{tr('The taxpayer accepted. Enter the four-digit code they shared with you:', 'করদাতা গ্রহণ করেছেন। তাঁর দেওয়া চার সংখ্যার কোড লিখুন:')}</p>
               <div className="taxpay-auth-inline">
-                <input aria-label={tr('Four-digit confirmation code', 'চার সংখ্যার নিশ্চিতকরণ কোড')} inputMode="numeric" autoComplete="one-time-code" maxLength={4}
+                <MuiInputBase data-mui-coverage="MUI-AUTH-CODE" type="text"
+                  inputProps={{'aria-label':tr('Four-digit confirmation code', 'চার সংখ্যার নিশ্চিতকরণ কোড'),inputMode:'numeric',autoComplete:'one-time-code',maxLength:4}}
                   value={codes[record.id]??''} onChange={e=>setCodes(old=>({...old,[record.id]:e.target.value.replace(/\D/g,'').slice(0,4)}))}
-                  placeholder={tr('4-digit code','৪ সংখ্যার কোড')}/>
-                <button type="button" className="taxpay-auth-primary" disabled={busy||(codes[record.id]??'').length!==4}
-                  onClick={()=>confirmCode(record)}>{tr('Complete authorization','অনুমোদন সম্পূর্ণ করুন')}</button>
+                  placeholder={tr('4-digit code','৪ সংখ্যার কোড')}
+                  sx={{flex:'1 1 180px',minWidth:0,maxWidth:'100%','& .MuiInputBase-input':{boxSizing:'border-box',width:'100%',font:'inherit'},'&.Mui-focused':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2,borderRadius:'9px'}}}/>
+                <MuiButtonBase data-mui-coverage="MUI-AUTH-CONFIRM-CODE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-primary" disabled={busy||(codes[record.id]??'').length!==4}
+                  onClick={()=>confirmCode(record)}>{tr('Complete authorization','অনুমোদন সম্পূর্ণ করুন')}</MuiButtonBase>
               </div>
               <div className="taxpay-auth-actions">
-                <button type="button" className="taxpay-auth-outline" disabled={busy || (record.codeResends??0)>=3 || (record.codeSentAt!=null && now-record.codeSentAt<60000)}
-                  onClick={() => resendCode(record)}><RefreshCw size={15} aria-hidden="true" />{tr('Resend code', 'কোড আবার পাঠান')}</button>
+                <MuiButtonBase data-mui-coverage="MUI-AUTH-RESEND" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy || (record.codeResends??0)>=3 || (record.codeSentAt!=null && now-record.codeSentAt<60000)}
+                  onClick={() => resendCode(record)}><RefreshCw size={15} aria-hidden="true" />{tr('Resend code', 'কোড আবার পাঠান')}</MuiButtonBase>
                 {(record.codeResends??0)>=3 ? <p className="taxpay-auth-note">{tr('Resend limit reached (3). Start a new request if this one expires.', 'তিনবার কোড পাঠানোর সীমা শেষ। মেয়াদ শেষ হলে নতুন অনুরোধ করুন।')}</p>
                   : record.codeSentAt!=null && now-record.codeSentAt<60000 ? <p className="taxpay-auth-note">{tr(`Available in ${Math.ceil((60000-(now-record.codeSentAt))/1000)} seconds`, `${Math.ceil((60000-(now-record.codeSentAt))/1000)} সেকেন্ড পরে আবার পাঠাতে পারবেন`)}</p> : null}
               </div>
             </div>}
             {tab === 'incoming' && status === 'ACTIVE' && <div className="taxpay-auth-actions">
-              {removeId !== record.id ? <button type="button" className="taxpay-auth-danger" onClick={() => setRemoveId(record.id)}>{tr('Remove authorization', 'অনুমোদন বাতিল করুন')}</button>
+              {removeId !== record.id ? <MuiButtonBase data-mui-coverage="MUI-AUTH-REMOVE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-danger" onClick={() => setRemoveId(record.id)}>{tr('Remove authorization', 'অনুমোদন বাতিল করুন')}</MuiButtonBase>
                 : <div className="taxpay-auth-confirm">
                   <p>{tr('Remove this person’s permission to initiate further payments for you?', 'এই ব্যক্তির আপনার হয়ে নতুন পেমেন্ট শুরু করার অনুমতি বাতিল করবেন?')}</p>
                   <div className="taxpay-auth-inline taxpay-auth-confirm__actions">
-                    <button type="button" className="taxpay-auth-outline" onClick={() => setRemoveId(null)}>{tr('Keep authorization', 'অনুমোদন রাখুন')}</button>
-                    <button type="button" className="taxpay-auth-danger" onClick={() => changeStatus(record, 'revoke')}>{tr('Confirm removal', 'বাতিল নিশ্চিত করুন')}</button>
+                    <MuiButtonBase data-mui-coverage="MUI-AUTH-KEEP" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" onClick={() => setRemoveId(null)}>{tr('Keep authorization', 'অনুমোদন রাখুন')}</MuiButtonBase>
+                    <MuiButtonBase data-mui-coverage="MUI-AUTH-REVOKE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-danger" onClick={() => changeStatus(record, 'revoke')}>{tr('Confirm removal', 'বাতিল নিশ্চিত করুন')}</MuiButtonBase>
                   </div>
                 </div>}
             </div>}
             <div className="taxpay-auth-actions">
-              {deleteId !== record.id ? <button type="button" className="taxpay-auth-outline" disabled={busy}
-                onClick={() => { setDeleteId(record.id); setRemoveId(null); }}><Trash2 size={15} aria-hidden="true" />{tr('Delete', 'মুছুন')}</button>
+              {deleteId !== record.id ? <MuiButtonBase data-mui-coverage="MUI-AUTH-DELETE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy}
+                onClick={() => { setDeleteId(record.id); setRemoveId(null); }}><Trash2 size={15} aria-hidden="true" />{tr('Delete', 'মুছুন')}</MuiButtonBase>
                 : <div className="taxpay-auth-confirm">
                   <p>{status === 'ACTIVE' ? tr('Deleting will immediately revoke this payment permission for both people. The payment and audit history will remain.', 'মুছলে উভয়ের জন্য পরিশোধের অনুমতি বাতিল হবে। পেমেন্ট ও নিরীক্ষার ইতিহাস থাকবে।')
                     : status === 'PENDING' || status === 'CODE_ISSUED' ? tr('Deleting will cancel this pending request for both people and hide it from your list. The audit record will remain.', 'মুছলে অনুরোধটি উভয়ের জন্য বাতিল হবে এবং আপনার তালিকা থেকে সরে যাবে। নিরীক্ষার রেকর্ড থাকবে।')
                     : tr('Remove this item from your list? The audit history will remain available to Office.', 'তালিকা থেকে সরাবেন? নিরীক্ষার ইতিহাস অফিসে থাকবে।')}</p>
                   <div className="taxpay-auth-inline taxpay-auth-confirm__actions">
-                    <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => setDeleteId(null)}>{tr('Cancel', 'ফিরে যান')}</button>
-                    <button type="button" className="taxpay-auth-danger" disabled={busy} onClick={() => deleteAuthorization(record)}>{tr('Confirm delete', 'মুছতে নিশ্চিত করুন')}</button>
+                    <MuiButtonBase data-mui-coverage="MUI-AUTH-CANCEL-DELETE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => setDeleteId(null)}>{tr('Cancel', 'ফিরে যান')}</MuiButtonBase>
+                    <MuiButtonBase data-mui-coverage="MUI-AUTH-CONFIRM-DELETE" disableRipple sx={{'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}} type="button" className="taxpay-auth-danger" disabled={busy} onClick={() => deleteAuthorization(record)}>{tr('Confirm delete', 'মুছতে নিশ্চিত করুন')}</MuiButtonBase>
                   </div>
                 </div>}
             </div>
@@ -285,5 +288,5 @@ export function ManageAuthorization() {
         })}
       </ul>}
     </section>}
-  </section>;
+  </section></CitizenMuiScope>;
 }

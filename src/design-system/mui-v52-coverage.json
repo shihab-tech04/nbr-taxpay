@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "scope": "classified subset; global eligible denominator UNVERIFIED",
+  "scope": "incremental classified source sites, including mixed native/MUI slot sites; global eligible denominator UNVERIFIED",
   "base": "69e547027bde3ff46cfd5a4d7269de280d2ef5a7",
   "items": [
     {
@@ -275,6 +275,796 @@
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
       "priorRun": 45679439371
+    },
+    {
+      "id": "MUI-AUTH-OUTGOING",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "I can pay for",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-INCOMING",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Can pay for me",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-SIGN-IN",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Sign in",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-ADD",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Add taxpayer",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-REQUEST",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Request authorization",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-DISCARD",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Discard",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-RETRY-SYNC",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Retry Office synchronization",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-ACCEPT",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Accept request",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-DECLINE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Decline",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-DECLINE-ISSUED",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Decline instead",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-CONFIRM-CODE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Complete authorization",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-RESEND",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Resend code",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-REMOVE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Remove authorization",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-KEEP",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Keep authorization",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-REVOKE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Confirm removal",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-DELETE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Delete",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-CANCEL-DELETE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Cancel",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-CONFIRM-DELETE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiButtonBase",
+      "control": "Confirm delete",
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "disabled where applicable"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/ButtonBase",
+      "contract": "unchanged button DOM, handlers, ref, class, type and actor rules"
+    },
+    {
+      "id": "MUI-AUTH-CODE",
+      "file": "src/components/screens/ManageAuthorization.tsx",
+      "symbol": "ManageAuthorization",
+      "route": "manage_authorization",
+      "component": "MuiInputBase",
+      "control": "four-digit confirmation",
+      "states": [
+        "empty",
+        "partial",
+        "valid",
+        "invalid characters",
+        "focus",
+        "expired code recovery"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "eligible account actor",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/manage-authorization-desktop.spec.ts",
+      "implementation": "@mui/material/InputBase"
+    },
+    {
+      "id": "MUI-RECORD-FILTER-TOGGLE",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Filter disclosure",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-CHIP-REMOVE",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Remove one active filter",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-CHIP-CLEAR",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Clear all active filters",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-PAGE-PREVIOUS",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Previous page",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-PAGE-NUMBER",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Page number",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-PAGE-NEXT",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Next page",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-COMPACT-MORE",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Show additional records",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-RETRY-TABLE",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Retry tabular records",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-RETRY-LIST",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordAction",
+      "control": "Retry list records",
+      "states": [
+        "enabled",
+        "disabled where applicable",
+        "focus",
+        "conditional",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/ButtonBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/e2e/account-tax-journey-private.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-OFFICE-SEARCH",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordSearch",
+      "control": "record search",
+      "states": [
+        "empty",
+        "filled",
+        "focus",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/InputBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-RECORD-GRID-SEARCH",
+      "file": "src/components/ui/TaxPayDataTable.tsx",
+      "symbol": "TaxPayDataTable",
+      "route": "ledger / account review history / notifications (explicit MUI scope)",
+      "component": "RecordSearch",
+      "control": "record search",
+      "states": [
+        "empty",
+        "filled",
+        "focus",
+        "responsive"
+      ],
+      "classification": "GENERIC-MIGRATE",
+      "role": "owner-scoped or existing read-only record consumer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "implementation": "slot -> official @mui/material/InputBase; native outside explicit scope",
+      "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/muiV53RecordControls.test.tsx",
+      "contextStatus": "UNVERIFIED_PER_CONSUMER"
     }
   ],
   "unresolved": [
@@ -286,6 +1076,41 @@
     {
       "file": "src/components/screens/AccountCenter.tsx",
       "reason": "multiple active owners; preserve their work",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/ui/TaxpayerTinLookup.tsx",
+      "reason": "Shared payment and authorization contexts; preserve original lookup behavior until scoped input/action contract migration",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/CorrectionRequests.tsx",
+      "reason": "Active PR #1082",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/CorrectionInquiries.tsx",
+      "reason": "Active PRs #912/#905/#779",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/CertificatesView.tsx",
+      "reason": "Active PRs #912/#905/#779",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/PaymentHistory.tsx",
+      "reason": "Active PR #779",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/ReceiptLookup.tsx",
+      "reason": "Active PR #779",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/SecureWorkspace.tsx",
+      "reason": "Active PR #586",
       "status": "UNVERIFIED"
     }
   ]

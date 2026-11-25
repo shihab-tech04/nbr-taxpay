@@ -14,7 +14,15 @@ test('MUI ledger uses the unified desktop table and original mobile records; det
    await expect(table).toBeHidden();
    await expect(region.locator('.taxpay-mobile-table-card').first()).toBeVisible();
  }
- await region.getByRole('button',{name:'Filter',exact:true}).click();
+ const filter=region.getByRole('button',{name:'Filter',exact:true});
+ await expect(filter).toHaveClass(/MuiButtonBase-root/);
+ await expect(filter).toHaveAttribute('aria-expanded','false');
+ const search=region.locator('[data-mui-coverage="MUI-RECORD-OFFICE-SEARCH"]');
+ await expect(search).toHaveClass(/MuiInputBase-input/);
+ await search.fill('Salary');
+ await search.clear();
+ await filter.focus();await filter.press('Enter');
+ await expect(filter).toHaveAttribute('aria-expanded','true');
  await region.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2025-2026');
  await region.getByRole('button',{name:'Credits',exact:true}).click();
  const trigger=region.getByRole('button',{name:/Salary withholding/}).first();
