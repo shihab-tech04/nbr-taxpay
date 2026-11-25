@@ -21,7 +21,13 @@ test('public guide provides scoped official support, legal links and example-pay
   await page.goto('/?action=user_guide&category=travel');
   await page.locator('.public-guide-actions').getByRole('button', { name: 'Pay Travel Tax' }).click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
-  await expect(page.getByText('Passengers and receipt details', { exact: true })).toBeVisible();
+  // The approved Travel Tax journey now places receipt contact in review,
+  // not passenger entry. Verify the current first-step passenger workspace.
+  const travel=page.getByRole('dialog',{name:'Travel tax'});
+  await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
+  await expect(travel.getByRole('heading',{name:'Add passenger'})).toBeVisible();
+  await expect(travel.locator('#travel-passport-first')).toBeEditable();
+  await expect(travel.locator('#travel-mobile')).toHaveCount(0);
 
   await page.goto('/?action=user_guide&lang=bn');
   const banglaSource = page.locator('.public-guide-source').first();

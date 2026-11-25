@@ -35,7 +35,14 @@ jobs:
       - run: npx playwright install chromium
       - name: Verify all migrated controls, legal content, ledger and native validation
         run: |
-          npx playwright test tests/e2e/mui-v4-glossary-pilot.spec.ts tests/e2e/mui-v4-guide-catalogue.spec.ts tests/e2e/mui-v4-ledger-pilot.spec.ts tests/e2e/mui-v4-public-forms.spec.ts tests/e2e/head-catalogue.spec.ts tests/e2e/event-based-ledger-payment-history.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/public-guidance-p3.spec.ts tests/e2e/signed-in-payment-entry.spec.ts --workers=2
+          npx playwright test tests/e2e/mui-v4-glossary-pilot.spec.ts tests/e2e/mui-v4-guide-catalogue.spec.ts tests/e2e/mui-v4-ledger-pilot.spec.ts tests/e2e/mui-v4-public-forms.spec.ts tests/e2e/event-based-ledger-payment-history.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/public-guidance-p3.spec.ts tests/e2e/signed-in-payment-entry.spec.ts --workers=2
+      - name: Verify complete catalogue transport with synthetic read-only source fixture
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://catalogue-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+          MUI_SYNTHETIC_CATALOGUE: 'true'
+        run: npx playwright test tests/e2e/head-catalogue.spec.ts --workers=2
       - name: Compare unchanged Main and combined candidate across full home matrix
         run: |
           set -euo pipefail

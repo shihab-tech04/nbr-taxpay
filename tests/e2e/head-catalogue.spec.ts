@@ -1,5 +1,17 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import { V11_SOURCE_HEADS } from '../../src/data/v11SourceHeads';
 import AxeBuilder from '@axe-core/playwright';
+
+async function switchToBengali(page:Page) {
+  if (!(await page.getByRole('button',{name:'বাংলা'}).isVisible())) {
+    await page.getByRole('button',{name:'Open menu'}).click();
+  }
+  await page.getByRole('button',{name:'বাংলা'}).click();
+  if(await page.getByRole('dialog',{name:'সেবা ও মেনু'}).isVisible()) {
+    await page.getByRole('button',{name:'বন্ধ করুন'}).click();
+  }
+}
+
 
 test('original 170-head source reference remains available read-only on its dedicated route',async({page})=>{
  await page.goto('/?action=head_catalogue');
@@ -79,7 +91,7 @@ test('legacy source codes and legal provisions remain visibly separate', async (
 
 test('public information home has bilingual safety copy and no prototype status',async({page})=>{
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await switchToBengali(page);
  await expect(page.locator('#public-home-title')).toBeVisible();
  await expect(page.locator('#public-how-it-works')).toBeHidden();
  await expect(page.locator('footer').getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
@@ -90,10 +102,23 @@ test('public information home has bilingual safety copy and no prototype status'
 });
 
 test('source integrity is announced only after verified read-only backend match', async ({ page }) => {
+  if(process.env.MUI_SYNTHETIC_CATALOGUE==='true'){
+    // Isolated runner verifies the complete transport/validator/UI contract using
+    // immutable source bytes. The existing live backend acceptance stays separate.
+    const rows=V11_SOURCE_HEADS.map(head=>({source_head_id:head.id,source_map:head.map,verification_status:'UNVERIFIED',executable:false,raw_original_record:head}));
+    await page.route('**/rest/v1/taxpay_head_source_candidates**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(rows)}));
+  }
   await page.goto('/?action=head_catalogue');
   await expect(page.getByTestId('catalogue-source-status')).toContainText(
     'Database reference matches all 170 controlled v11 source records.'
   );
+});
+test('synthetic mismatched source cannot be marked verified',async({page})=>{
+  test.skip(process.env.MUI_SYNTHETIC_CATALOGUE!=='true','Synthetic transport only; no live data mutation.');
+  await page.route('**/rest/v1/taxpay_head_source_candidates**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([])}));
+  await page.goto('/?action=head_catalogue');
+  await expect(page.getByTestId('catalogue-source-status')).toContainText('Supabase reference could not be verified.');
+  await expect(page.getByText('Legal validity and current applicability: UNVERIFIED')).toBeVisible();
 });
 test('when source backend is unreachable, read-only offline fallback is explicit', async ({ page }) => {
   await page.route('**/rest/v1/taxpay_head_source_candidates**', route => route.abort('failed'));
@@ -106,10 +131,19 @@ test('when source backend is unreachable, read-only offline fallback is explicit
 test('public footer accurately describes service and does not promise challan issuance',async({page})=>{
  await page.goto('/?action=landing');
  const footer=page.locator('footer');
- await expect(footer.getByText('Income tax payment information')).toBeVisible();
+ const desktop=(page.viewportSize()?.width??1280)>=768;
+ const identity=footer.locator('.public-footer__identity');
+ await expect(identity).toContainText('Income tax payment information');
+ if(desktop)await expect(identity).toBeVisible();
+ else{
+   await expect(identity).toBeHidden();
+   await expect(footer.locator('.public-footer__mobile-more summary')).toBeVisible();
+ }
  await expect(footer.getByText('No government payments or challans are issued here.')).toHaveCount(0);
- await page.getByRole('button',{name:'বাংলা'}).click();
- await expect(footer.getByText('আয়কর পরিশোধের তথ্য')).toBeVisible();
+ await switchToBengali(page);
+ await expect(identity).toContainText('আয়কর পরিশোধের তথ্য');
+ if(desktop)await expect(identity).toBeVisible();
+ else await expect(footer.locator('.public-footer__mobile-more summary')).toBeVisible();
  await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 
