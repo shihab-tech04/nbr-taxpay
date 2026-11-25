@@ -27,9 +27,16 @@ test('approved Payment Head group typography and selection survive desktop/mobil
   await expect(catalogue).toHaveCSS('row-gap', '6px');
   await expect(status).toContainText('168 available payment heads');
 
-  for (const width of [1280, 375, 320]) {
+  for (const width of [1280, 375, 320, 768, 1024, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(heading).toHaveCSS('font-size', '16px');
+    await expect(heading).toHaveCSS('font-weight', '600');
+    for (const section of await editor.locator('.payment-form-section__heading h2, .unified-v5-row-heading').all()) {
+      await expect(section).toHaveCSS('font-size', '16px');
+      await expect(section).toHaveCSS('font-weight', '600');
+    }
+    await expect(editor.locator('.unified-v5-tax-head-heading')).toBeVisible();
+    await expect(advanceTax).toHaveCSS('border-radius', '8px');
     await modal.screenshot({ path: `test-results/sohojkor-v5-candidate-tax-head-${width}.png`, animations: 'disabled' });
     await expect(status).toHaveCSS('font-size', '14px');
     await expect(advanceTax.locator('summary')).toHaveCSS('font-size', '16px');
@@ -45,6 +52,7 @@ test('approved Payment Head group typography and selection survive desktop/mobil
     await advanceTax.locator('summary').click();
   }
 
+  await page.setViewportSize({ width: 320, height: 900 });
   await returnGroup.locator('summary').click();
   await returnGroup.getByTestId('unified-v5-return-checkbox').check();
   await expect(returnGroup.locator('.other-tax-category-trigger__selected')).toContainText('1 selected');
