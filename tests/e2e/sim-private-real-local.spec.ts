@@ -4,6 +4,9 @@ import {spawnSync} from 'node:child_process';
 
 /** Real disposable Supabase Auth + PostgREST + React/Playwright journey, no mocked transport. */
 test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment while its Office mirror is pending',async({browser})=>{
+ // This real multi-account journey performs numerous isolated SQL and browser
+ // round trips. Bound the full scenario separately from each assertion.
+ test.setTimeout(120_000);
  const root=process.env.TAXPAY_LOCAL_SUPABASE_URL;
  const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
@@ -110,6 +113,15 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(transactionCard.getByText(tx!.id)).toBeVisible({timeout:15000});
  await transactionCard.getByText('View allocations',{exact:false}).click();
  await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
+ // Assert recipient-only details on the actual recipient History screen,
+ // before navigating this account to its beneficiary and notification pages.
+ await expect(transactionCard.locator('.taxpay-mobile-table-card__actions button')).toHaveCount(1);
+ await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
+ await transactionCard.getByRole('button',{name:'View details',exact:true}).click();
+ await expect(two.page.getByRole('dialog')).toBeVisible();
+ await expect(two.page.getByRole('dialog').getByTestId('pay-again-details')).toHaveCount(0);
+ await two.page.keyboard.press('Escape');
+ await expect(two.page.getByRole('dialog')).toHaveCount(0);
 
  // Save the recipient through the account's existing beneficiary form.
  // The private simulator ledger remains in its own SQL-backed activity; it is
@@ -278,8 +290,12 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
  // transaction. A supported historical year remains selected and editable.
- await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
- await one.page.getByTestId('pay-again-mobile').first().click();
+ const repeatCard=one.page.getByTestId('signed-in-payment-activity-cards')
+  .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(repeatCard.locator('.taxpay-mobile-table-card__actions button')).toHaveCount(1,{timeout:15000});
+ await repeatCard.getByRole('button',{name:'View details',exact:true}).click();
+ await expect(one.page.getByRole('dialog').getByTestId('pay-again-details')).toBeEnabled();
+ await one.page.getByRole('dialog').getByTestId('pay-again-details').click();
  await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
  await expect(one.page.getByLabel('Payment category').nth(0)).toHaveValue('ADVANCE_TAX');
  await expect(one.page.getByLabel('Payment category').nth(1)).toHaveValue('PENALTY');
@@ -403,6 +419,5 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(preservedCard.getByRole('button',{name:'Open beneficiary profile for '+savedContacts[0].display_name})).toBeVisible();
  await expect(preservedCard).toContainText(savedContacts[0].tin);
  await expect(preservedCard).toContainText('৳23.50');
- await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });

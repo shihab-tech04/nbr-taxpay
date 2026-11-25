@@ -444,12 +444,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <button type="button" onClick={()=>setSelected(item)}
       className={action+' taxpayer-transaction-row__action'}
       aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
-    {item.sql&&<button type="button" data-testid="recorded-pay-again"
-      disabled={!item.sql.reuse} onClick={()=>payAgain(item)}
-      title={!item.sql.reuse?tr('Complete original payment unavailable','আগের পেমেন্টের সম্পূর্ণ তথ্য নেই'):undefined}
-      className={action+' taxpayer-transaction-row__action disabled:opacity-50'}>
-      {tr('Pay Again','আবার পরিশোধ')}
-    </button>}
   </div>;
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
     day:'numeric',month:'short',year:'numeric',timeZone:'UTC'

@@ -116,6 +116,11 @@ test('history rows, filters and detail modal fit narrow screens',async({page},in
     await expect(panel.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
     const visibleRows=width>=768 ? panel.getByTestId('taxpayer-transaction-table').locator('tbody tr') : panel.getByTestId('taxpayer-transaction-mobile-cards').locator(':scope > li');
     await expect(visibleRows.first()).toBeVisible();
+    const actionSelector=width>=768?'td[data-column-key="actions"] button':'.taxpayer-transaction-mobile-record__footer button';
+    for(const row of await visibleRows.all()){
+      await expect(row.locator(actionSelector)).toHaveCount(1);
+      await expect(row.locator(actionSelector)).toHaveText('Details');
+    }
     if(width<768){
       await expect(visibleRows.first()).toContainText('Paid by:');
       await expect(visibleRows.first()).toContainText('Paid for:');

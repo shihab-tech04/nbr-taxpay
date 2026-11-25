@@ -1,3 +1,4 @@
+import {assertAccountDraftFooter} from './account-draft-footer-assertion';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { openTaxpayerTravelTax } from './taxpayer-travel-menu-helper';
@@ -93,6 +94,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     const modal = owner.getByRole('dialog', { name: 'Travel tax' });
     await expect(modal.locator('.travel-flow')).toHaveAttribute('data-step', '0');
     await expect(modal.getByRole('button', { name: 'Save Draft', exact: true })).toBeEnabled();
+    await assertAccountDraftFooter(modal);
 
     // Save a multi-passenger draft from the incomplete travel-details step.
     await modal.locator('#travel-passport-first').fill('TEST123456');
@@ -121,6 +123,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await expect(modal.locator('#travel-mobile')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Continue to travel details' }).click();
     await expect(modal.locator('.travel-flow')).toHaveAttribute('data-step', '1');
+    await assertAccountDraftFooter(modal);
     await modal.locator('#travel-port').selectOption('Benapole');
     await modal.locator('#travel-destination').fill('India');
     // Keep travel date incomplete so the saved record is demonstrably a draft.
