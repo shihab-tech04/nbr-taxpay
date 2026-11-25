@@ -15,8 +15,6 @@
    corrections to this editor so Gift/Travel, return, receipts, and forms retain
    their established typography and 16px required control labels. */
 .taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-tax-head-heading {
-  font-size: 14px;
-  font-weight: 600;
   line-height: 1.45;
   padding: 12px 0 4px;
 }
