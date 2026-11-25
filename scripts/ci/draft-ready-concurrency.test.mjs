@@ -62,3 +62,11 @@ test('draft conversion does not trigger duplicate release workflows; code change
   assert.match(pages, /push:\s*\n\s*branches: \[main\]/);
   assert.match(pages, /workflow_dispatch:/);
 });
+
+import "./ready-pr-update.test.mjs";
+
+test("release instructions prohibit ready-PR draft toggles", () => {
+  const doc = readFileSync(new URL("../../docs/RELEASE_READY_DEVELOPMENT.md", import.meta.url), "utf8");
+  assert.match(doc, /Never toggle draft\/ready merely to update or reconcile an existing ready PR/);
+  assert.doesNotMatch(doc, /convert to draft before pushing/);
+});
