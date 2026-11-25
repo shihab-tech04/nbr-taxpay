@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X, ArrowRight, PhoneCall } from 'lucide-react';
+import { CitizenMuiScope, MuiButtonBase, MuiInputBase } from '../../design-system/mui';
 import { useTaxState } from '../../services/taxState';
 import '../../styles/public-guide-p3.css';
 
@@ -61,9 +62,9 @@ export const PublicUserGuide:React.FC=()=>{
   return [{id:'payment',label:['Open payment services','পরিশোধ সেবাসমূহ খুলুন'] as Pair,run:()=>openPaymentServiceChoice()}];
  };
  const actionLinks=(category:Category)=><div className="public-guide-actions" role="group" aria-label={bn?'সম্পর্কিত সেবা':'Related services'}>
-  {actionsFor(category).map(action=><button key={action.id} type="button" className="public-guide-action" onClick={action.run}>
+  {actionsFor(category).map(action=><MuiButtonBase disableRipple key={action.id} type="button" className="public-guide-action" onClick={action.run}>
    {t(action.label)}<ArrowRight size={16} aria-hidden="true"/>
-  </button>)}
+  </MuiButtonBase>)}
  </div>;
  const officialSource=<aside className="public-guide-source" aria-label={bn?'সরকারি তথ্য ও সহায়তা':'Official information and support'}>
    <div className="public-guide-source-copy">
@@ -82,7 +83,7 @@ export const PublicUserGuide:React.FC=()=>{
    </nav>
    <p className="public-guide-source-note">{bn?'এই শর্ত ও গোপনীয়তার পৃষ্ঠাগুলো এনবিআর ভ্যাট পোর্টালের জন্য; সহজকরের নিজস্ব নীতি নয়। উভয় পৃষ্ঠায় প্রকাশের তারিখ মে ২০১২। উদাহরণ রেকর্ড সরকারি কোষাগারে অর্থ জমা বা সরকারি কর লেজারে ক্রেডিটের প্রমাণ নয়। প্রকৃত পরিশোধ সরকারি রেকর্ডে যাচাই করুন।':'These terms and privacy pages describe the NBR VAT Portal, not Sohojkor. Both pages show a May 2012 publication date. An example record does not prove Treasury settlement or a credit in an official tax ledger; verify actual payments through official records.'}</p>
  </aside>;
- return <div className={'public-guide-page '+(bn?'font-bengali':'')}>
+ return <CitizenMuiScope><div data-mui-citizen-region="user-guide" className={'public-guide-page '+(bn?'font-bengali':'')}>
   <div className="public-guide-overview">
     <header className="public-guide-intro">
       <p className="citizen-hub-eyebrow">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</p>
@@ -101,8 +102,8 @@ export const PublicUserGuide:React.FC=()=>{
         <div className="public-guide-search" onClick={()=>searchRef.current?.focus()}>
           <Search size={20} aria-hidden="true"/>
           <label className="sr-only" htmlFor="public-guide-search-input">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</label>
-          <input id="public-guide-search-input" ref={searchRef} value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="text" role="searchbox" inputMode="search" aria-controls={query?'guide-search-results':undefined}/>
-          {search&&<button className="public-guide-clear" type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'} onClick={()=>{setSearch('');searchRef.current?.focus();}}><X size={18} aria-hidden="true"/></button>}
+          <MuiInputBase id="public-guide-search-input" inputRef={searchRef} fullWidth value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="text" inputProps={{role:"searchbox",inputMode:"search","aria-controls":query?'guide-search-results':undefined}} sx={{flex:1,minWidth:0,"& .MuiInputBase-input":{minHeight:"52px",padding:0,font:"inherit"}}}/>
+          {search&&<MuiButtonBase disableRipple className="public-guide-clear" type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'} onClick={()=>{setSearch('');searchRef.current?.focus();}}><X size={18} aria-hidden="true"/></MuiButtonBase>}
         </div>
       </div>
     </section>
@@ -127,16 +128,16 @@ export const PublicUserGuide:React.FC=()=>{
     </section>):<div className="public-guide-no-results" role="status">
       <h3>{bn?'কোনো ফল পাওয়া যায়নি':'No results found'}</h3>
       <p>{bn?'অন্য শব্দ দিয়ে খুঁজুন বা অনুসন্ধান মুছে বিষয়গুলো দেখুন।':'Try a different term, or clear the search to browse by topic.'}</p>
-      <button className="public-guide-action" type="button" onClick={()=>{setSearch('');searchRef.current?.focus();}}>
+      <MuiButtonBase disableRipple className="public-guide-action" type="button" onClick={()=>{setSearch('');searchRef.current?.focus();}}>
         {bn?'অনুসন্ধান মুছুন':'Clear search'}
-      </button>
+      </MuiButtonBase>
     </div>}
     {officialSource}
   </section>:<div className="public-guide-layout">
     <nav className="public-guide-topics" aria-label={bn?'বিষয় নির্বাচন':'Guide topics'}>
       <h2>{bn?'বিষয় বেছে নিন':'Browse topics'}</h2>
-      {GUIDE_CONTENT.map((item,index)=><button type="button" key={item.id} aria-current={selected===item.id?'true':undefined}
-        onClick={()=>chooseTopic(item.id)}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span>{bn?item.bn:item.en}</button>)}
+      {GUIDE_CONTENT.map((item,index)=><MuiButtonBase disableRipple type="button" key={item.id} aria-current={selected===item.id?'true':undefined}
+        onClick={()=>chooseTopic(item.id)}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span>{bn?item.bn:item.en}</MuiButtonBase>)}
     </nav>
     <article className="public-guide-content" ref={contentRef} tabIndex={-1}>
       <div className="public-guide-content-head">
@@ -146,9 +147,9 @@ export const PublicUserGuide:React.FC=()=>{
         <div className="public-guide-steps-head">
           <div><h3 id="guide-steps-title">{bn?'ধাপে ধাপে করণীয়':'Follow these steps'}</h3><p>{bn?'আপনার ডিভাইস অনুযায়ী নির্দেশনা দেখুন।':'Choose your device to see the right instructions.'}</p></div>
           <div className="public-guide-device" role="group" aria-label={bn?'প্ল্যাটফর্ম':'Platform'}>
-            {(['web','mobile'] as const).map((key,i)=><button type="button" key={key} aria-pressed={device===key} onClick={()=>setDevice(key)}>
+            {(['web','mobile'] as const).map((key,i)=><MuiButtonBase disableRipple type="button" key={key} aria-pressed={device===key} onClick={()=>setDevice(key)}>
               {key==='web'?<Monitor size={17}/>:<Smartphone size={17}/>} {labels[i]}
-            </button>)}
+            </MuiButtonBase>)}
           </div>
         </div>
         <ol className="public-guide-steps">
@@ -168,5 +169,5 @@ export const PublicUserGuide:React.FC=()=>{
       {officialSource}
     </article>
   </div>}
- </div>;
+ </div></CitizenMuiScope>;
 };

@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import MuiButton from '@mui/material/Button';
+import MuiButtonBase from '@mui/material/ButtonBase';
 import MuiIconButton from '@mui/material/IconButton';
 import MuiInputBase from '@mui/material/InputBase';
 import MuiNativeSelect from '@mui/material/NativeSelect';
@@ -37,4 +38,4 @@ export const citizenMuiTheme = createTheme({
 export function CitizenMuiScope({children}:PropsWithChildren) {
   return <ThemeProvider theme={citizenMuiTheme}>{children}</ThemeProvider>;
 }
-export { MuiButton, MuiIconButton, MuiInputBase, MuiNativeSelect };
+export { MuiButton, MuiButtonBase, MuiIconButton, MuiInputBase, MuiNativeSelect };
