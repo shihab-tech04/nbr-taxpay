@@ -138,10 +138,19 @@ test('frozen homepage '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),as
   }
   expect(reproducible,'Exact unchanged Main control cannot reproduce '+name).toBe(true);
   writeFileSync(join(dir,name),reference);
-  await expect(page,'Unchanged Main self-control '+name).toHaveScreenshot(name,{...screenshotOptions,maxDiffPixels:0,threshold:0});
+  // The A/A frames above already match byte-for-byte. Use the identical capture
+  // path for A/B, rather than mixing page.screenshot with the snapshot matcher's
+  // separate capture path (which failed even on unchanged Main).
+  // Exact PNG equality is stricter than zero pixel tolerance; retain both files
+  // for investigation and never select the reference using a candidate frame.
+  const mainControl=await stableFrame();
+  writeFileSync(join(dir,'main-control-'+name),mainControl);
+  expect(mainControl.equals(reference),'Unchanged Main exact PNG control '+name).toBe(true);
   await signIn(candidate);
   expect(await visit(candidate,h),'Same approved fonts on candidate').toEqual(baselineFonts);
-  await expect(page,'MUI candidate versus exact Main '+name).toHaveScreenshot(name,{...screenshotOptions,maxDiffPixels:0,threshold:0});
+  const candidateFrame=await stableFrame();
+  writeFileSync(join(dir,'candidate-'+name),candidateFrame);
+  expect(candidateFrame.equals(reference),'MUI candidate versus exact Main PNG '+name).toBe(true);
  }
  const manifest=await Promise.all([...fontAssets].map(async([url,asset])=>({url,sha256:(await asset).sha256})));
  writeFileSync(join(dir,'fonts-'+lang+'-'+theme+'-'+(signedIn?'local-account':'guest')+'.json'),JSON.stringify(manifest,null,2));

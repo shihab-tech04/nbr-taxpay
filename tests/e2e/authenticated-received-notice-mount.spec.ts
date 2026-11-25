@@ -76,8 +76,13 @@ for (const language of ['en', 'bn'] as const) {
     const popup = page.getByTestId('authenticated-received-payment-notice');
     for (const fixture of fixtures) {
       await expect(popup).toContainText(fixture.receiptReference);
-      await page.getByRole('dialog', { name: bangla ? 'প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি' : 'Received payment notice' })
-        .getByRole('button', { name: bangla ? 'পড়েছি, পরবর্তী' : 'Acknowledge and continue' }).click();
+      const dialog=page.getByRole('dialog', { name: bangla ? 'প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি' : 'Received payment notice' });
+      await expect(dialog.getByRole('button',{name:bangla?'পেমেন্ট রিপোর্ট করুন':'Report Payment',exact:true})).toBeVisible();
+      await expect(dialog.getByRole('button',{name:bangla?'সংশোধনের অনুরোধ':'Request correction',exact:true})).toHaveCount(0);
+      await expect(popup.locator('time')).toHaveAttribute('datetime',fixture.createdAt);
+      await expect(popup).toContainText(bangla?'নথিভুক্ত — নিষ্পত্তি নিশ্চিত নয়':'Recorded — settlement not confirmed');
+      if(fixture===fixtures[1]&&!bangla) await dialog.getByRole('button',{name:'Close modal',exact:true}).click();
+      else await dialog.getByTestId('received-notice-close').click();
     }
     await expect(popup).toHaveCount(0);
     const readsBeforeReload = completedReads;
