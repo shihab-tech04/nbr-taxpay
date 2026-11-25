@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
-import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice, enterLegacyPaymentAsAccount, openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
@@ -11,8 +11,8 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false) {
-  let sessionLanguage: 'en' | 'bn' = 'en';
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false, unifiedRoute: 'taxpayer_home' | 'landing' | 'services' | 'user_guide' = 'taxpayer_home') {
+  let sessionLanguage: 'en' | 'bn' = unified ? 'en' : language;
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**', route=>{
     const payer=route.request().headers()['x-taxpay-guest-capability'];
     const rows=frequentHistory&&payer==='A'.repeat(43) ? [20,21].map(day=>({id:'SIM-'+day,transactionId:'00000000-0000-4000-8000-0000000000'+day,payer:'user1',state:'SIMULATED',createdAt:'2026-11-'+day+'T10:00:00Z',simulationOnly:true,totalMinor:10000,reviewStatus:'MIRRORED_TO_OFFICE',events:[],allocations:[{id:'line-'+day,lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:10000,headId:125,economicCode:'74'}]})) : [];
@@ -29,7 +29,7 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
     const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number;key?:string;value?:string};
     let data:unknown;
-    if(body.action==='demo-login') data={language:'en',selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099',profileId:'user1',capability:'A'.repeat(43)};
+    if(body.action==='demo-login') data={language:sessionLanguage,selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099',profileId:'user1',capability:'A'.repeat(43)};
     else if(body.action==='demo-settings') {
       if(body.key==='language' && (body.value==='bn'||body.value==='en')) sessionLanguage=body.value;
       data={language:sessionLanguage,selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099'};
@@ -43,6 +43,10 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
     else { writes.push(String(body.action??'unknown')); data=[]; }
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
+  if(!unified){
+    const dialog=await enterLegacyPaymentAsAccount(page,'user1','OTHER_TAX_PAYMENT',relationship,language);
+    return {dialog,people};
+  }
   await page.goto('/?action=taxpayer_login');
   const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
@@ -67,32 +71,39 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
     }
   }
   if(unified){
-    await page.goto('/?action=taxpayer_home');
-    // Open the actual signed-in Pay Tax action, even when the dashboard has
-    // no draft rows or its follow-up panel is showing requests.
-    const pay = page.getByRole('button',{name:'Pay — select payment type'});
+    await page.goto('/?action='+unifiedRoute);
+    // Use native navigation at the configured viewport; never substitute mobile
+    // controls for the desktop sidebar.
     const viewport=page.viewportSize();
-    if (viewport && viewport.width>900 && !(await pay.isVisible())) await page.setViewportSize({width:900,height:viewport.height});
-    await pay.click();
-    await page.getByRole('menu',{name:'Payment options'}).getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
-    if(viewport) await page.setViewportSize(viewport);
+    if (!viewport) throw new Error('Payment entry requires a configured viewport');
+    if (unifiedRoute==='services') {
+      await page.getByRole('button',{name:'Select a service',exact:true}).click();
+    } else if (unifiedRoute==='user_guide') {
+      await page.getByRole('button',{name:'Open payment services',exact:true}).filter({visible:true}).first().click();
+    } else if (viewport.width>900 && unifiedRoute==='landing') {
+      // The public desktop landing renders PublicHomeHeader, not CitizenNavigation.
+      // Its visible carousel Pay Tax is the actual income-tax entry.
+      const pay=page.getByRole('button',{name:'Pay Tax',exact:true}).filter({visible:true}).first();
+      await expect(pay).toBeVisible();
+      await pay.click();
+    } else if (viewport.width>900) {
+      const pay=page.getByRole('button',{name:'Pay Tax menu',exact:true});
+      await expect(pay).toBeVisible();
+      await pay.click();
+      await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+    } else {
+      const pay=page.getByRole('button',{name:'Pay — select payment type'});
+      await expect(pay).toBeVisible();
+      await pay.click();
+      await page.getByRole('menu',{name:'Payment options'}).getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+    }
+    expect(page.viewportSize()).toEqual(viewport);
     const dialog=page.getByRole('dialog',{name:'Pay Tax'});
     await dialog.getByRole('button',{name:'Start new Tax payment'}).click();
     await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
     return {dialog,people};
   }
-  await openLegacyTaxServiceChoice(page);
-  const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
-  if(language==='en') await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT',relationship);
-  else {
-    await ensureNewPaymentEntry(dialog);
-    await dialog.locator(`[data-payer-relationship="${relationship}"]`).click();
-    await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-    const advance=dialog.locator('.tax-service-choice__actions .tax-service-choice__continue');
-    await expect(advance).toBeEnabled();
-    await advance.click();
-  }
-  return {dialog,people};
+  throw new Error('Unexpected unified account route');
 }
 
 // Reveal the mobile-only calculation in the sticky footer before checking
@@ -724,17 +735,8 @@ test('walk-in self payer keeps multiple heads and years without adding a second 
   await expect(document.getByTestId('payment-certificate-reference')).toHaveCount(0);
 });
 
-test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
-  await login.getByLabel('Password', { exact: true }).fill('user2');
-  await login.getByRole('button', { name: 'Sign In' }).click();
-  await expect(login).toHaveCount(0);
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+test('legacy guest-origin account SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
+  const dialog=await enterLegacyPaymentAsAccount(page,'user2','OTHER_TAX_PAYMENT','SELF');
   const account = dialog.locator('#signed-in-account-taxpayer-card');
   await expect(account).toContainText('Meghna Trading Ltd.');
   await expect(account).toContainText('2222222222222');
@@ -777,20 +779,11 @@ test('F-039 signed-in OTHER selects multiple saved beneficiaries without writing
   expect(writes).toEqual([]);
 });
 
-test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual taxpayer entry', async ({ page }) => {
+test('legacy guest-origin account OTHER Tax uses only saved beneficiaries and never exposes manual taxpayer entry', async ({ page }) => {
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [], simulationOnly: true }),
   }));
-  await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await login.getByLabel('Password', { exact: true }).fill('user1');
-  await login.getByRole('button', { name: 'Sign In' }).click();
-  await expect(login).toHaveCount(0);
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const dialog=await enterLegacyPaymentAsAccount(page,'user1','OTHER_TAX_PAYMENT','OTHER');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
   await expect(picker).toBeVisible();
   await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible();
@@ -834,16 +827,8 @@ test('additional taxpayers are not blocked by an unapproved 20-person limit', as
 });
 
 
-test('own-tax payment hides redundant taxpayer picker and keeps bulk actions beside search', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await login.getByLabel('Password', { exact: true }).fill('user1');
-  await login.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+test('legacy guest-origin own-tax payment hides redundant taxpayer picker and keeps bulk actions beside search', async ({ page }) => {
+  const dialog=await enterLegacyPaymentAsAccount(page,'user1','OTHER_TAX_PAYMENT','SELF');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
 
   const batch = dialog.getByTestId('other-tax-batch');
@@ -1111,5 +1096,102 @@ test('F-039 unified frequent head is owner-scoped and opens the original editor 
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await original.check();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  expect(writes).toEqual([]);
+});
+
+test('authenticated landing Pay Tax uses the same unified workspace at its native viewport',async({page})=>{
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true,false,'landing');
+  await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+  await expect(dialog.getByTestId('saved-beneficiary-picker')).toBeVisible();
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+  expect(writes).toEqual([]);
+});
+
+for(const route of ['services','user_guide'] as const) {
+  test(`authenticated ${route} opens the approved income-tax workspace`,async({page})=>{
+    const writes:string[]=[];
+    const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true,false,route);
+    await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+    await expect(dialog.getByTestId('saved-beneficiary-picker')).toBeVisible();
+    await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
+    expect(writes).toEqual([]);
+  });
+}
+
+test('F-039 unified account native entry preserves mixed allocation amounts through final preview, checkout and one simulated receipt',async({page})=>{
+  const writes:string[]=[];
+  const submitted:Record<string,any>[]=[];
+  // No hosted writes: only the explicitly scoped synthetic fixtures below
+  // can answer a POST. The application still executes its real validation.
+  await page.route('**/*.supabase.co/**',route=>route.abort());
+  // This test belongs to the existing loopback-only F-039 mock matrix.
+  await mockSubmittedPaymentSqlReadback(page);
+  await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
+    if(route.request().method()!=='POST')return route.fallback();
+    submitted.push(route.request().postDataJSON());
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,id:'00000000-0000-4000-8000-000000000409',
+      status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true
+    })});
+  });
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'})).toBeVisible();
+  await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'}).check();
+  await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const editor=dialog.getByTestId('other-tax-batch');
+  const group=editor.locator('[data-head-group="Advance Tax"]');
+  const openGroup=async()=>{if(await group.getAttribute('open')===null)await group.locator('summary').click();};
+  await openGroup();
+  await editor.getByRole('checkbox',{name:/Select 68A/}).check();
+  await editor.getByTestId('other-tax-line').first().locator('select[id^="other-tax-year"]').selectOption('2026-27');
+  await editor.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('15');
+  await editor.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]').nth(1).click();
+  await openGroup();
+  await editor.getByRole('checkbox',{name:/Select 68B/}).check();
+  await editor.getByTestId('other-tax-line').first().locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await editor.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('35');
+  await dialog.getByRole('button',{name:'Continue to Final Preview'}).click();
+  const review=dialog.getByTestId('unified-v3-payment-details');
+  await expect(review).toBeVisible();
+  await expect(review.locator('tbody tr.unified-v3-review__owner')).toHaveCount(2);
+  await expect(review).toContainText('2026-27');
+  await expect(review).toContainText('2025-26');
+  await expect(dialog.getByTestId('unified-v5-payment-total').locator('output')).toContainText('50');
+  await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toHaveCount(0);
+  await dialog.locator('#guest-payment-remarks').fill('Scoped mixed account payment acceptance');
+  await dialog.getByRole('button',{name:'Make Payment'}).click();
+  await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toBeVisible();
+  await expect(review).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Confirm payment'})).toBeDisabled();
+  expect(submitted).toHaveLength(0);
+  await dialog.locator('.taxpay-modal__back').click();
+  await expect(review).toBeVisible();
+  await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Scoped mixed account payment acceptance');
+  await dialog.getByRole('button',{name:'Make Payment'}).click();
+  await dialog.getByRole('button',{name:'Pay online'}).click();
+  await dialog.getByRole('button',{name:'Mobile banking'}).click();
+  await dialog.getByRole('radio',{name:'bKash'}).check();
+  await dialog.getByRole('checkbox',{name:/I have checked the taxpayers/}).check();
+  await dialog.getByRole('button',{name:'Confirm payment'}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:20000});
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].amountMinor).toBe(5000);
+  const allocations=submitted[0].details.allocations;
+  expect(allocations.map((x:any)=>[x.taxpayerTin,x.assessmentYear,x.amountMinor])).toEqual([
+    ['1111111111111','2026-27',1500],['222222222222','2025-26',3500]
+  ]);
+  expect(new Set(allocations.map((x:any)=>x.allocationId)).size).toBe(2);
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  const receipt=dialog.locator('.receipt-view__paper');
+  await expect(receipt).toContainText('1111111111111');
+  await expect(receipt).toContainText('222222222222');
+  await expect(receipt).toContainText('৳ 50');
   expect(writes).toEqual([]);
 });

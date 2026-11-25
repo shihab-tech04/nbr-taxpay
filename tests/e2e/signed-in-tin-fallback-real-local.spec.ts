@@ -1,4 +1,4 @@
-import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -17,7 +17,7 @@ for(const language of ['en','bn'] as const){
       !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
       throw new Error('Refusing hosted Auth or SQL for the one-time TIN fallback test.');
     const psql=(query:string)=>{
-      const run=spawnSync('psql',['-X','-At','-v','ON_ERROR_STOP=1','-c',query],{
+      const run=spawnSync('psql',['-X','-q','-At','-v','ON_ERROR_STOP=1','-c',query],{
         encoding:'utf8',timeout:10_000,
         env:{...process.env,PGHOST:database.hostname.replace(/^\[|\]$/g,''),PGPORT:database.port||'5432',
           PGUSER:decodeURIComponent(database.username),PGPASSWORD:decodeURIComponent(database.password),
@@ -59,8 +59,23 @@ for(const language of ['en','bn'] as const){
       expect(response.status).toBe(200);
       return response.json();
     };
+    // Create an explicitly synthetic profile binding in this loopback-only
+    // disposable database, using the test runner's privileged SQL fixture.
+    // No production permissions or binding workflow are altered.
+    let fixtureProfile='';
     try{
       expect(SAMPLE_TIN_SUGGESTIONS).toHaveLength(30);
+      expect(auth.user.id).toMatch(/^[0-9a-f-]{36}$/i);
+      // Earlier isolated suites can already own some of these synthetic IDs.
+      // Reserve a free fixture row atomically; never overwrite another owner.
+      fixtureProfile=psql(`INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+        SELECT u.id,'${auth.user.id}'::uuid,'${auth.user.id}'::uuid
+        FROM public.sim_payment_users u
+        WHERE u.id IN ('user25','user26','user27','user28','user29','user30')
+          AND NOT EXISTS(SELECT 1 FROM public.sim_payment_account_bindings b WHERE b.user_id=u.id)
+        ORDER BY u.id LIMIT 1 FOR UPDATE OF u SKIP LOCKED
+        ON CONFLICT DO NOTHING RETURNING user_id;`);
+      expect(fixtureProfile, 'An unbound disposable fixture profile is required').toMatch(/^user(2[5-9]|30)$/);
       await page.goto(loginUrl);
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15_000});
       await page.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).first().click();
@@ -78,70 +93,106 @@ for(const language of ['en','bn'] as const){
         {owner_uid:auth.user.id,tin:'012345678901',display_name:'Saved Contact'}
       ]);
 
-      // Exercise the approved embedded Pay Tax journey, where footer actions
-      // are portaled into the existing modal rather than the legacy guest page.
-      await page.goto('/?action=landing&lang='+language);
-      await openLegacyTaxServiceChoice(page);
-      const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
-      await dialog.locator('[data-payer-relationship="OTHER"]').click();
-      await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-      await dialog.getByRole('button',{name:language==='bn'?'এগিয়ে যান':'Continue',exact:true}).click();
-      await expect(dialog.locator('[data-payment-service="OTHER_TAX_PAYMENT"]').first()).toBeVisible();
-      const picker=page.getByTestId('saved-beneficiary-picker');
+      // Native signed-in navigation, at its actual desktop/mobile viewport.
+      const dialog=await openUnifiedSignedInPayment(page,language);
+      const picker=dialog.getByTestId('saved-beneficiary-picker');
+      const count=dialog.getByTestId('unified-taxpayer-count');
       await expect(picker).toBeVisible({timeout:15_000});
+      await expect(dialog.getByTestId('unified-account-own').getByRole('checkbox')).toBeVisible();
+      await expect(count).toHaveText('0');
       const savedSearch=picker.locator('#payment-beneficiary-search');
       await savedSearch.fill('012345678901');
       await expect(picker.getByRole('checkbox')).toHaveCount(1);
-      await expect(picker.getByTestId('one-time-tin-fallback-open')).toHaveCount(0);
       await picker.getByRole('checkbox').check();
+      await expect(count).toHaveText('1');
+      const classification=dialog.getByRole('combobox',{name:language==='bn'?'আয়করের ধরন Saved Contact':'Income tax type for Saved Contact'});
+      await classification.selectOption('NON_COMPANY');
 
-      await savedSearch.fill('111111111111');
-      const noSavedMatch=picker.getByTestId('one-time-tin-fallback-open');
-      await expect(noSavedMatch).toBeVisible();
-      await noSavedMatch.click();
-      const fallback=picker.getByTestId('one-time-tin-fallback');
-      const tinInput=fallback.locator('#payment-fallback-tin');
-      const searchName=language==='bn'?'টিআইএন খুঁজুন':'Search TIN';
-      await tinInput.fill('123456789012');
-      await fallback.getByRole('button',{name:searchName,exact:true}).click();
-      await expect(fallback.getByRole('alert')).toContainText(
-        language==='bn'?'কোনো নমুনা প্রোফাইল পাওয়া যায়নি':'No sample profile found');
-      await expect(fallback.getByRole('button',{name:language==='bn'?'এই করদাতাকে নিশ্চিত করুন':'Confirm this taxpayer',exact:true})).toHaveCount(0);
-
-      await tinInput.fill('111111111111');
-      await fallback.getByRole('button',{name:searchName,exact:true}).click();
-      await expect(fallback.locator('#payment-fallback-name')).toHaveValue(language==='bn'?'ইউজার 1':'User 1');
-      await expect(fallback).toContainText(language==='bn'?'নমুনা প্রোফাইল':'sample profiles');
-      await fallback.getByRole('button',{name:language==='bn'?'এই করদাতাকে নিশ্চিত করুন':'Confirm this taxpayer',exact:true}).click();
-      const selected=picker.getByTestId('one-time-tin-selection');
-      await expect(selected).toContainText(language==='bn'?'ইউজার 1':'User 1');
-      await expect(selected).toContainText('111*********');
-      await expect(selected).toContainText(language==='bn'?'সংরক্ষিত নয়':'Not saved to your beneficiary lists');
-      await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
-
-      // Confirming a one-time sample must not create an address-book row or a payment.
-      expect(await readBeneficiaries()).toEqual([
-        {owner_uid:auth.user.id,tin:'012345678901',display_name:'Saved Contact'}
-      ]);
+      // Real local Auth/SQL: add a beneficiary from payment, return to the same
+      // saved draft, then manage again without a duplicate draft or payment.
+      const bn=language==='bn';
+      const saveLabel=bn?'খসড়া সংরক্ষণ করুন':'Save Draft';
+      const readDrafts=async()=>{
+        const response=await fetch(new URL('/rest/v1/taxpay_account_payment_form_drafts?select=id,service,revision,form_payload&owner_uid=eq.'+encodeURIComponent(auth.user.id),api.origin),{headers:{apikey:key,Authorization:'Bearer '+session.access_token},signal:AbortSignal.timeout(15_000)});
+        expect(response.status).toBe(200);return response.json();
+      };
+      await picker.getByRole('button',{name:bn?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      const guard=dialog.getByRole('alertdialog');
+      await guard.getByRole('button',{name:bn?'সম্পাদনা চালিয়ে যান':'Keep editing'}).click();
+      await expect(count).toHaveText('1');
+      await picker.getByRole('button',{name:bn?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      await guard.getByRole('button',{name:saveLabel,exact:true}).click();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const addFromPayment=page.getByRole('dialog',{name:bn?'উপকারভোগী যোগ':'Beneficiary entry'});
+      await expect(addFromPayment).toBeVisible();
+      await addFromPayment.locator('#beneficiary-tin').fill('333333333333');
+      await addFromPayment.getByRole('button',{name:bn?'খুঁজুন':'Search',exact:true}).click();
+      await expect(addFromPayment.getByTestId('searched-taxpayer-card')).toBeVisible();
+      await chooseBeneficiaryOption(addFromPayment,'beneficiary-tag','clients');
+      await addFromPayment.getByRole('button',{name:bn?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      await expect(addFromPayment).toHaveCount(0);
+      expect((await readBeneficiaries()).map((row:{tin:string})=>row.tin).sort()).toEqual(['012345678901','333333333333']);
+      const firstDrafts=await readDrafts();expect(firstDrafts).toHaveLength(1);
+      const draftId=firstDrafts[0].id;
+      await page.getByTestId('beneficiary-return-to-payment').getByRole('button').click();
+      await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+      await expect(count).toHaveText('1');
+      await picker.locator('#payment-beneficiary-search').fill('333333333333');
+      await expect(picker.getByRole('checkbox')).toHaveCount(1);
+      await picker.getByRole('checkbox').check();
+      await expect(count).toHaveText('2');
+      await picker.getByRole('button',{name:bn?'উপকারভোগী পরিচালনা':'Manage beneficiaries'}).click();
+      await guard.getByRole('button',{name:saveLabel,exact:true}).click();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const afterManage=await readDrafts();expect(afterManage).toHaveLength(1);expect(afterManage[0].id).toBe(draftId);expect(afterManage[0].revision).toBeGreaterThan(firstDrafts[0].revision);
+      await page.getByTestId('beneficiary-return-to-payment').getByRole('button').click();
+      await expect(count).toHaveText('2');
+      await picker.locator('#payment-beneficiary-search').fill('333333333333');
+      await expect(picker.getByRole('checkbox')).toBeChecked();
+      await picker.getByRole('checkbox').uncheck();
+      await expect(count).toHaveText('1');
+      await picker.locator('#payment-beneficiary-search').fill('012345678901');
+      await expect(picker.getByRole('checkbox')).toBeChecked();
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
 
-      const receiptPhone=dialog.locator('#guest-phone');
-      if(await receiptPhone.count()===1&&await receiptPhone.isEditable())
-        await receiptPhone.fill('01712345678');
-      const continueLabel=language==='bn'?'খাত ও পরিমাণে এগিয়ে যান':'Continue to purpose & amount';
-      const footer=dialog.locator('.taxpay-modal__footer-actions');
-      await expect(footer).toBeVisible();
-      await footer.getByRole('button',{name:continueLabel,exact:true}).click();
-      await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('2/4');
-      // The approved modal header Back delegates to the current payment-stage back action.
-      const backLabel=language==='bn'?'ফিরুন':'Back';
-      const modalBack=dialog.locator('.taxpay-modal__back');
-      await expect(modalBack).toHaveAttribute('aria-label',backLabel);
-      await modalBack.click();
-      await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('1/4');
-      await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111*********');
+      const tin=dialog.getByTestId('unified-tin-input');
+      const search=dialog.getByRole('button',{name:language==='bn'?'করদাতার টিআইএন অনুসন্ধান':'Search taxpayer TIN',exact:true});
+      const addName=language==='bn'?'করদাতা যোগ করুন':'Add taxpayer';
+      await tin.fill('123456789012');
+      await search.click();
+      await expect(dialog.getByRole('alert')).toContainText(language==='bn'?'টিআইএন তথ্য পাওয়া যায়নি।':'TIN information not found.');
+      await expect(dialog.getByTestId('unified-taxpayer-search-result')).toHaveCount(0);
+      await expect(count).toHaveText('1');
+
+      await tin.fill('111111111111');
+      await search.click();
+      const result=dialog.getByTestId('unified-taxpayer-search-result');
+      await expect(result).toBeVisible();
+      await expect(result).toContainText(language==='bn'?'ইউজার 1':'User 1');
+      await expect(result.getByRole('button',{name:addName,exact:true})).toBeEnabled();
+      await result.getByRole('button',{name:addName,exact:true}).click();
+      await expect(count).toHaveText('2');
+      await expect(dialog.locator('.unified-taxpayer-workspace__person')).toHaveCount(2);
+      await expect(dialog.locator('.unified-taxpayer-workspace__person').filter({hasText:'111*********'})).toHaveCount(1);
+      await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
+
+      // Confirming a one-time sample neither creates an address-book row nor a payment.
+      expect((await readBeneficiaries()).map((row:{tin:string})=>row.tin).sort()).toEqual(['012345678901','333333333333']);
+      expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
+      const next=dialog.getByRole('button',{name:language==='bn'?'পেমেন্ট খাতে এগিয়ে যান':'Continue to Payment Head',exact:true});
+      await expect(next).toBeEnabled();
+      await next.click();
+      await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+      await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('2/3');
+      await dialog.locator('.taxpay-modal__back').click();
+      await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('1/3');
+      await expect(count).toHaveText('2');
+      await expect(dialog.locator('.unified-taxpayer-workspace__person').filter({hasText:'111*********'})).toHaveCount(1);
+      expect(await readBeneficiaries()).toHaveLength(2);
+      expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
     }finally{
       await context.close().catch(()=>undefined);
+      if(fixtureProfile)psql(`DELETE FROM public.sim_payment_account_bindings WHERE owner_uid='${auth.user.id}'::uuid AND user_id='${fixtureProfile}';`);
     }
   });
 }

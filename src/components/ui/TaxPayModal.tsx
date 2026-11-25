@@ -3,7 +3,7 @@ import React, { createContext, useEffect, useId, useLayoutEffect, useRef, useSta
 /** Portal target for workflow-owned footer actions; the modal still owns its close control. */
 export const TaxPayModalFooterTarget = createContext<HTMLDivElement | null>(null);
 /** Only payment workflows register a verified, owner-scoped draft save action. */
-export type PaymentDraftExitAction = () => Promise<void>;
+export type PaymentDraftExitAction = () => Promise<void | import('../../services/accountPaymentFormDrafts').PaymentFormDraft>;
 export const PaymentDraftExitContext = createContext<((action: PaymentDraftExitAction | null) => void) | null>(null);
 import { ArrowLeft, X } from 'lucide-react';
 

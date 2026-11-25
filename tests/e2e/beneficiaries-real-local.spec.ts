@@ -1,4 +1,4 @@
-import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {setWorkspaceLanguage} from './workspace-language';
 import {expect,test} from '@playwright/test';
@@ -160,21 +160,11 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(otherPage.getByText('Local Beneficiary One')).toHaveCount(0);
   await otherContext.close();
 
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const modal=page.getByRole('dialog',{name:'Pay Tax'});
-  // Real Supabase Auth keeps the payer and service choices, but must not
-  // ask an already authenticated taxpayer to sign in or pay as a walk-in.
-  await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
-  await modal.locator('[data-payer-relationship="OTHER"]').click();
-  await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await expect(modal.locator('[data-entry-section="access"]')).toHaveCount(0);
-  await expect(modal.locator('[data-payment-access]')).toHaveCount(0);
-  await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
-  await expect(modal.locator('[data-payment-entry]')).toHaveCount(2);
-  await expect(modal.getByRole('button',{name:'Continue',exact:true})).toBeEnabled();
-  await modal.getByRole('button',{name:'Continue',exact:true}).click();
-  await expect(modal.getByText('Continuing with your account')).toHaveCount(0);
+  const modal=await openUnifiedSignedInPayment(page);
+  await expect(modal.getByTestId('unified-account-own')).toContainText('Linked taxpayer profile is unavailable.');
+  await expect(modal.getByTestId('unified-account-own').getByRole('checkbox')).toHaveCount(0);
+  await expect(modal.locator('[data-payer-relationship], [data-payment-entry], [data-payment-access]')).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Continue to Payment Head'})).toBeDisabled();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
   const picker=modal.getByTestId('saved-beneficiary-picker');
   await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible({timeout:15000});
@@ -183,7 +173,10 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await picker.getByRole('checkbox',{name:'Select Local Beneficiary One'}).check();
   await expect(picker).toContainText('1 selected for this payment');
   await expect(picker).toContainText('012*********');
-  await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
+  await expect(modal.getByTestId('unified-tin-input')).toHaveValue('');
+  await expect(modal.locator('#guest-payer-name')).toHaveCount(0);
+  await expect(modal.getByTestId('unified-taxpayer-count')).toHaveText('1');
+  await expect(modal.getByRole('button',{name:'Continue to Payment Head'})).toBeDisabled();
   await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
 
   // Disposable local SQL only: preserve an immutable payment snapshot independently

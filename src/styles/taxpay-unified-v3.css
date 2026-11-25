@@ -574,9 +574,8 @@
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .taxpay-modal__progress-fill {
   background:#2d5eac;
 }
-/* Parallel All Tax Payments: one full-width primary action in every
-   payment step, including checkout (which has no progress bar).
-   Draft controls retain their own row when offered. */
+/* Parallel All Tax Payments: keep the sole primary action full width.
+   When a signed-in draft action is present, retain the approved paired footer. */
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded__footer-actions {
   display:flex;
   flex-wrap:wrap;
@@ -588,10 +587,12 @@
 }
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .payment-flow-embedded__draft-actions {
   order:0;
-  flex:0 0 100%;
-  width:100%;
+  flex:0 0 auto;
+  width:auto;
   min-width:0;
   margin:0;
+  display:flex;
+  align-items:stretch;
 }
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .payment-flow-embedded__draft-actions:empty {
   display:none;
@@ -802,7 +803,7 @@
   cursor:not-allowed;
 }
 
-/* Mobile keeps the complete primary CTA label and full-row width. */
+/* Mobile keeps the complete primary CTA label; the sole action stays full width. */
 @media (max-width:650px) {
   .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title {
     font-size:var(--taxpay-type-h3);
@@ -816,6 +817,29 @@
     padding:10px 8px;
     font-size:var(--taxpay-font-body, 16px);
     line-height:1.3;
+  }
+}
+
+/* The paired action exception is scoped to a mounted draft portal. Preserve
+   full-width walk-in/checkout/result CTAs and any separate calculation row. */
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+.payment-flow-embedded__footer-actions:has(> .payment-flow-embedded__draft-actions:not(:empty)) > .tax-service-choice__continue {
+  flex:0 1 auto;
+  width:auto;
+  min-width:0;
+  max-width:65%;
+  margin-inline-start:auto;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+.payment-flow-embedded__footer-actions > .payment-flow-embedded__draft-actions .payment-form-draft-controls__actions {
+  align-items:stretch;
+}
+@media (max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+  .payment-flow-embedded__footer-actions:has(> .payment-flow-embedded__draft-actions:not(:empty)) > .tax-service-choice__continue {
+    flex:1 1 0;
+    width:auto;
+    max-width:65%;
   }
 }
 

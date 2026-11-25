@@ -170,6 +170,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       // The SQL write and readback have already completed. Show success only in
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
+      return result;
     } catch (cause) {
       if (!ownerStillCurrent()) {
         if (rethrowFailure) throw cause;

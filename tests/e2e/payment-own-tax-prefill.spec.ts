@@ -1,18 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterLegacyPaymentAsAccount } from './pay-tax-entry-helper';
 
-test('already signed-in user2 pays own tax with prefilled locked account identity', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
-  await login.getByLabel('Password', { exact: true }).fill('user2');
-  await login.getByRole('button', { name: 'Sign In' }).click();
-  await expect(login).toHaveCount(0);
-
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(payment, 'ADVANCE_TAX', 'SELF');
+test('legacy guest-origin sign-in: user2 pays own tax with prefilled locked account identity', async ({ page }) => {
+  const payment=await enterLegacyPaymentAsAccount(page,'user2','ADVANCE_TAX','SELF');
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   // Signed-in uses the same borderless payment section and 60:40 desktop geometry.
   await expect(payment.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
@@ -49,15 +39,8 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
-test('changing from own tax to another taxpayer shows saved beneficiary lists without manual TIN entry', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await page.getByLabel('Password', { exact: true }).fill('user1');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
+test('legacy guest-origin sign-in: changing from own tax to another taxpayer shows saved beneficiary lists without manual TIN entry', async ({ page }) => {
+  const payment=await enterLegacyPaymentAsAccount(page,'user1','TAX_WITH_RETURN','SELF');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('1111111111111');
   // Back returns to the unified chooser; its tax selection is preserved.
   await payment.locator('.taxpay-modal__back').click();
@@ -78,15 +61,8 @@ test('changing from own tax to another taxpayer shows saved beneficiary lists wi
   await expect(payment.locator('#guest-tin')).toHaveCount(0);
 });
 
-test('own Other Tax keeps the account taxpayer without saved beneficiary controls', async ({ page }) => {
-  await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await page.getByLabel('Password', { exact: true }).fill('user1');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(payment, 'OTHER_TAX', 'SELF');
+test('legacy guest-origin sign-in: own Other Tax keeps the account taxpayer without saved beneficiary controls', async ({ page }) => {
+  const payment=await enterLegacyPaymentAsAccount(page,'user1','OTHER_TAX','SELF');
 
   await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toBeVisible();

@@ -270,7 +270,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const suggestedFor = (taxpayerId: string, headId: number, year: string) =>
     paymentAmountSuggestionFor(
       suggestionTaxpayerIds?.[taxpayerId] ?? null,
-      liability.find(head => head.id === headId)?.grpEn,
+      headId === RETURN_HEAD_ID && allowMixedReturn ? 'Tax with Return' : liability.find(head => head.id === headId)?.grpEn,
       year,
       headId,
     );
@@ -293,7 +293,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const selectAll = () => {
     if (!activeId) return;
     const additions = visibleEligible.filter(head => !activeLines.some(line => line.headId === head.id))
-      .map(head => head.id === RETURN_HEAD_ID ? { ...newLine(head.id), amount: '' } : newLine(head.id));
+      .map(head => newLine(head.id));
     if (additions.length) applyLines([...lines, ...additions]);
   };
   const unselectAll = () => {
@@ -304,7 +304,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     if (!activeId || !headEligible(headId)) return;
     if (!checked) applyLines(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
     else if (!activeLines.some(line => line.headId === headId)) applyLines([...lines,
-      headId === RETURN_HEAD_ID ? { ...newLine(headId), amount: '' } : newLine(headId)]);
+      newLine(headId)]);
   };
   const addYear = (headId: number) => {
     const chosen = new Set(activeLines.filter(line => line.headId === headId).map(line => line.assessmentYear));

@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice, enterLegacyPaymentAsAccount, openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 
 type Status='ACTIVE'|'PENDING'|'EXPIRED'|'REVOKED';
 function authorization(taxpayerId:'user2'|'user3',status:Status,activeUntil:number|null=null){
@@ -29,7 +29,7 @@ async function mockSavedBeneficiaries(page:Page,empty=false,shortTin=false){
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
 }
-async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT'){
+async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT',unified=false){
   // Route only synthetic profile-login/settings to the account fixture;
   // keep each test's existing list-read, failure and authorization responses.
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
@@ -47,20 +47,18 @@ async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT'){
     }
     return route.fallback();
   });
+  if(!unified)return enterLegacyPaymentAsAccount(page,'user1',service,'OTHER');
   await page.goto('/?action=taxpayer_login');
   const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
   await expect(login).toHaveCount(0);
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
-  await enterTaxPayService(dialog,service,'OTHER');
+  const dialog=await openUnifiedSignedInPayment(page,'en','taxpayer_home');
   return dialog;
 }
 
-test('signed-in facilitation uses saved beneficiary list accordions and never manual taxpayer inputs',async({page})=>{
+test('legacy guest-origin account facilitation uses saved beneficiary list accordions and never manual taxpayer inputs',async({page})=>{
   await mockSavedBeneficiaries(page);await mockAuthorizations(page,[]);
   const dialog=await openSignedInPayment(page);
   const picker=dialog.getByTestId('saved-beneficiary-picker');
@@ -174,6 +172,14 @@ test('empty beneficiary lists direct signed-in payers to the dedicated managemen
   await expect(picker).toContainText('No beneficiary lists yet');
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
   await picker.getByRole('button',{name:'Create your first list'}).click();
+  const exit=page.getByRole('alertdialog',{name:'Save your tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Keep editing'}).click();
+  await expect(exit).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await picker.getByRole('button',{name:'Create your first list'}).click();
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });
@@ -271,3 +277,36 @@ test('signed-in facilitated payments produce one combined receipt with linked al
   await dialog.getByRole('button',{name:'Back to confirmation'}).click();
   await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
 });
+
+test('native unified account payment selects current saved beneficiaries without requiring separate authorization',async({page})=>{
+  await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
+  const dialog=await openSignedInPayment(page,'OTHER_TAX_PAYMENT',true);
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'})).toBeVisible();
+  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).check();
+  await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
+  await expect(dialog.getByTestId('unified-account-own').getByRole('checkbox')).not.toBeChecked();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const tabs=dialog.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
+  await expect(tabs).toHaveCount(2);
+  await expect(tabs.nth(0)).toContainText('Meghna Trading Ltd.');
+  await expect(tabs.nth(1)).toContainText('Saved Taxpayer Three');
+  await expect(tabs.nth(0)).not.toHaveAttribute('aria-label',/2222222222222/);
+});
+for(const unavailable of [false,true]){
+  test(`native unified account fails closed if a selected saved beneficiary is ${unavailable?'unverifiable':'removed'}`,async({page})=>{
+    await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
+    const dialog=await openSignedInPayment(page,'OTHER_TAX_PAYMENT',true);
+    await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+    await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('1');
+    await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
+      const body=route.request().postDataJSON() as {action?:string};
+      if(body.action==='open')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:{active:true}})});
+      return route.fulfill({status:unavailable?503:200,contentType:'application/json',body:JSON.stringify(unavailable?{success:false,error:'BENEFICIARIES_UNAVAILABLE'}:{success:true,data:[]})});
+    });
+    await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+    await expect(dialog.getByText(unavailable?/Saved beneficiaries could not be verified/:/no longer in your saved lists/)).toBeVisible();
+    await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
+  });
+}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { openLegacyTaxServiceChoice, openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 
 for (const locale of ['en', 'bn'] as const) {
   test(`already signed-in ${locale.toUpperCase()} taxpayer skips redundant account/walk-in choice for both payers`, async ({ page }) => {
@@ -9,28 +9,35 @@ for (const locale of ['en', 'bn'] as const) {
     await login.getByLabel('Password', { exact: true }).fill('user1');
     await login.getByRole('button', { name: 'Sign In' }).click();
     await expect(login).toHaveCount(0);
-    await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await openLegacyTaxServiceChoice(page);
-    const payment = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
-    await ensureNewPaymentEntry(payment);
-
-    for (const payer of ['OTHER', 'SELF'] as const) {
-      await payment.locator(`[data-payer-relationship="${payer}"]`).click();
-      await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
-      await expect(payment.locator('[data-entry-section="access"]')).toHaveCount(0);
-      await expect(payment.locator('[data-payment-access]')).toHaveCount(0);
-      await expect(payment.getByRole('heading', { name: locale === 'bn' ? 'কীভাবে এগিয়ে যেতে চান?' : 'How would you like to continue?' })).toHaveCount(0);
-      const continueButton = payment.locator('.tax-service-choice__actions').getByRole('button', { name: locale === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true });
-      await expect(continueButton).toBeEnabled();
-      await continueButton.click();
-      await expect(payment.locator('.taxpay-modal__step-count')).toContainText('1/4');
-      await expect(payment.locator('.tax-service-choice__account-access')).toHaveCount(0);
-      await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
-      if (payer === 'OTHER') {
-        await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(1);
-      }
-      await payment.locator('.taxpay-modal__back').click();
-    }
+    const payment=await openUnifiedSignedInPayment(page,locale);
+    const own=payment.getByTestId('unified-account-own').getByRole('checkbox');
+    const other=payment.getByTestId('unified-tin-input');
+    const next=payment.getByRole('button',{name:locale==='bn'?'পেমেন্ট খাতে এগিয়ে যান':'Continue to Payment Head'});
+    await expect(next).toBeDisabled();
+    await expect(other).toBeEditable();
+    await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
+    await own.check();
+    await expect(payment.getByTestId('unified-taxpayer-count')).toHaveText('1');
+    await next.click();
+    await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(payment.locator('.taxpay-modal__step-count')).toContainText('2/3');
+    await payment.locator('.taxpay-modal__back').click();
+    await expect(own).toBeChecked();
+    await own.uncheck();
+    await expect(payment.getByTestId('unified-taxpayer-count')).toHaveText('0');
+    await expect(next).toBeDisabled();
+    await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
+    await other.fill('333333333333');
+    await payment.getByRole('button',{name:locale==='bn'?'করদাতার টিআইএন অনুসন্ধান':'Search taxpayer TIN'}).click();
+    await expect(payment.getByTestId('unified-taxpayer-search-result')).toBeVisible();
+    // This suite runs without a configured beneficiary backend. A search result
+    // must not become a payable recipient without the required owner-scoped read.
+    await expect(payment.getByRole('button',{name:locale==='bn'?'করদাতা যোগ করুন':'Add taxpayer',exact:true})).toBeDisabled();
+    await expect(own).not.toBeChecked();
+    await expect(payment.getByTestId('unified-taxpayer-count')).toHaveText('0');
+    await expect(next).toBeDisabled();
+    await expect(payment.locator('[data-entry-section="access"],[data-payment-access]')).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
   });
 }
 

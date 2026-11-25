@@ -1,27 +1,36 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice, openUnifiedSignedInPayment, enterLegacyPaymentAsAccount } from './pay-tax-entry-helper';
+import type { Page } from '@playwright/test';
+
+type EntryMode = 'unified' | 'guest-origin';
+async function startAccountDraftPayment(page: Page, mode: EntryMode) {
+  if (mode === 'guest-origin') return enterLegacyPaymentAsAccount(page, 'user2', 'TAX_WITH_RETURN', 'SELF');
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
+  await login.getByLabel('Password', { exact: true }).fill('user2');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login).toHaveCount(0);
+  const payment = await openUnifiedSignedInPayment(page);
+  await payment.getByTestId('unified-account-own').getByRole('checkbox').check();
+  return payment;
+}
 
 // Layout-only regression: never save data or submit a payment to hosted SQL.
+for (const mode of ['unified', 'guest-origin'] as const) {
 for (const width of [320, 375, 1280]) {
-  test('signed-in payment footer keeps Save Draft left and Continue right without Drafts at ' + width + 'px', async ({ page }, info) => {
+  test('signed-in payment footer keeps Save Draft left and Continue right without Drafts at ' + width + 'px (' + mode + ')', async ({ page }, info) => {
     const expectedProject = width === 1280 ? 'desktop-1280' : 'mobile-' + width;
     test.skip(info.project.name !== expectedProject, 'The targeted viewport belongs to its own device project');
     await page.setViewportSize({ width, height: 850 });
-    await page.goto('/?action=taxpayer_login');
-    const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-    await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
-    await login.getByLabel('Password', { exact: true }).fill('user2');
-    await login.getByRole('button', { name: 'Sign In' }).click();
-    await expect(login).toHaveCount(0);
-    await page.goto('/?action=landing');
-    await openLegacyTaxServiceChoice(page);
-    const modal = page.getByRole('dialog', { name: 'Pay Tax' });
-    await enterTaxPayService(modal, 'TAX_WITH_RETURN', 'SELF');
+    const modal = await startAccountDraftPayment(page, mode);
+    const nextLabel = mode === 'unified' ? 'Continue to Payment Head' : 'Continue to purpose & amount';
+    const step2Label = mode === 'unified' ? 'Continue to Final Preview' : 'Continue to payment channel';
     const footer = modal.locator('.taxpay-modal__footer');
     const actionGroup = footer.locator('.payment-form-draft-controls__actions');
     const save = actionGroup.getByRole('button', { name: 'Save Draft' });
     const resume = actionGroup.locator('.payment-form-draft-controls__open');
-    const next = footer.getByRole('button', { name: 'Continue to purpose & amount' });
+    const next = footer.getByRole('button', { name: nextLabel, exact: true });
     await expect(save).toBeVisible();
     await expect(resume).toHaveCount(0);
     await expect(next).toBeVisible();
@@ -50,13 +59,13 @@ for (const width of [320, 375, 1280]) {
     };
     await geometry();
     await next.click();
-    await expect(modal.locator('.taxpay-modal__step-count')).toContainText('2/4');
+    await expect(modal.locator('.taxpay-modal__step-count')).toContainText(mode === 'unified' ? '2/3' : '2/4');
     await expect(footer.getByRole('button', { name: 'Save Draft' })).toBeVisible();
     await expect(footer.locator('.payment-form-draft-controls__open')).toHaveCount(0);
-    await expect(footer.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+    await expect(footer.getByRole('button', { name: step2Label, exact: true })).toBeVisible();
     await expect(modal.locator('.taxpay-modal__body .payment-form-draft-controls__actions')).toHaveCount(0);
     const step2Save = await footer.getByRole('button', { name: 'Save Draft' }).boundingBox();
-    const step2Next = await footer.getByRole('button', { name: 'Continue to payment channel' }).boundingBox();
+    const step2Next = await footer.getByRole('button', { name: step2Label, exact: true }).boundingBox();
     const step2Footer = await footer.boundingBox();
     expect(step2Save && step2Next && step2Footer).toBeTruthy();
     if (step2Save && step2Next && step2Footer) {
@@ -64,8 +73,9 @@ for (const width of [320, 375, 1280]) {
       expect(step2Save.x + step2Save.width).toBeLessThan(step2Next.x);
       expect(step2Next.width).toBeLessThan(step2Footer.width * .7);
     }
-    await page.screenshot({ path: 'test-results/payment-footer-drafts-' + width + '.png' });
+    await page.screenshot({ path: 'test-results/payment-footer-drafts-' + mode + '-' + width + '.png' });
   });
+}
 }
 
 
@@ -129,18 +139,10 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
 });
 
 
-test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }, testInfo) => {
+for (const mode of ['unified', 'guest-origin'] as const) {
+test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint (' + mode + ')', async ({ page }, testInfo) => {
   // No hosted writes: this suite explicitly runs with the backend disabled.
-  await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
-  await login.getByLabel('Password', { exact: true }).fill('user2');
-  await login.getByRole('button', { name: 'Sign In' }).click();
-  await expect(login).toHaveCount(0);
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
+  const payment = await startAccountDraftPayment(page, mode);
   await expect(payment.locator('.payment-form-draft-controls__save')).toBeVisible();
 
   // Accidental outside clicks must not close or open a destructive dialog.
@@ -184,7 +186,7 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
   }
   await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toHaveCSS('justify-content', 'center');
   await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toHaveCSS('border-top-width', '1px');
-  await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-' + (page.viewportSize()?.width ?? 1280) + '.png' });
+  await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-' + mode + '-' + (page.viewportSize()?.width ?? 1280) + '.png' });
   if (testInfo.project.name === 'desktop-1280') {
     const previousSize = page.viewportSize()!;
     await page.setViewportSize({ width: 515, height: 354 });
@@ -195,7 +197,7 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
     expect(compactBox!.x + compactBox!.width).toBeLessThanOrEqual(503);
     expect(compactBox!.y + compactBox!.height).toBeLessThanOrEqual(354);
     expect(await confirm.evaluate(node => node.scrollWidth - node.clientWidth), 'no horizontal dialog overflow').toBeLessThanOrEqual(2);
-    await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-515x354.png' });
+    await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-' + mode + '-515x354.png' });
     await page.setViewportSize(previousSize);
   }
   await confirm.getByRole('button', { name: 'Keep editing' }).click();
@@ -210,6 +212,7 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
   await confirm.getByRole('button', { name: 'Discard tax payment' }).click();
   await expect(payment).toHaveCount(0);
 });
+}
 
 
 test('signed-out guest payment uses the one reusable X-discard confirmation', async ({ page }) => {

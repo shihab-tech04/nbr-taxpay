@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 
 test('an already signed-in taxpayer starts payment without a second login prompt', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
@@ -8,23 +8,14 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
-
-  // Sign-in lands in the taxpayer dashboard; the payment service chooser is on Home.
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await ensureNewPaymentEntry(payment);
-  await payment.locator('[data-payer-relationship="SELF"]').click();
-  await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
-  await expect(payment.locator('[data-entry-section="access"]')).toHaveCount(0);
-  await expect(payment.locator('[data-payment-access]')).toHaveCount(0);
-  // A real signed-in session goes directly into the existing account payment flow.
-  await expect(payment.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-
-  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(payment.getByText('Continuing with your account')).toHaveCount(0);
+  const payment=await openUnifiedSignedInPayment(page,'en','taxpayer_home');
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/3 Steps');
+  await expect(payment.getByTestId('unified-account-own')).toContainText('Meghna Trading Ltd.');
+  await expect(payment.locator('[data-entry-section="access"],[data-payment-access]')).toHaveCount(0);
+  await payment.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await payment.getByRole('button',{name:'Continue to Payment Head'}).click();
+  await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/3 Steps');
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
 });
 
@@ -34,41 +25,32 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await openLegacyTaxServiceChoice(page);
-  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
-
-  await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
-  await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
-  const card = payment.locator('#signed-in-account-taxpayer-card');
+  const payment=await openUnifiedSignedInPayment(page);
+  const card=payment.getByTestId('unified-account-own');
+  const own=card.getByRole('checkbox');
+  const search=payment.getByTestId('unified-tin-input');
+  const count=payment.getByTestId('unified-taxpayer-count');
   await expect(card).toContainText('Meghna Trading Ltd.');
-  await expect(card).toContainText('2222222222222');
-  await expect(card).toContainText('01700000002');
-  await expect(payment.locator('#guest-tin, #guest-phone, #guest-taxpayer-name')).toHaveCount(0);
-  await expect(payment.locator('.payment-identity__fields input')).toHaveCount(1);
-  await expect(payment.locator('#guest-notice-ref')).toBeEditable();
-  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
-
-  await payment.locator('.taxpay-modal__back').click();
-  await payment.locator('.taxpay-modal__back').click();
-  await payment.locator('[data-payer-relationship="OTHER"]').click();
-  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
-  // Keep saved-beneficiary selection available after verified account sign-in.
-  await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(1);
-  await expect(payment.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(1);
+  await expect(card).toContainText(/222\*+/);
+  await expect(card.getByRole('textbox')).toHaveCount(0);
+  await expect(search).toHaveValue('');
+  await own.check();
+  await expect(count).toHaveText('1');
+  await expect(search).toHaveValue('');
+  await own.uncheck();
+  await expect(count).toHaveText('0');
+  await expect(search).toHaveValue('');
   await expect(payment.getByTestId('saved-beneficiary-picker').getByRole('button',{name:'Manage beneficiaries'})).toBeVisible();
-  await expect(payment.locator('#guest-tin, #guest-payer-name, #guest-taxpayer-name')).toHaveCount(0);
-  await expect(payment.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
-  await payment.locator('.taxpay-modal__back').click();
-  await payment.locator('[data-payer-relationship="SELF"]').click();
-  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
-  await expect(payment.locator('#guest-tin')).toHaveCount(0);
+  await search.fill('333333333333');
+  await payment.getByRole('button',{name:'Search taxpayer TIN'}).click();
+  await expect(payment.getByTestId('unified-taxpayer-search-result')).toBeVisible();
+  await expect(payment.getByRole('button',{name:'Add taxpayer',exact:true})).toBeDisabled();
+  await expect(count).toHaveText('0');
+  await expect(own).not.toBeChecked();
+  await expect(search).toHaveValue('333333333333');
+  await own.check();
+  await expect(count).toHaveText('1');
+  await payment.getByRole('button',{name:'Continue to Payment Head'}).click();
+  await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/3 Steps');
 });
