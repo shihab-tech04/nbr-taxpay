@@ -107,6 +107,7 @@ jobs:
       - name: Compile public review-only application with scoped hosted Auth / RLS
         env:
           GITHUB_PAGES: 'true'
+          VITE_RECIPIENT_NOTICE_FEED_ENABLED: 'true'
           VITE_SUPABASE_DISABLED: 'false'
           # Unapproved V2 switches are rejected by the signed cutover gate below.
           VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
@@ -954,6 +955,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/ci/main-sql-release-gate.mjs
+      - name: Require hosted fictional recipient feed and report route before publication
+        env:
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: node scripts/ci/verify-hosted-recipient-notice-feed.mjs
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1
@@ -1036,6 +1041,10 @@ jobs:
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-table.mjs
+      - name: Verify real published fictional recipient popup and report access
+        env:
+          TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/ci/verify-live-recipient-feed.mjs
 
       - name: Sample deployed Core Web Vitals without authenticated writes
         env:
