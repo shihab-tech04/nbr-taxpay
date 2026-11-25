@@ -72,3 +72,40 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
   await expect(payment.locator('#guest-tin')).toHaveCount(0);
 });
+
+// Actual public hero login must not unmount its pending continuation when the
+// account identity changes. Keep the approved start/resume choice, not a second
+// sign-in/walk-in chooser. No hosted mutations: existing isolated browser suite.
+for (const language of ['en','bn'] as const) {
+  test('public Pay Tax sign-in continues without a second access chooser ('+language+')', async ({page}) => {
+    await page.goto('/?action=landing&lang='+language);
+    const active=page.locator('.public-hero-carousel__slide[aria-hidden="false"]');
+    await active.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).click();
+    const modal=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true});
+    await expect(modal.locator('[data-view="entry"]')).toBeVisible();
+    const user=modal.locator('#taxpayer-login-user-id');
+    const password=modal.locator('#taxpayer-login-password');
+    await user.fill('user2');
+    await password.fill('incorrect');
+    await modal.getByTestId('taxpayer-login-submit').click();
+    await expect(modal.getByRole('alert')).toBeVisible();
+    await expect(modal.locator('[data-view="entry"]')).toBeVisible();
+    await password.fill('user2');
+    await page.evaluate(()=>{
+      const state={seen:false};
+      Object.assign(window,{__payTaxAccessRegression:state});
+      const check=()=>{if(document.querySelector('.taxpay-unified-entry__signed-in'))state.seen=true;};
+      new MutationObserver(check).observe(document.body,{childList:true,subtree:true});
+      check();
+    });
+    await modal.getByTestId('taxpayer-login-submit').click();
+    await expect(modal.locator('[data-view="payer"]')).toBeVisible({timeout:15000});
+    await expect(modal.locator('.taxpay-unified-entry__signed-in')).toHaveCount(0);
+    await expect(modal.locator('.taxpay-unified-entry__walkin')).toHaveCount(0);
+    await expect(modal.getByTestId('account-draft-entry')).toBeVisible();
+    await modal.getByTestId('account-draft-entry').locator('[data-draft-entry-option="NEW"]').click();
+    await expect(modal.locator('[data-view="payment"]')).toBeVisible();
+    await expect(modal.locator('.taxpay-modal__subtitle')).toHaveText(language==='bn'?'সাইন-ইন পেমেন্ট':'Signed-in Payment');
+    expect(await page.evaluate(()=> (window as unknown as {__payTaxAccessRegression:{seen:boolean}}).__payTaxAccessRegression.seen)).toBe(false);
+  });
+}
