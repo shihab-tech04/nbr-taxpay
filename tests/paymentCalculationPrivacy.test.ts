@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PaymentLiveSummary } from '../src/components/ui/PaymentFormLayout.tsx';
 
-test('167 selected incomplete heads remain in the model, not in the approved compact sidebar', () => {
+test('compact taxpayer disclosures preserve masked subtotals and bounded access to all 167 selected heads', () => {
   const entries = Array.from({length:167}, (_,index) => ({
     id:'line-'+String(index+1), label:'Payment head '+String(index+1),
     detail:'2026-27', value:null,
@@ -23,7 +23,14 @@ test('167 selected incomplete heads remain in the model, not in the approved com
   assert.match(markup,/Enter amounts for 167 selected heads/);
   assert.match(markup,/111\*\*\*\*/);
   assert.doesNotMatch(markup,/Show all 167 selected heads/);
-  assert.doesNotMatch(markup,/payment-form-summary__taxpayer-entries/);
+  assert.match(markup,/<details[^>]*payment-form-summary__compact-owner/);
+  assert.match(markup,/payment-form-summary__compact-owner-disclosure/);
+  assert.match(markup,/Show next 20 selected heads/);
+  assert.match(markup,/163 more heads/);
+  assert.match(markup,/Payment head 4/);
+  assert.doesNotMatch(markup,/Payment head 5/);
+  assert.doesNotMatch(markup,/<details[^>]*\sopen(?:=|\s|>)/);
+  assert.doesNotMatch(markup,/111111111111|222222222222/);
   assert.doesNotMatch(markup,/Payment head 167/);
   assert.doesNotMatch(markup,/Copy TIN|টিআইএন কপি করুন/);
 });

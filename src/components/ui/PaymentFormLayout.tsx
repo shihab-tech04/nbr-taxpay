@@ -134,38 +134,16 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
         {breakdown.map(renderBreakdownEntry)}
       </div>}
-      {compactTaxpayerView && groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__compact-owners"
-        aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="v5-compact-taxpayer-summary">
-        {groupedBreakdown.map(group => {
-          const incomplete = group.entries.filter(entry =>
-            entry.value === null || !Number.isFinite(entry.value) || entry.value <= 0).length;
-          return <div className="payment-form-summary__compact-owner" key={group.id}>
-            <div className="payment-form-summary__compact-owner-top">
-              <div className="payment-form-summary__compact-owner-identity">
-                <strong>{group.label}</strong>
-                <small>{group.tin ? maskTinForDisplay(group.tin) : '—'}</small>
-              </div>
-              <strong className="payment-form-summary__compact-owner-total">
-                {group.amount === null ? '—' : formatCurrency(group.amount, language)}
-              </strong>
-            </div>
-            {group.entries.length === 0 && <p role="status" className="payment-form-summary__compact-owner-warning">
-              {bn ? 'এই করদাতার জন্য একটি খাত নির্বাচন করুন।' : 'Select a payment head for this taxpayer.'}
-            </p>}
-            {incomplete > 0 && <p role="status" className="payment-form-summary__compact-owner-warning">
-              {bn ? `${incomplete}টি নির্বাচিত খাতের পরিমাণ পূরণ করুন।`
-                  : `Enter amounts for ${incomplete} selected ${incomplete === 1 ? 'head' : 'heads'}.`}
-            </p>}
-          </div>;
-        })}
-      </section>}
-      {!compactTaxpayerView && groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
-        <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
+      {groupedBreakdown && groupedBreakdown.length > 0 && <section
+        className={compactTaxpayerView ? "payment-form-summary__compact-owners" : "payment-form-summary__taxpayers"}
+        aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'}
+        data-testid={compactTaxpayerView ? "v5-compact-taxpayer-summary" : "grouped-taxpayer-calculation"}>
+        {!compactTaxpayerView && <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>}
         {groupedBreakdown.map((group, index) => {
           const countLabel = group.countLabel ?? (bn ? `${group.entries.length}টি খাত` : `${group.entries.length} ${group.entries.length === 1 ? 'head' : 'heads'}`);
           const previewLimit = 4;
           const canExpand = group.entries.length > previewLimit;
-          const progressive = progressiveHeads && group.entries.length > 24;
+          const progressive = (progressiveHeads || compactTaxpayerView) && group.entries.length > 24;
           const visibleCount = progressive
             ? Math.min(group.entries.length, Math.max(previewLimit, visibleHeadsByTaxpayer[group.id] ?? previewLimit))
             : expandedTaxpayerSummaries[group.id] ? group.entries.length : previewLimit;
@@ -173,15 +151,41 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           const visibleEntries = group.entries.slice(0, visibleCount);
           const remaining = Math.max(0, group.entries.length - visibleCount);
           const nextCount = Math.min(20, remaining);
-          return <details key={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
-          <summary>
+          const incomplete = group.entries.filter(entry =>
+            entry.value === null || !Number.isFinite(entry.value) || entry.value <= 0).length;
+          // Preserve the approved compact subtotal header. Restore the original
+          // native disclosure and shared bounded line renderer underneath it.
+          // Compact cards start closed, remain independent and never auto-open
+          // just because another amount or the active taxpayer changed.
+          return <details key={group.id}
+            className={compactTaxpayerView ? "payment-form-summary__taxpayer payment-form-summary__compact-owner" : "payment-form-summary__taxpayer"}
+            open={compactTaxpayerView ? undefined : index === 0}>
+          {compactTaxpayerView ? <summary className="payment-form-summary__compact-owner-disclosure">
+            <span className="payment-form-summary__compact-owner-top">
+              <span className="payment-form-summary__compact-owner-identity">
+                <strong>{group.label}</strong>
+                <small>{group.tin ? maskTinForDisplay(group.tin) : '—'}</small>
+              </span>
+              <strong className="payment-form-summary__compact-owner-total">
+                {group.amount === null ? '—' : formatCurrency(group.amount, language)}
+              </strong>
+              <ChevronDown className="payment-form-summary__compact-owner-chevron" size={16} aria-hidden="true" />
+            </span>
+            {group.entries.length === 0 && <span role="status" className="payment-form-summary__compact-owner-warning">
+              {bn ? 'এই করদাতার জন্য একটি খাত নির্বাচন করুন।' : 'Select a payment head for this taxpayer.'}
+            </span>}
+            {incomplete > 0 && <span role="status" className="payment-form-summary__compact-owner-warning">
+              {bn ? `${incomplete}টি নির্বাচিত খাতের পরিমাণ পূরণ করুন।`
+                  : `Enter amounts for ${incomplete} selected ${incomplete === 1 ? 'head' : 'heads'}.`}
+            </span>}
+          </summary> : <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
               <small className="payment-form-summary__taxpayer-identity">{bn ? 'টিআইএন' : 'TIN'}: {group.tin ? maskTinForDisplay(group.tin) : '—'} · {countLabel}</small>
             </span>
             <span className="payment-form-summary__taxpayer-total">{group.amount === null ? '—' : formatCurrency(group.amount, language)}</span>
             <ChevronDown size={16} aria-hidden="true" />
-          </summary>
+          </summary>}
           <div className="payment-form-summary__taxpayer-items">
             {canExpand && <button type="button" className="payment-form-summary__taxpayer-show-all"
               aria-expanded={expanded}
@@ -221,7 +225,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
               }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
             </div>
-            {group.tin && <div className="payment-form-summary__taxpayer-tin-tools" aria-label={bn ? 'করদাতার টিআইএন নিয়ন্ত্রণ' : 'Taxpayer TIN controls'}>
+            {!compactTaxpayerView && group.tin && <div className="payment-form-summary__taxpayer-tin-tools" aria-label={bn ? 'করদাতার টিআইএন নিয়ন্ত্রণ' : 'Taxpayer TIN controls'}>
               <MaskedSummaryTin tin={group.tin} language={language} />
             </div>}
           </div>

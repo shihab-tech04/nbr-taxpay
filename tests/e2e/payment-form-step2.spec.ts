@@ -249,13 +249,18 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   expect(partyBounds!.y).toBeGreaterThanOrEqual(referenceBounds!.y + referenceBounds!.height - 1);
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   const allocationTable = dialog.getByTestId('receipt-allocation-table');
-  const allocationCards = dialog.getByTestId('receipt-allocation-mobile');
+  await expect(allocationTable).toBeVisible();
+  await expect(dialog.getByTestId('receipt-allocation-mobile')).toHaveCount(0);
+  await expect(allocationTable.locator('thead th')).toHaveCount(4);
   await expect(allocationTable.locator('tbody tr')).toHaveCount(2);
-  await expect(allocationCards.locator('article')).toHaveCount(1);
-  await expect(allocationCards.locator('article').first().getByTestId('receipt-taxpayer-head-row')).toHaveCount(2);
-  await expect(allocationCards.locator('article').first()).toContainText('Taxpayer subtotal');
-  expect((await allocationTable.isVisible()) || (await allocationCards.isVisible()),
-    'at least one responsive allocation view must be visible').toBe(true);
+  await expect(allocationTable.getByTestId('receipt-taxpayer-cell')).toHaveCount(1);
+  await expect(allocationTable.getByTestId('receipt-taxpayer-cell')).toHaveAttribute('rowspan','2');
+  await expect(allocationTable.getByTestId('receipt-taxpayer-cell')).toContainText('Taxpayer subtotal');
+  await expect(allocationTable.locator('tfoot')).toContainText('1,500');
+  for (const amount of await allocationTable.locator('.receipt-view__allocation-amount').all())
+    await expect(amount).toHaveCSS('text-align','right');
+  await expect(allocationTable).toHaveCSS('overflow-x','auto');
+  expect(await dialog.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
 });
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');

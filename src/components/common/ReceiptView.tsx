@@ -16,6 +16,7 @@ import {beneficiaryFinalTagLabel,type BeneficiaryRelation} from '../../services/
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
 import { groupReceiptAllocations } from '../../services/receiptAllocationGroups';
+import '../../styles/receipt-allocation-table.css';
 import { TaxPayModal, TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { PaymentCertificateDocument } from './PaymentCertificateDocument';
 import { canViewPaymentCertificate } from '../../services/paymentCertificateModel';
@@ -165,36 +166,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className="receipt-view__breakdown">
       <h3 className="receipt-view__section-title">{labels.allocations}</h3>
       <div className="receipt-view__breakdown-content">
-        <div className="receipt-view__cards" data-testid="receipt-allocation-mobile">
-          {taxpayerGroups.map(group => (
-            <article key={group.key} data-testid="receipt-taxpayer-group" className="p-3 space-y-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">{labels.allocationTaxpayer}</p>
-                <p className="mt-1 break-words text-sm font-semibold text-slate-900">{group.taxpayerName}</p>
-                {group.taxpayerTin && <p className="mt-1 break-all font-mono-plex text-xs text-slate-700">{group.taxpayerTin}</p>}
-              </div>
-              {group.items.map((item, index) => (
-                <div key={group.key + ':' + index} data-testid="receipt-taxpayer-head-row" className="border-t border-slate-200 pt-3">
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                    <div><dt className="text-slate-700">{labels.service}</dt><dd className="mt-1 break-words font-medium text-slate-900">{bn ? item.paymentServiceBn : item.paymentServiceEn}</dd></div>
-                    <div><dt className="text-slate-700">{labels.year}</dt><dd className="mt-1 font-medium text-slate-900">{item.assessmentYear}</dd></div>
-                  </dl>
-                  <div className="flex items-center justify-between gap-3 pt-2 font-semibold text-taxpay-dark">
-                    <span>{labels.allocationAmount}</span>
-                    <span className="shrink-0 font-mono-plex">{formatCurrency(item.amountMinor / 100, language)}</span>
-                  </div>
-                </div>
-              ))}
-              {group.items.length > 1 && <div className="flex items-center justify-between gap-3 border-t border-taxpay-border bg-taxpay-light px-2 py-2 text-sm font-semibold text-taxpay-dark">
-                <span>{labels.taxpayerSubtotal}</span><span className="font-mono-plex">{formatCurrency(group.totalMinor / 100, language)}</span>
-              </div>}
-            </article>
-          ))}
-          <div className="flex items-center justify-between gap-3 bg-taxpay-light px-3 py-3 text-sm font-bold text-taxpay-dark">
-            <span>{labels.grandTotal}</span><span className="shrink-0 font-mono-plex">{formatCurrency(receipt.totalAmount, language)}</span>
-          </div>
-        </div>
-        <div className="receipt-view__table" data-testid="receipt-allocation-table">
+        <div className="receipt-view__table receipt-view__allocation-scroll" data-testid="receipt-allocation-table" role="region" aria-label={labels.allocations} tabIndex={0}>
           <table className="receipt-view__financial-table receipt-view__allocation-table" aria-label={labels.allocations}>
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
@@ -212,7 +184,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                     {group.taxpayerTin && <div className="mt-1 break-all font-mono-plex text-xs text-slate-700">{group.taxpayerTin}</div>}
                     {group.items.length > 1 && <div className="mt-2 text-xs font-semibold text-taxpay-dark">{labels.taxpayerSubtotal}: {formatCurrency(group.totalMinor / 100, language)}</div>}
                   </td>}
-                  <td className="receipt-view__allocation-service text-slate-800">{bn ? item.paymentServiceBn : item.paymentServiceEn}</td>
+                  <td className="receipt-view__allocation-service text-slate-800">{bn ? item.paymentServiceBn : item.paymentServiceEn}{item.economicCode && <small className="receipt-view__allocation-code">{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}: {item.economicCode}</small>}</td>
                   <td className="receipt-view__allocation-year">{item.assessmentYear}</td>
                   <td className="receipt-view__allocation-amount font-mono-plex font-bold text-slate-900">{formatCurrency(item.amountMinor / 100, language)}</td>
                 </tr>
