@@ -101,76 +101,7 @@ BEGIN
     WHERE a.value->>'taxpayerTin' IN (v_tin12,v_tin13,v_registered_tin)
       AND (p.data->'details'->>'payerId' IS NOT NULL
            OR length(coalesce(a.value->>'allocationId','')) BETWEEN 1 AND 128)
-      AND a.value->>'amountMinor' ~ '^[1-9][0-9]{0,11}
-      AND coalesce(a.value->>'assessmentYear','')<>''
-    UNION ALL
-    SELECT p.id::text||':legacy:'||l.ordinality::text AS event_id,
-      NULL::text AS allocation_id,p.id,p.created_at,
-      coalesce(nullif(p.data->'details'->>'receiptReference',''),
-        p.data->'details'->'receiptSnapshot'->>'challanNo'),
-      NULL::text AS recipient_tin,l.value->>'headId',
-      p.service_code,l.value->>'assessmentYear',
-      (l.value->>'amountMinor')::bigint AS amount_minor
-    FROM valid_parents p
-    CROSS JOIN LATERAL jsonb_array_elements(
-      CASE WHEN jsonb_typeof(p.data->'details'->'lines')='array'
-        THEN p.data->'details'->'lines' ELSE '[]'::jsonb END
-    ) WITH ORDINALITY l(value,ordinality)
-    WHERE jsonb_typeof(p.data->'details'->'allocations') IS DISTINCT FROM 'array'
-      AND l.value->>'beneficiary'=v_demo
-      AND l.value->>'amountMinor' ~ '^[1-9][0-9]{0,11}$'
-  )
-  SELECT coalesce(jsonb_agg(
-    jsonb_build_object(
-      'eventId',e.event_id,'paymentId',e.payment_id,
-      'allocationId',e.allocation_id,'receiptReference',e.receipt_reference,
-      'recipientTin',e.recipient_tin,'headId',e.head_id,
-      'serviceCode',e.service_code,'assessmentYear',e.assessment_year,
-      'amountMinor',e.amount_minor,'createdAt',e.created_at)
-    ORDER BY e.created_at,e.payment_id,e.event_id
-  ),'[]'::jsonb) INTO v_events FROM eligible e;
-
-  IF p_action='ack' THEN
-    IF p_event_id IS NULL OR length(p_event_id)>200 OR NOT EXISTS (
-      SELECT 1 FROM jsonb_array_elements(v_events) AS event(value)
-      WHERE event.value->>'eventId'=p_event_id
-    ) THEN RAISE EXCEPTION 'NOTICE_NOT_FOUND'; END IF;
-    INSERT INTO taxpay_guest_private.demo_received_payment_notice_ack
-      (demo_id,event_id) VALUES (v_demo,p_event_id)
-      ON CONFLICT (demo_id,event_id) DO NOTHING;
-    SELECT acknowledged_at INTO v_ack_at
-      FROM taxpay_guest_private.demo_received_payment_notice_ack
-      WHERE demo_id=v_demo AND event_id=p_event_id;
-    RETURN jsonb_build_object(
-      'eventId',p_event_id,'isRead',true,'acknowledgedAt',v_ack_at
-    );
-  END IF;
-  SELECT count(*) INTO v_count FROM jsonb_array_elements(v_events) AS event(value)
-   LEFT JOIN taxpay_guest_private.demo_received_payment_notice_ack ack
-    ON ack.demo_id=v_demo AND ack.event_id=event.value->>'eventId'
-   WHERE p_action='list' OR ack.event_id IS NULL;
-  SELECT coalesce(jsonb_agg(p.item ORDER BY p.ordinal),'[]'::jsonb)
-    INTO v_list FROM (
-    SELECT event.value ||
-      jsonb_build_object('isRead',ack.acknowledged_at IS NOT NULL,
-        'acknowledgedAt',ack.acknowledged_at) AS item,event.ordinality AS ordinal
-    FROM jsonb_array_elements(v_events) WITH ORDINALITY AS event(value,ordinality)
-    LEFT JOIN taxpay_guest_private.demo_received_payment_notice_ack ack
-      ON ack.demo_id=v_demo AND ack.event_id=event.value->>'eventId'
-    WHERE p_action='list' OR ack.event_id IS NULL
-    ORDER BY event.ordinality
-    OFFSET p_offset LIMIT p_limit
-  ) p;
-  RETURN jsonb_build_object('items',v_list,'total',v_count,
-    'hasMore',v_count>p_offset+p_limit,'offset',p_offset,'limit',p_limit);
-END;
-$notices$;
-
-REVOKE ALL ON FUNCTION public.taxpay_demo_received_payment_notices(
-  text,text,text,integer,integer) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.taxpay_demo_received_payment_notices(
-  text,text,text,integer,integer) TO service_role;
-
+      AND a.value->>'amountMinor' ~ '^[1-9][0-9]{0,11}$'
       AND coalesce(a.value->>'assessmentYear','')<>''
     UNION ALL
     SELECT p.id::text||':legacy:'||l.ordinality::text AS event_id,
