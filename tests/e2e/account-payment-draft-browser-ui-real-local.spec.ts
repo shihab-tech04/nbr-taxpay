@@ -347,6 +347,13 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await expect(workspace.getByRole('heading', { name: 'Payment and request summary' })).toBeVisible();
     await savedCard.getByRole('button', { name: 'Continue' }).click();
     const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(payment).toHaveClass(/taxpay-v5-locked/);
+    await expect(payment.getByTestId('unified-account-own').getByRole('checkbox')).toBeChecked();
+    await expect(payment.locator('.taxpay-modal__subtitle')).toHaveText('Signed-in Payment');
+    await payment.getByRole('button',{name:'Continue to Payment Head'}).click();
+    await expect(payment.locator('#guest-assessment-year')).toBeVisible();
+    await payment.locator('#guest-tax-amount').fill('125');
+    await payment.getByRole('button',{name:'Continue to Final Preview'}).click();
     await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);
     await expect(cards).toBeVisible();
     await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
