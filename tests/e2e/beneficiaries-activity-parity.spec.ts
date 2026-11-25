@@ -57,6 +57,37 @@ for(const language of ['en','bn'] as const){
     await selectList.click();
     const search=screen.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
     await expect(search).toBeVisible();
+    // The shared search is a single 44px control, not a labelled vertical
+    // stack. Verify actual EN/BN rendered geometry on 320/375/desktop.
+    const toolbar=screen.locator('.beneficiary-register-frame > .taxpay-office-register__toolbar');
+    const field=toolbar.locator('.taxpay-record-toolbar__search');
+    const filter=toolbar.getByRole('button',{name:t('Filter','ফিল্টার'),exact:true});
+    const geometry=await toolbar.evaluate(el=>{
+      const field=el.querySelector<HTMLElement>('.taxpay-record-toolbar__search')!;
+      const input=field.querySelector('input')!;
+      const icon=field.querySelector('svg')!;
+      const filter=el.querySelector<HTMLElement>('.taxpay-office-filter-toggle')!;
+      const label=el.querySelector<HTMLElement>('.taxpay-office-register__search-label')!;
+      const rect=(node:Element)=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right};};
+      return {field:rect(field),input:rect(input),icon:rect(icon),filter:rect(filter),label:rect(label),toolbar:rect(el),
+        inputFont:getComputedStyle(input).fontSize,inputBorder:getComputedStyle(input).borderTopWidth};
+    });
+    expect(geometry.label.height).toBeLessThanOrEqual(1);
+    expect(geometry.field.height).toBeCloseTo(44,0);
+    expect(geometry.filter.height).toBeCloseTo(44,0);
+    expect(Math.abs(geometry.field.y-geometry.filter.y)).toBeLessThanOrEqual(2);
+    expect(geometry.field.right).toBeLessThanOrEqual(geometry.filter.x-6);
+    expect(geometry.field.width).toBeGreaterThanOrEqual(page.viewportSize()!.width>=1180?240:120);
+    expect(Math.abs(geometry.icon.y+geometry.icon.height/2-(geometry.input.y+geometry.input.height/2))).toBeLessThanOrEqual(2);
+    expect(geometry.inputFont).toBe('16px');
+    expect(geometry.inputBorder).toBe('0px');
+    expect(geometry.filter.right).toBeLessThanOrEqual(geometry.toolbar.right+1);
+    await search.focus();
+    await expect(field).toHaveCSS('outline-style','solid');
+    await expect(filter).toHaveAttribute('aria-expanded','true');
+    await search.fill('222222222222');
+    await expect(screen.locator('.taxpay-office-register__count')).toContainText('1 / 2');
+    await search.fill('');
     await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
