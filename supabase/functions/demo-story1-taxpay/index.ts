@@ -38,6 +38,26 @@ function officeMirrorSource(url:string):'original'|'v2'{
  if(origin==='https://eyqhoavnitkrajvyqvxn.supabase.co')return 'original';
  throw Error('UNRECOGNIZED_TAXPAY_SOURCE');
 }
+function canonicalJson(value:unknown):string{
+ if(value===null||typeof value!=='object')return JSON.stringify(value)??'null';
+ if(Array.isArray(value))return '['+value.map(canonicalJson).join(',')+']';
+ const object=value as Record<string,unknown>;
+ return '{'+Object.keys(object).sort().map(key=>JSON.stringify(key)+':'+canonicalJson(object[key])).join(',')+'}';
+}
+async function fingerprintSourceRecord(record:unknown):Promise<string>{
+ const digest=await crypto.subtle.digest('SHA-256',encoder.encode(canonicalJson(record)));
+ return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+function sourceParentId(record:Record<string,unknown>):string|null{
+ const data=record.data&&typeof record.data==='object'&&!Array.isArray(record.data)
+  ?record.data as Record<string,unknown>:null;
+ const details=data?.details&&typeof data.details==='object'&&!Array.isArray(data.details)
+  ?data.details as Record<string,unknown>:null;
+ const candidate=details?.sourcePaymentId;
+ if(candidate===undefined||candidate===null||candidate==='')return null;
+ if(typeof candidate!=='string'||!uuid.test(candidate))throw Error('INVALID_SOURCE_PARENT');
+ return candidate.toLowerCase();
+}
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
 async function mirrorAuthorization(id:string,sourceUrl:string){
@@ -244,7 +264,13 @@ Deno.serve(async(req)=>{
    const {data,error}=await serviceClient(url).rpc("taxpay_office_story1_mirror_read",{p_id:m[1],p_session:session});
    if(error||data?.id!==m[1]||data?.status!=="SIMULATED_SUCCESS")
      return respond({success:false,error:"SOURCE_RECORD_NOT_FOUND"},404);
-   return respond({success:true,data,simulationOnly:true});
+   // Derive provenance from this server's allowlisted project URL and the
+   // immutable SQL readback. Office compares this project marker to its
+   // requested route and stores the fingerprint outside the source JSON.
+   const provenance={sourceProject:officeMirrorSource(url),
+     sourceParentId:sourceParentId(data),
+     sourceRevision:await fingerprintSourceRecord(data)};
+   return respond({success:true,data:{...data,...provenance},simulationOnly:true});
   }
   // A refresh-safe original SQL lookup for an *existing approved profile*
   // capability. Public references and receipt mobiles are identifiers only:
