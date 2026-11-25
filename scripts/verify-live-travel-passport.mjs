@@ -14,7 +14,12 @@ try {
     ['desktop', { width: 1280, height: 800 }, false],
     ['short-desktop', { width: 1280, height: 520 }, false],
     ['mobile', { width: 375, height: 812 }, true],
+    ['desktop-bn', { width: 1280, height: 800 }, false],
+    ['mobile-bn', { width: 375, height: 812 }, true],
   ]) {
+    const bn = name.endsWith('-bn');
+    const tr = (en, bangla) => bn ? bangla : en;
+    const amountText = tr('1,000','১,০০০');
     const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile, serviceWorkers: 'block' });
     // The deployed app is real; the payment acknowledgement and detail readback
     // below are isolated browser fixtures. Never send payment or other mutation
@@ -60,10 +65,19 @@ try {
     await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
     const url = new URL(base);
     url.searchParams.set('action', 'landing');
+    url.searchParams.set('lang', tr('en','bn'));
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     // PR #985 routes Home > Other Tax through the approved sign-in/walk-in
     // access modal. Keep that journey intact. Enter the separate Travel Tax
     // flow through its existing public Guide action (also tested in EN/BN).
+    if (bn) {
+      const carousel = page.locator('.public-hero-carousel');
+      await expect(carousel).toBeVisible();
+      await carousel.getByRole('button',{name:'অন্যান্য কর',exact:true}).click();
+      const access = page.locator('.taxpay-modal[data-public-service="login"]');
+      await access.getByRole('button',{name:'ওয়াক-ইন পেমেন্ট',exact:true}).click();
+      await page.getByTestId('other-tax-chooser').getByRole('button',{name:/^ভ্রমণ কর/}).click();
+    } else {
     url.searchParams.set('action', 'user_guide');
     url.searchParams.set('lang', 'en');
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -74,10 +88,31 @@ try {
     await expect(result).toBeVisible({ timeout: 15_000 });
     await result.getByRole('button', { name: 'Pay Travel Tax' }).click();
 
-    const modal = page.getByRole('dialog', { name: 'Travel tax' });
+    }
+    const modal = bn ? page.locator('.taxpay-modal:visible').first() : page.getByRole('dialog', { name: 'Travel tax' });
     await expect(modal).toBeVisible();
     // Approved parallel Travel Tax journey (PR #955): passenger first, travel
     // details second, final preview third, checkout a separate subsequent view.
+    if (bn) {
+      await expect(modal.locator('.travel-flow')).toHaveAttribute('lang','bn');
+      await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রীর তথ্য');
+      await modal.locator('#travel-passport-first').fill('TEST230001');
+      await modal.locator('#travel-lookup-first').click();
+      await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER TWO');
+      await modal.getByRole('button',{name:'যাত্রী যোগ করুন',exact:true}).click();
+      await modal.getByRole('button',{name:'ভ্রমণের তথ্য দিতে এগিয়ে যান'}).click();
+      await modal.locator('#travel-port').selectOption('Benapole');
+      await modal.locator('#travel-destination').fill('India');
+      await modal.locator('#travel-departure-date').fill(new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Dhaka'}).format(new Date(Date.now()+86_400_000)));
+      await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
+      await expect(modal.locator('.taxpay-modal__title')).toHaveText('চূড়ান্ত পর্যালোচনা');
+      await expect(modal.getByTestId('travel-preview-total')).toContainText(amountText);
+      await expect(modal.getByTestId('travel-preview-total-in-words')).toBeVisible();
+      await expect(modal.getByRole('heading',{name:'পরিশোধকারী ও রসিদের তথ্য'})).toBeVisible();
+      await modal.locator('#travel-mobile').fill('01712345678');
+      await modal.screenshot({path:`test-results/live-travel-passport-${name}-final-preview.png`,animations:'disabled'});
+      await modal.getByRole('button',{name:'পেমেন্ট করুন'}).click();
+    } else {
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
     if (!mobile) {
       const expectedWidth = Math.min(1160, viewport.width - 32);
@@ -107,7 +142,7 @@ try {
 
     const geometry = () => modal.evaluate(el => {
       const nodes=[el,...['.taxpay-modal__header','.taxpay-modal__body','.taxpay-modal__footer',
-        '.travel-flow__passport-row','.travel-passenger-workspace__rail'].map(s=>el.querySelector(s))];
+        '.travel-flow__passport-row','#travel-passport-first','.travel-passenger-workspace__rail'].map(s=>el.querySelector(s))];
       return nodes.flatMap(node=>{if(!node)throw new Error('Missing stable modal section');
         const b=node.getBoundingClientRect();return [b.x,b.y,b.width,b.height,node.scrollTop,node.scrollHeight];});
     });
@@ -120,17 +155,27 @@ try {
     await expect(options.first()).toBeVisible();
     await expect.poll(()=>modal.locator('#travel-passport-suggestions-first').evaluate(el=>{
       const b=el.getBoundingClientRect(); const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
-      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+2)return false;
+      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+1)return false;
       const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
       return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
     })).toBe(true);
     await modal.locator('#travel-passport-suggestions-first').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
     const opened=await geometry();
-    if(Math.max(...opened.map((n,i)=>Math.abs(n-baseline[i])))>2)throw new Error('Passport dropdown changed modal layout or scroll position');
+    const assertStable=async()=>{const current=await geometry();if(Math.max(...current.map((n,i)=>Math.abs(n-baseline[i])))>1)throw new Error('Passport dropdown changed modal layout or scroll position by more than one pixel');};
+    if(Math.max(...opened.map((n,i)=>Math.abs(n-baseline[i])))>1)throw new Error('Passport dropdown changed modal layout or scroll position by more than one pixel');
+    await page.waitForTimeout(350);
+    await assertStable();
     await page.screenshot({path:`test-results/live-travel-passport-${name}-dropdown.png`});
     const optionScroll = await modal.locator('#travel-passport-suggestions-first')
       .evaluate(element => ({ scroll: element.scrollHeight, visible: element.clientHeight }));
     if (optionScroll.scroll <= optionScroll.visible) throw new Error('Ten sample passport suggestions should scroll independently');
+    await modal.locator('#travel-passport-first').press('Escape');
+    await expect(options).toHaveCount(0);
+    await assertStable();
+    await modal.locator('#travel-passport-first').click();
+    await expect(options).toHaveCount(10);
+    await modal.locator('#travel-passport-suggestions-first').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
+    await assertStable();
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
     await expect(addPassenger).toHaveCount(0);
@@ -243,39 +288,42 @@ try {
     await modal.getByRole('button',{name:'Continue to review'}).click();
     await expect(modal.locator('#travel-mobile')).toHaveValue('01712345678');
     await modal.getByRole('button',{name:'Make Payment'}).click();
+    }
+    await expect(modal.getByTestId('travel-payment-channel-screen')).toBeVisible();
     await expect(modal.getByTestId('travel-payment-channel-screen').locator('.unified-v5-review-total')).toHaveCount(0);
-    await modal.getByRole('button',{name:'Pay online'}).click();
-    await modal.getByRole('button',{name:'Mobile banking'}).click();
+    await modal.getByRole('button',{name:tr('Pay online','অনলাইনে পরিশোধ')}).click();
+    await modal.getByRole('button',{name:tr('Mobile banking','মোবাইল ব্যাংকিং')}).click();
     await modal.getByRole('radio',{name:'Nagad'}).check();
-    await modal.getByLabel(/I confirm the travel information/).check();
-    await modal.getByRole('button',{name:'Confirm sample payment'}).click();
+    await modal.getByLabel(tr('I confirm the travel information, all passengers and the combined amount.','ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।')).check();
+    await modal.getByRole('button',{name:tr('Confirm sample payment','নমুনা পেমেন্ট নিশ্চিত করুন')}).click();
     const confirmation = modal.getByTestId('travel-payment-result');
     await expect(confirmation).toBeVisible({timeout:20000});
-    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Payment result');
-    await expect(confirmation.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
-    await expect(confirmation.locator('.payment-lifecycle__overview')).toContainText('1,000');
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText(tr('Payment result','পেমেন্টের ফলাফল'));
+    await expect(confirmation.getByRole('heading',{name:tr('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')})).toBeVisible();
+    await expect(confirmation.locator('.payment-lifecycle__overview')).toContainText(amountText);
     await expect(confirmation.getByTestId('walkin-result-benefits')).toBeVisible();
     await expect(modal.getByTestId('travel-family-challan')).toHaveCount(0);
     await modal.screenshot({path:`test-results/live-travel-passport-${name}-payment-result.png`,animations:'disabled'});
     await confirmation.getByTestId('walkin-challan-action').getByRole('button').first().click();
-    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Challan details');
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText(tr('Challan details','চালানের বিবরণ'));
     await expect(modal.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(1);
     await expect(modal.getByTestId('travel-family-challan')).toContainText('SAMPLE PASSENGER TWO');
-    await expect(modal.getByRole('button',{name:'Download',exact:true})).toBeVisible();
-    await expect(modal.getByRole('button',{name:'Print receipt',exact:true})).toBeVisible();
+    await expect(modal.getByRole('button',{name:tr('Download','ডাউনলোড'),exact:true})).toBeVisible();
+    await expect(modal.getByRole('button',{name:tr('Print receipt','রসিদ প্রিন্ট'),exact:true})).toBeVisible();
     await modal.screenshot({path:`test-results/live-travel-passport-${name}-challan.png`,animations:'disabled'});
-    await modal.getByRole('tab',{name:'Payment record certificate'}).click();
+    await modal.getByRole('tab',{name:tr('Payment record certificate','পেমেন্ট রেকর্ড সনদ')}).click();
     const certificate = modal.getByTestId('payment-certificate-document');
     await expect(certificate).toBeVisible();
-    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Payment record certificate');
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText(tr('Payment record certificate','পেমেন্ট রেকর্ড সনদ'));
     await expect(certificate.getByTestId('payment-certificate-reference')).toContainText('SK-PC-'+fixtureId);
-    await expect(certificate.getByTestId('payment-certificate-total')).toContainText('1,000');
+    await expect(certificate.getByTestId('payment-certificate-total')).toContainText(amountText);
     await modal.screenshot({path:`test-results/live-travel-passport-${name}-certificate.png`,animations:'disabled'});
-    await modal.getByRole('button',{name:'Back to receipt',exact:true}).click();
+    await modal.getByRole('button',{name:tr('Back to receipt','রসিদে ফিরুন'),exact:true}).click();
     await expect(modal.getByTestId('travel-family-challan')).toBeVisible();
-    await modal.getByRole('button',{name:'Back to confirmation',exact:true}).click();
+    await modal.getByRole('button',{name:tr('Back to confirmation','পেমেন্টের ফলাফলে ফিরুন'),exact:true}).click();
     await expect(confirmation).toBeVisible();
     expect(posts).toBe(1);
+    await expect(modal.getByTestId('travel-office-sync-status')).toHaveCount(0);
     expect(reads).toBeGreaterThanOrEqual(1);
     console.log('PASS: '+name+' deployed Travel Tax preview, payment result, challan and certificate; all financial requests intercepted; no hosted writes');
 
@@ -289,7 +337,7 @@ try {
       fullPage: false, animations: 'disabled' });
     await page.close();
   }
-  console.log('PASS: production Travel Tax passport lookup, manual medical block, duplicate handling, passenger rail, separate receipt contact and payment channel, EN/desktop/mobile responsive bounds, confirmation, challan and certificate (intercepted nonfinancial fixture)');
+  console.log('PASS: production Travel Tax passport lookup, manual medical block, duplicate handling, passenger rail, separate receipt contact and payment channel, EN/BN desktop/mobile responsive bounds, confirmation, challan and certificate (intercepted nonfinancial fixture)');
 } finally {
   await browser.close();
 }
