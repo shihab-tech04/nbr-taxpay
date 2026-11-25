@@ -243,7 +243,7 @@ export const PublicLanding: React.FC<{home2?: boolean; home3?: boolean}> = ({hom
     </React.Suspense>}
     {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onBack={openService === 'other' ? () => { setOpenService(null); setOtherTaxEntryOpen(true); } : undefined} onChooseOther={setOpenService} /></React.Suspense>}</>);
   if (home3) return <><Home3Layout onSearch={chooseReference} onService={setOpenService} />{serviceOverlays}</>;
-  if (home2) return <><Home2Layout onSearch={chooseReference} onOtherTax={()=>setOtherTaxEntryOpen(true)} />{serviceOverlays}</>;
+  if (home2) return <><Home2Layout onSearch={chooseReference} onOtherTax={()=>setOtherTaxEntryOpen(true)} sliderPaused={isPaymentServiceChoiceOpen || otherTaxEntryOpen || openService !== null} />{serviceOverlays}</>;
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     {hero}
     {recordSearch}

@@ -1,0 +1,21 @@
+/* Draft choice cards are actions, not subsection headings. The broad
+ * citizen typography contract also styles .tax-service-choice__card strong
+ * as a 20px heading; this component-owned role must stay at the 16px action
+ * tier. Keep shared card geometry, colors, focus and all other flows intact. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]
+  [data-testid="account-draft-entry"] .tax-service-choice__card .tax-service-choice__copy > strong {
+  font-size: var(--taxpay-type-body, 1rem);
+  font-weight: var(--taxpay-weight-action, 600);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]
+  [data-testid="account-draft-entry"] .tax-service-choice__card .tax-service-choice__description {
+  font-size: var(--taxpay-type-body, 1rem);
+  font-weight: var(--taxpay-weight-reading, 400);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has([data-testid="account-draft-entry"])
+  > .taxpay-modal__header > .taxpay-modal__title {
+  font-size: var(--taxpay-type-h3, 1.25rem);
+  font-weight: var(--taxpay-weight-action, 600);
+}
