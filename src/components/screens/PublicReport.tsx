@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {CitizenMuiScope,MuiButtonBase,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
 import {useTaxState} from '../../services/taxState';
 
 export function PublicReport(){
@@ -13,7 +14,7 @@ export function PublicReport(){
    {value:'security',en:'Security concern',bn:'নিরাপত্তা সমস্যা'},
  ];
  const categoryLabel=categories.find(item=>item.value===category);
- return <section className={'public-report-page '+(bn?'font-bengali':'')} aria-labelledby="public-report-title">
+ return <CitizenMuiScope><section data-mui-citizen-region="incident-report" className={'public-report-page '+(bn?'font-bengali':'')} aria-labelledby="public-report-title">
    <header className="public-report-header">
      <h1 id="public-report-title">{bn?'সমস্যা জানান':'Report a problem'}</h1>
      <p>{bn?'পেমেন্ট, রসিদ বা নিরাপত্তা সংক্রান্ত সমস্যার বিবরণ দিন।':'Describe an issue with a payment, receipt or account security.'}</p>
@@ -26,20 +27,21 @@ export function PublicReport(){
          <div><dt>{bn?'সংক্ষিপ্ত বিবরণ':'Short description'}</dt><dd>{details.trim()}</dd></div>
        </dl>
        <div className="public-report-actions">
-         <button type="button" className="public-report-edit" onClick={()=>setReviewing(false)}>{bn?'বিবরণ সম্পাদনা করুন':'Edit details'}</button>
+         <MuiButtonBase disableRipple type="button" className="public-report-edit" onClick={()=>setReviewing(false)}>{bn?'বিবরণ সম্পাদনা করুন':'Edit details'}</MuiButtonBase>
        </div>
      </section>:<form onSubmit={e=>{e.preventDefault();if(details.trim().length>=10)setReviewing(true);}}>
        <label htmlFor="public-report-type">{bn?'সমস্যার ধরন':'Issue type'}</label>
-       <select id="public-report-type" value={category} onChange={e=>setCategory(e.target.value)}>
+       <MuiNativeSelect fullWidth input={<MuiInputBase/>} inputProps={{id:"public-report-type"}} value={category} onChange={e=>setCategory(e.target.value)} sx={{minWidth:0,"& .MuiNativeSelect-select":{paddingRight:"32px"}}}>
          {categories.map(item=><option key={item.value} value={item.value}>{bn?item.bn:item.en}</option>)}
-       </select>
+       </MuiNativeSelect>
        <label htmlFor="public-report-details">{bn?'সংক্ষিপ্ত বিবরণ':'Short description'}</label>
-       <textarea id="public-report-details" rows={4} minLength={10} maxLength={500} required
-         value={details} onChange={e=>setDetails(e.target.value)} placeholder={bn?'সমস্যাটি সংক্ষেপে লিখুন':'Describe what happened'}/>
+       <MuiInputBase id="public-report-details" multiline rows={4} required fullWidth
+         inputProps={{minLength:10,maxLength:500}} value={details} onChange={e=>setDetails(e.target.value)}
+         placeholder={bn?'সমস্যাটি সংক্ষেপে লিখুন':'Describe what happened'} sx={{padding:0,minWidth:0,"& .MuiInputBase-inputMultiline":{boxSizing:"border-box",width:"100%",resize:"vertical"}}}/>
        <div className="public-report-actions">
-         <button className="public-report-submit" type="submit">{bn?'বিবরণ যাচাই করুন':'Review details'}</button>
+         <MuiButtonBase disableRipple className="public-report-submit" type="submit">{bn?'বিবরণ যাচাই করুন':'Review details'}</MuiButtonBase>
        </div>
      </form>}
    </div>
- </section>;
+ </section></CitizenMuiScope>;
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {CitizenMuiScope,MuiButtonBase,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
 import { 
   Layers, 
   Search, 
@@ -29,7 +30,7 @@ export const OntologyView: React.FC = () => {
   const activeNode = TAX_ONTOLOGY_NODES.find(n => n.id === selectedNodeId) || TAX_ONTOLOGY_NODES[0];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+    <CitizenMuiScope><div data-mui-citizen-region="ontology" className="max-w-6xl mx-auto space-y-6 pb-12">
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="flex items-center gap-3 border-b border-slate-200 pb-4 mb-4">
           <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
@@ -56,18 +57,18 @@ export const OntologyView: React.FC = () => {
 
         {/* Controls Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-xs">
-          <input
-            type="text"
+          <MuiInputBase fullWidth
+            type="text" inputProps={{"aria-label":"Search concepts or rules"}}
             placeholder="Search concepts or rules..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-300"
+            className="rounded-lg border border-slate-300" sx={{minWidth:0,"& .MuiInputBase-input":{padding:"8px 12px",font:"inherit"}}}
           />
 
-          <select
+          <MuiNativeSelect fullWidth input={<MuiInputBase/>} inputProps={{"aria-label":"Concept category"}}
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-300 font-medium"
+            className="rounded-lg border border-slate-300 font-medium" sx={{minWidth:0,"& .MuiNativeSelect-select":{padding:"8px 32px 8px 12px",font:"inherit"}}}
           >
             <option value="ALL">All Categories</option>
             <option value="LEGAL_ENTITY">Legal Entities (Taxpayer, Payer, Agent)</option>
@@ -75,7 +76,7 @@ export const OntologyView: React.FC = () => {
             <option value="FINANCIAL_EVENT">Financial Events (Transactions, Receipts)</option>
             <option value="RECONCILIATION_PRIMITIVE">Reconciliation Primitives (Credits, Ledgers)</option>
             <option value="GOVERNANCE">Governance & Approval Workflows</option>
-          </select>
+          </MuiNativeSelect>
         </div>
 
         {/* Two-Column Explorer: Nodes Grid + Detail Panel */}
@@ -87,7 +88,7 @@ export const OntologyView: React.FC = () => {
             </span>
             <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
               {filteredNodes.map(node => (
-                <button
+                <MuiButtonBase disableRipple sx={{display:"block",textAlign:"left"}}
                   key={node.id}
                   type="button"
                   aria-pressed={selectedNodeId === node.id}
@@ -105,7 +106,7 @@ export const OntologyView: React.FC = () => {
                   <span className="block text-[10px] mt-1 font-mono uppercase opacity-75">
                     {node.category.replace(/_/g, ' ')}
                   </span>
-                </button>
+                </MuiButtonBase>
               ))}
             </div>
           </div>
@@ -161,6 +162,6 @@ export const OntologyView: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div></CitizenMuiScope>
   );
 };

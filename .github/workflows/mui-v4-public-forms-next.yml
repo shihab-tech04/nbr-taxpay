@@ -1,0 +1,47 @@
+name: MUI v4 public forms and knowledge controls
+on:
+  push:
+    branches: [ops/mui-v4-public-forms-next-766f320]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      VITE_SUPABASE_DISABLED: 'true'
+      VITE_SUPABASE_URL: ''
+      VITE_SUPABASE_PUBLISHABLE_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - uses: actions/download-artifact@v4
+        with:
+          name: mui-v4-glossary-pilot-evidence
+          run-id: 45657043479
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/prior-mui-pilot
+      - run: |
+          cp "$RUNNER_TEMP/prior-mui-pilot/package.json" package.json
+          cp "$RUNNER_TEMP/prior-mui-pilot/package-lock.json" package-lock.json
+          npm ci --no-audit --no-fund
+          npm run lint
+          npm run build
+      - run: npx playwright install chromium
+      - run: |
+          npx playwright test tests/e2e/mui-v4-public-forms.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/public-homepage-redesign.spec.ts --grep 'MUI |ontology choices|report|Report a problem' --workers=2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mui-v4-public-forms-evidence
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,4 +1,5 @@
 import React from 'react';
+import {CitizenMuiScope,MuiButtonBase} from '../../design-system/mui';
 import { 
   Layers, 
   Database, 
@@ -164,13 +165,13 @@ export const ArchitectureView: React.FC = () => {
         </div>
 
         <div className="pt-2 flex justify-end">
-          <button
+          <CitizenMuiScope><MuiButtonBase disableRipple type="button"
             onClick={() => navigate('ontology')}
             className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer"
           >
             <span>Explore Conceptual Tax Ontology</span>
             <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          </MuiButtonBase></CitizenMuiScope>
         </div>
       </div>
     </div>
