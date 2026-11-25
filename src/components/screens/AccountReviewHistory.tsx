@@ -1,4 +1,6 @@
 import React, {useEffect,useState} from 'react';
+import {CitizenMuiScope,MuiButtonBase,MuiNativeSelect,MuiInputBase} from '../../design-system/mui';
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
 import {supabase} from '../../services/supabaseClient';
 import {useTaxState} from '../../services/taxState';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
@@ -65,7 +67,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
         'অ্যাকাউন্টভিত্তিক অ-আর্থিক পরিশোধ পর্যালোচনা। টিআইএন সংযোগের প্রয়োজন নেই।')} />
     {activityTabs && <TaxpayerActivityTabs />}
     <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={tr('Submitted request history','জমা দেওয়া অনুরোধের ইতিহাস')}>
+    <CitizenMuiScope><section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={tr('Submitted request history','জমা দেওয়া অনুরোধের ইতিহাস')}>
       <p className="text-sm text-taxpay-muted">
         {tr('These are review requests, not payments or government receipts. No Treasury settlement, liability, credit, or tax balance is implied.',
           'এগুলো পর্যালোচনার অনুরোধ, অর্থ পরিশোধ বা সরকারি রসিদ নয়। ট্রেজারি নিষ্পত্তি, দায়, ক্রেডিট বা করের ব্যালেন্স বোঝায় না।')}
@@ -74,8 +76,8 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
         {tr('Loading my requests…','আমার অনুরোধ লোড হচ্ছে…')}</p>}
       {state.status==='error'&&<div role="alert" className="mt-4 space-y-2">
         <p className="text-sm text-taxpay-error">{tr('Unable to verify my request history.', 'আমার অনুরোধের ইতিহাস যাচাই করা যাচ্ছে না।')}</p>
-        <button type="button" onClick={()=>setRetry(v=>v+1)} className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
-          {tr('Try again','আবার চেষ্টা করুন')}</button>
+        <MuiButtonBase disableRipple sx={{"&.Mui-focusVisible":{outline:"2px solid #2C5EAD",outlineOffset:2}}} type="button" onClick={()=>setRetry(v=>v+1)} className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+          {tr('Try again','আবার চেষ্টা করুন')}</MuiButtonBase>
       </div>}
       {state.status==='ready'&&state.rows.length===0&&<div role="status" className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-taxpay-muted">
         {tr('No review requests have been submitted from this account.', 'এই অ্যাকাউন্ট থেকে কোনো পর্যালোচনা অনুরোধ জমা দেওয়া হয়নি।')}</div>}
@@ -90,16 +92,16 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
         <TaxPayOfficeRegisterFilters open={filtersOpen}>
           <label className="taxpayer-transaction-filter">
             <span>{tr('Assessment year','করবর্ষ')}</span>
-            <select value={selectedYear} onChange={event=>setSelectedYear(event.target.value)}
-              aria-label={tr('Filter requests by year','করবর্ষ অনুযায়ী অনুরোধ ফিল্টার করুন')}
-              className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white px-3 text-base">
+            <MuiNativeSelect fullWidth input={<MuiInputBase/>} value={selectedYear} onChange={event=>setSelectedYear(event.target.value)}
+              inputProps={{'aria-label':tr('Filter requests by year','করবর্ষ অনুযায়ী অনুরোধ ফিল্টার করুন')}}
+              sx={{minWidth:0,"& .MuiNativeSelect-select":{boxSizing:"border-box",minHeight:"44px",border:"1px solid #E1E6EE",borderRadius:"8px",backgroundColor:"white",padding:"8px 32px 8px 12px",fontSize:"16px"}}}>
               <option value="all">{tr('All years','সব করবর্ষ')}</option>
               {years.map(year=><option key={year} value={year}>{year}</option>)}
-            </select>
+            </MuiNativeSelect>
           </label>
-          {(search||selectedYear!=='all')&&<button type="button"
+          {(search||selectedYear!=='all')&&<MuiButtonBase disableRipple sx={{"&.Mui-focusVisible":{outline:"2px solid #2C5EAD",outlineOffset:2}}} type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>{setSearch('');setSelectedYear('all');}}>{tr('Clear filters','ফিল্টার মুছুন')}</button>}
+            onClick={()=>{setSearch('');setSelectedYear('all');}}>{tr('Clear filters','ফিল্টার মুছুন')}</MuiButtonBase>}
         </TaxPayOfficeRegisterFilters>
         <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
           onClear={()=>{setSearch('');setSelectedYear('all');}}
@@ -108,7 +110,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
             ...(selectedYear!=='all'?[{key:'year',label:selectedYear,onRemove:()=>setSelectedYear('all')}]:[])
           ]}/>
         {visible.length===0?<TaxPayTableState>{tr('No submitted requests match those filters.','এই ফিল্টারে কোনো অনুরোধ মেলেনি।')}</TaxPayTableState>:
-          <TaxPayDataGrid variant="tabular" rows={visible} getRowKey={row=>row.id}
+          <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={visible} getRowKey={row=>row.id}
             ariaLabel={tr('Submitted request register','জমা দেওয়া অনুরোধের তালিকা')}
             testId="account-owner-review-table" mobileTestId="account-owner-review-mobile-cards" className="taxpay-convay-signed-in-table"
             columns={[
@@ -131,11 +133,11 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
           labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
       </div>}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={()=>navigate('secure_workspace')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
-          {tr('Saved drafts & review workspace','সংরক্ষিত খসড়া ও পর্যালোচনা')}</button>
-        <button type="button" onClick={()=>navigate('corrections')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
-          {tr('Correction inquiries','সংশোধনের অনুসন্ধান')}</button>
+        <MuiButtonBase disableRipple sx={{"&.Mui-focusVisible":{outline:"2px solid #2C5EAD",outlineOffset:2}}} type="button" onClick={()=>navigate('secure_workspace')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
+          {tr('Saved drafts & review workspace','সংরক্ষিত খসড়া ও পর্যালোচনা')}</MuiButtonBase>
+        <MuiButtonBase disableRipple sx={{"&.Mui-focusVisible":{outline:"2px solid #2C5EAD",outlineOffset:2}}} type="button" onClick={()=>navigate('corrections')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
+          {tr('Correction inquiries','সংশোধনের অনুসন্ধান')}</MuiButtonBase>
       </div>
-    </section>
+    </section></CitizenMuiScope>
   </div>;
 };
