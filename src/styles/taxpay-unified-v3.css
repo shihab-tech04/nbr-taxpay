@@ -440,9 +440,9 @@
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__heading {
   border:0; padding:0 0 10px; min-height:0;
 }
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__heading h2,
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-row-heading {
-  font-size:13px; color:#17345a; font-weight:700; line-height:1.4; margin:0;
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__heading h2,
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-row-heading {
+  font-size:var(--taxpay-type-body, 16px); color:#17345a; font-weight:600; line-height:1.4; margin:0;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__body {
   padding:0; display:block; min-width:0;
