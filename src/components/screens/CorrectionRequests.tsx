@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useId, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { UiButton } from '../ui/Controls';
+import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import {
   Send,
   CheckCircle2
@@ -15,8 +18,10 @@ import {activePreviewSession} from '../../services/previewAccountSession';
 import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 
-export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string;embedded?:boolean}> =
-  ({activityTabs=false,recordedReceipts=[],preferredReference='',embedded=false}) => {
+export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string;embedded?:boolean;historyOnly?:boolean;onViewRequests?:()=>void}> =
+  ({activityTabs=false,recordedReceipts=[],preferredReference='',embedded=false,historyOnly=false,onViewRequests}) => {
+  const formId=useId();
+  const footerTarget=useContext(TaxPayModalFooterTarget);
   const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest, language, previewAccount, routeParams } = useTaxState();
   const tr=(en:string,bn:string)=>language==='bn'?bn:en;
   const {user:authenticatedUser}=useAccountIdentity();
@@ -97,32 +102,39 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     setReason('');
   };
 
+  const saveAction=<UiButton type="submit" form={formId} variant="primary" className="gap-2">
+    <Send size={16} aria-hidden="true"/>
+    {tr('Save request locally','স্থানীয়ভাবে আবেদন সংরক্ষণ করুন')}
+  </UiButton>;
+  const footerAction=embedded&&footerTarget&&visibleReceipts.length>0
+    ?createPortal(saveAction,footerTarget):null;
   return (
     <div className={embedded ? 'w-full min-w-0 space-y-4' : 'max-w-4xl mx-auto space-y-6 pb-12'}>
-      {!embedded && <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
+      {!embedded && !historyOnly && <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
         description="Request a change to the assessment year, tax circle or payment head." />}
       {!embedded && activityTabs && <TaxpayerActivityTabs />}
-      <div className={embedded ? 'bg-white border border-taxpay-border rounded-xl p-3 sm:p-5' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
+      {!historyOnly && <div className={embedded ? 'w-full min-w-0' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
         {submittedTicket && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
+          <div role="status" className="mb-4 p-3 rounded-lg border border-taxpay-border bg-taxpay-light space-y-2">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Request saved locally: {submittedTicket}</span>
+              <span>{tr('Request saved locally:','আবেদন স্থানীয়ভাবে সংরক্ষিত:')} {submittedTicket}</span>
             </div>
             <p className="text-xs text-emerald-700">
-              Not submitted to NBR or an official review queue.
+              {tr('Not submitted to NBR or an official review queue.','এনবিআর বা কোনো আনুষ্ঠানিক পর্যালোচনা তালিকায় জমা হয়নি।')}
             </p>
+            {embedded&&onViewRequests&&<UiButton variant="outline" onClick={onViewRequests}>{tr('View correction requests','সংশোধনের আবেদন দেখুন')}</UiButton>}
           </div>
         )}
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+          <div role="alert" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm">
             {error}
           </div>
         )}
 
         {/* New Correction Form */}
-        {visibleReceipts.length ? <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        {visibleReceipts.length ? <form id={formId} onSubmit={handleSubmit} className="space-y-4 text-sm" data-testid="correction-request-form">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="correction-challan" className="block font-semibold text-slate-700 mb-1">
@@ -250,19 +262,12 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             />
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
-            >
-              <Send className="w-4 h-4" />
-              <span>Save request locally</span>
-            </button>
-          </div>
+          {!embedded&&<div className="flex justify-end">{saveAction}</div>}
+          {footerAction}
         </form> : <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No payment records are available for correction.</p>}
-      </div>
+      </div>}
 
-      <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6 space-y-3"
+      {!embedded && <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6 space-y-3"
         data-testid="preview-correction-register" aria-label={tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}>
         <div className="taxpay-table-toolbar">
           <h3 className="text-base font-semibold text-taxpay-text">{tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}</h3>
@@ -317,7 +322,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 {c.approverRemarks&&<p className="mt-2 break-words text-sm">{tr('Review note','পর্যালোচনার মন্তব্য')}: {c.approverRemarks}</p>}
               </details>
             </div>}/>}
-      </section>
+      </section>}
     </div>
   );
 };

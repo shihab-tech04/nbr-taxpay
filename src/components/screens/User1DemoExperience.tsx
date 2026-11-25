@@ -1072,7 +1072,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     route==='corrections'&&(routeParams?.applyForCorrection===true&&authorizedPreviewScenario)
       ?<CorrectionRequests recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
         preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
-      :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+      :route==='corrections'?<>{exceptions}{authorizedPreviewScenario&&<CorrectionRequests historyOnly recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}/>}</>:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-payment-source-state={sqlLoadError?'error':sqlLoading?'loading':'ready'} data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
@@ -1123,11 +1123,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         title={tr('Apply for Correction','সংশোধনের আবেদন')}
         onClose={() => setCorrectionTarget(null)}
         closeIconLabel={tr('Close correction form','সংশোধনের ফরম বন্ধ করুন')}
-        hideFooter
+        footer={<></>}
         className="taxpayer-correction-modal"
       >
         <CorrectionRequests
           embedded
+          onViewRequests={()=>{setCorrectionTarget(null);navigate('corrections');}}
           recordedReceipts={correctionTarget.sql.receipts}
           preferredReference={correctionTarget.sql.receipts[0].challanNo}
         />
