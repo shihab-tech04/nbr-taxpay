@@ -66,8 +66,23 @@ test('payment form drafts survive another browser, protect owner isolation and r
     expect(draftId).toBeTruthy();
     await firstCard.getByRole('button', { name: 'Continue' }).click();
     const restoredModal = dashboard.getByRole('dialog', { name: 'Pay Tax' });
+    // The unified account editor revalidates the taxpayer before presenting
+    // the restored reference in Final Preview, not in the legacy identity step.
+    await expect(restoredModal).toHaveClass(/taxpay-v5-locked/);
+    await expect(restoredModal.getByTestId('unified-account-own').getByRole('checkbox')).toBeChecked();
+    await expect(restoredModal.locator('.taxpay-modal__subtitle')).toHaveText('Signed-in Payment');
+    await restoredModal.getByRole('button',{name:'Continue to Payment Head'}).click();
+    await expect(restoredModal.locator('#guest-assessment-year')).toBeVisible();
+    await restoredModal.locator('#guest-tax-amount').fill('125');
+    await restoredModal.getByRole('button',{name:'Continue to Final Preview'}).click();
     await expect(restoredModal.locator('#guest-notice-ref')).toHaveValue(marker);
     await restoredModal.getByRole('button', { name: 'Close payment services' }).click();
+    const exitPrompt = restoredModal.getByRole('alertdialog');
+    await expect(exitPrompt).toBeVisible();
+    // Discard only the unsaved preview edits, keeping the existing SQL draft
+    // and revision unchanged for the independent stale-write checks below.
+    await exitPrompt.getByTestId('payment-draft-exit-discard-row').getByRole('button').click();
+    await expect(restoredModal).toHaveCount(0);
     await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
 
     // The existing draft makes Pay Tax open its compact two-choice modal.
