@@ -1,9 +1,10 @@
-name: MUI v5.4 exact candidate strict full homepage acceptance
+name: MUI v6.0 foundation strict visual and previous A/B diagnosis
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
 permissions:
   contents: read
+  actions: read
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -13,12 +14,12 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
-      CANDIDATE_SHA: de410ce36d859f2cf6ff053f38f59ff264af11bc
+      BASE_SHA: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
+      CANDIDATE_SHA: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: de410ce36d859f2cf6ff053f38f59ff264af11bc
+          ref: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -31,13 +32,13 @@ jobs:
           git merge-base --is-ancestor "$BASE_SHA" "$CANDIDATE_SHA"
           npm ci --no-audit --no-fund
           npm run build
-          git show "${{ github.sha }}:tests/visual/mui-v54-deterministic-home.spec.ts" > tests/visual/mui-v4-protected-home.spec.ts
+          git show "5aa67318b1beec81eaa7b169a60caa212da40704:tests/visual/mui-v4-protected-home.spec.ts" > tests/visual/mui-v4-protected-home.spec.ts
           export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
           mkdir -p "$MUI_BASELINE_DIR"
           git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
           (cd "$MUI_BASELINE_DIR" && npm ci --no-audit --no-fund && npm run build)
           npx playwright install chromium
-      - name: Strict full matrix, preselected exact methods and independent A/A before A/B
+      - name: Strict full matrix, three consecutive exact captures and independent A/A before A/B
         run: |
           set -euo pipefail
           export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
@@ -49,9 +50,78 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v54-exact-full-home-matrix
+          name: mui-v60-foundation-exact-full-home-matrix
           path: |
             ${{ runner.temp }}/mui-snapshots
             test-results/
+          if-no-files-found: error
+          retention-days: 7
+
+  diagnose-prior-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mui-v4-combined-acceptance
+          run-id: 45693443551
+          github-token: ${{ github.token }}
+          path: previous-evidence
+      - name: Compare original exact failed A/B and unchanged Main controls
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet Pillow==12.0.0
+          mkdir -p diagnosis
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageChops
+          import hashlib, json, zipfile
+          root=Path('previous-evidence')
+          name='default-en-dark-local-account.png'
+          candidates=[p for p in root.rglob(name) if 'width-320' in p.parts]
+          assert len(candidates)==1, candidates
+          main=candidates[0]
+          candidate=main.with_name('candidate-'+name)
+          control=main.with_name('main-control-'+name)
+          assert candidate.is_file() and control.is_file()
+          files=[main,control,candidate,*sorted(main.parent.glob('aa-*-'+name))]
+          report={'files':[],'comparisons':[],'metadata':[],'traces':[]}
+          def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+          for p in files:
+              with Image.open(p) as im:
+                  report['files'].append({'name':p.name,'sha256':digest(p),'dimensions':im.size,'mode':im.mode})
+          for p in [control,candidate,*files[3:]]:
+              with Image.open(main) as a0,Image.open(p) as b0:
+                  a,b=a0.convert('RGB'),b0.convert('RGB')
+                  result={'against':p.name,'bytes_equal':main.read_bytes()==p.read_bytes(),'dimensions_equal':a.size==b.size}
+                  if a.size==b.size:
+                      diff=ImageChops.difference(a,b)
+                      bbox=diff.getbbox()
+                      points=[(i%a.width,i//a.width,px) for i,px in enumerate(diff.getdata()) if px!=(0,0,0)]
+                      result.update({'pixel_count':len(points),'bbox':bbox,'first_pixels':[{'x':x,'y':y,'rgb_delta':d,'main':a.getpixel((x,y)),'other':b.getpixel((x,y))} for x,y,d in points[:50]]})
+                      if bbox and p==candidate:
+                          x1,y1,x2,y2=bbox
+                          region=(max(0,x1-24),max(0,y1-24),min(a.width,x2+24),min(a.height,y2+24))
+                          for label,im in [('main',a),('candidate',b),('diff',diff)]:
+                              im.crop(region).save('diagnosis/'+label+'-region.png')
+                  report['comparisons'].append(result)
+          for p in main.parent.glob('*'+name+'*.json'):
+              try: report['metadata'].append({'path':str(p),'data':json.loads(p.read_text())})
+              except Exception as exc: report['metadata'].append({'path':str(p),'error':str(exc)})
+          for p in root.rglob('trace.zip'):
+              if 'dark' not in str(p) or '320' not in str(p):continue
+              with zipfile.ZipFile(p) as z:
+                  report['traces'].append({'path':str(p),'entries':z.namelist()[:50]})
+          out=json.dumps(report,indent=2)
+          Path('diagnosis/report.json').write_text(out)
+          print(out)
+          assert main.read_bytes()==control.read_bytes(), 'A/A did not match original receipt'
+          assert main.read_bytes()!=candidate.read_bytes(), 'Original A/B failure missing'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mui-v60-original-ab-pixel-diagnosis
+          path: diagnosis/
           if-no-files-found: error
           retention-days: 7
