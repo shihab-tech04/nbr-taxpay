@@ -95,8 +95,21 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
     ]));
     expect(rows.some(row=>row.list_id===listId&&row.tin==='012345678901')).toBe(false);
     expect(rows.some(row=>row.list_id===listId&&row.tin==='012345678905')).toBe(false);
+    const denied=await invoke('delete-list',{id:listId});
+    expect(denied.status()).toBe(409);
+    expect((await denied.json()).code).toBe('BENEFICIARY_GROUP_NOT_EMPTY');
+    const preserved=await invoke('people',{offset:0,limit:500});
+    expect(preserved.status()).toBe(200);
+    expect((await preserved.json()).data).toEqual(rows);
   }finally{
     if(listId){
+      const readback=await invoke('people',{offset:0,limit:500});
+      expect(readback.status()).toBe(200);
+      const fixtures=(await readback.json()).data as Array<{id:string;list_id:string}>;
+      for(const row of fixtures.filter(row=>row.list_id===listId)){
+        const removedPerson=await invoke('remove',{id:row.id});
+        expect(removedPerson.status()).toBe(200);
+      }
       const removed=await invoke('delete-list',{id:listId});
       expect(removed.status()).toBe(200);
     }
@@ -177,11 +190,22 @@ test('F-058 US-010 tagged beneficiary survives a fresh browser context and stays
     expect(attempted.ok()).toBe(false);
     const after=(await people(fresh,capA)).filter(row=>row.list_id===listId);
     expect(after).toEqual(owned);
+    const denied=await invoke(first,capA,'delete-list',{id:listId});
+    expect(denied.status()).toBe(409);
+    expect((await denied.json()).code).toBe('BENEFICIARY_GROUP_NOT_EMPTY');
+    expect((await people(fresh,capA)).filter(row=>row.list_id===listId)).toEqual(owned);
   }finally{
-    if(listId){
-      const removed=await invoke(first,capA,'delete-list',{id:listId});
-      expect(removed.status()).toBe(200);
+    try{
+      if(listId){
+        for(const row of (await people(first,capA)).filter(row=>row.list_id===listId)){
+          const removedPerson=await invoke(first,capA,'remove',{id:row.id});
+          expect(removedPerson.status()).toBe(200);
+        }
+        const removed=await invoke(first,capA,'delete-list',{id:listId});
+        expect(removed.status()).toBe(200);
+      }
+    }finally{
+      await Promise.all([first.close(),fresh.close(),other.close()]);
     }
-    await Promise.all([first.close(),fresh.close(),other.close()]);
   }
 });
