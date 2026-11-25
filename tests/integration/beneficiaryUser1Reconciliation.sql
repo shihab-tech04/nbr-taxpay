@@ -35,7 +35,7 @@ begin
    (v_family,'012345678901','Synthetic family','friends_family','father',null),
    ('Professional Contacts','222222222222','Synthetic client','clients',null,null),
    (v_extra,'333333333333','Synthetic extra','others',null,'Neighbour'),
-   ('Friends','222222222222','Duplicate in distinct list','friends_family','friend',null)
+   ('Friends','222222222222','Duplicate in distinct list','friends_family','friends',null)
  ) x(listname,tin,name,tag,relationship,other_label)
  join taxpay_guest_private.lists l on l.session_id=v_session and l.name=x.listname;
  update taxpay_guest_private.demo_profiles set selected_list_id=(select id from taxpay_guest_private.lists
