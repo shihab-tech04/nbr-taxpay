@@ -47,6 +47,8 @@ function checked(raw:unknown):PreviewCorrectionRecord{
   if(row.officeSyncState!==undefined&&!['PENDING','ACKNOWLEDGED'].includes(String(row.officeSyncState)))throw Error('Invalid Office delivery state');
   if(row.reviewState!==undefined&&!['PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','REJECTED'].includes(String(row.reviewState)))throw Error('Invalid Office review state');
   if(row.reviewReason!==undefined&&row.reviewReason!==null&&typeof row.reviewReason!=='string')throw Error('Invalid Office review reason');
+  if(row.caseKind!==undefined&&!['CORRECTION_REVIEW','UNSOLICITED_PAYMENT_REPORT'].includes(String(row.caseKind)))throw Error('Invalid case kind');
+  if(row.caseKind==='UNSOLICITED_PAYMENT_REPORT'&&(typeof row.recipientEventId!=='string'||!row.recipientEventId.startsWith(String(row.paymentId)+':')))throw Error('Invalid report event identity');
   return row as unknown as PreviewCorrectionRecord;
 }
 async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|PreviewReportInput|{eventId:string}):Promise<unknown>{
@@ -130,7 +132,7 @@ export function usePreviewCorrectionRegister(profileId:string|null,enabled=true)
 
 export type CorrectionNotice={eventId:string;requestId:string;code:string;reference:string;createdAt:string;detail:string|null;isRead:boolean};
 export function correctionNoticeTitle(code:string,language:'en'|'bn'){
- const labels:Record<string,[string,string]>={SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_INITIATED:['Office initiated correction','অফিস সংশোধনের আবেদন শুরু করেছে'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
+ const labels:Record<string,[string,string]>={REPORT_RECORDED:['Payment report recorded','পেমেন্ট রিপোর্ট নথিভুক্ত'],REPORT_OFFICE_RECEIVED:['Office received payment report','অফিস পেমেন্ট রিপোর্ট পেয়েছে'],REPORT_MAKER_ACKNOWLEDGED:['Payment report acknowledged','পেমেন্ট রিপোর্ট গ্রহণ করা হয়েছে'],REPORT_REVIEWER_VERIFIED:['Payment report reviewed','পেমেন্ট রিপোর্ট পর্যালোচিত হয়েছে'],REPORT_APPROVER_CLOSED:['Payment report closed','পেমেন্ট রিপোর্ট নিষ্পত্তি হয়েছে'],REPORT_REJECTED:['Payment report rejected','পেমেন্ট রিপোর্ট প্রত্যাখ্যাত'],SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_INITIATED:['Office initiated correction','অফিস সংশোধনের আবেদন শুরু করেছে'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
  return (labels[code]??[code,code])[language==='bn'?1:0];
 }
 async function noticePage(offset=0,limit=100){

@@ -27,17 +27,27 @@ jobs:
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
           VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'
-  hosted-preview-read:
+  lifecycle-report-sql:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: supabase/setup-cli@v3
         with:
-          node-version-file: .node-version
-      - name: Existing fictional V2 recipient read capability only
-        run: node scripts/ci/verify-hosted-recipient-notice-feed.mjs
-        env:
-          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+          version: latest
+      - name: Isolate disposable database
+        run: |
+          python3 scripts/ci/isolate-local-supabase.py
+          supabase start -x studio,imgproxy,realtime,storage-api,logflare,vector,supavisor,postgres-meta
+      - name: Apply staged candidate and verify exact lifecycle and report intake
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f scripts/ci/recipient-lifecycle-candidate.sql
+          psql -X -v ON_ERROR_STOP=1 -f scripts/ci/recipient-report-intake-candidate.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
+      - name: Clean disposable database
+        if: always()
+        run: supabase stop --no-backup

@@ -315,7 +315,14 @@ Deno.serve(async(req)=>{
     if(!acceptPaymentRequestSize(raw.length,body))return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const p_capability_hash=await capabilityHash(req);
     const client=p_capability_hash?serviceClient(url):db;
-    const {data,error}=p_capability_hash
+    const initiated=body?.origin==='TAXPAY_UI'
+      ?(p_capability_hash
+        ?await client.rpc('taxpay_demo_story1_initiate',{p_capability_hash,p_input:body})
+        :await client.rpc('demo_story1_initiate',{p_input:body}))
+      :null;
+    // Stage and completion are separate SQL transactions. A lost connection
+    // leaves a durable initiated event; the same key resumes without replay.
+    const {data,error}=initiated?.error?initiated:p_capability_hash
       ?await client.rpc("taxpay_demo_story1_submit",{p_capability_hash,p_input:body})
       :await client.rpc("demo_story1_submit",{p_input:body});
     if(error){

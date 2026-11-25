@@ -15,7 +15,7 @@ export function PreviewCorrectionNotifications(){
  <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">{correctionNoticeTitle(n.code,language)}</p><span className="text-xs">{n.isRead?tr('Read','পঠিত'):tr('Unread','অপঠিত')}</span></div>
  <p className="text-sm break-all">{n.reference} · {new Date(n.createdAt).toLocaleString(language==='bn'?'bn-BD':'en-GB')}</p>
  {n.detail&&<p className="text-sm break-words">{n.detail}</p>}
- <div className="flex flex-wrap gap-2"><UiButton type="button" variant="outline" onClick={()=>navigate('corrections',{correctionRequestId:n.requestId,originalReference:n.reference})}>{tr('View correction','সংশোধন দেখুন')}</UiButton>
+ <div className="flex flex-wrap gap-2"><UiButton type="button" variant="outline" onClick={()=>navigate('corrections',{correctionRequestId:n.requestId,originalReference:n.reference})}>{n.code.startsWith('REPORT_')?tr('View report','রিপোর্ট দেখুন'):tr('View correction','সংশোধন দেখুন')}</UiButton>
  {!n.isRead&&<UiButton type="button" variant="outline" disabled={busy!==null} onClick={async()=>{setBusy(n.eventId);setError(false);try{await markCorrectionNoticeRead(n.eventId);notices.retry();}catch{setError(true);}finally{setBusy(null);}}}>{tr('Mark as read','পঠিত হিসেবে চিহ্নিত করুন')}</UiButton>}</div>
  </li>)}</ul>}
  {error&&<p role="alert">{tr('Could not mark notification as read. Please retry.','বিজ্ঞপ্তি পঠিত হিসেবে চিহ্নিত করা যায়নি। আবার চেষ্টা করুন।')}</p>}

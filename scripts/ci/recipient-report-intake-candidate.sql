@@ -48,7 +48,7 @@ revoke all on function taxpay_guest_private.story_correction_event(taxpay_guest_
 
 
 create function public.taxpay_demo_received_payment_report_save(p_capability_hash text,p_event_id text,p_request_key uuid,p_reason text)
-returns jsonb language plpgsql security definer set search_path='' as $
+returns jsonb language plpgsql security definer set search_path='' as $recipient_report$
 declare v_demo text; v_page jsonb; v_notice jsonb; v_offset integer:=0; v_reason text; v_row taxpay_guest_private.story_correction_requests%rowtype;
 begin
  if p_event_id is null or p_event_id !~ '^[0-9a-f-]{36}:(allocation|legacy):[1-9][0-9]{0,8}$' or p_request_key is null then raise exception 'INVALID_CORRECTION_REQUEST'; end if;
@@ -72,7 +72,22 @@ begin
  select * into v_row from taxpay_guest_private.story_correction_requests where demo_id=v_demo and recipient_event_id=p_event_id and case_kind='UNSOLICITED_PAYMENT_REPORT';
  if not found then raise exception 'CORRECTION_REQUEST_CONFLICT'; end if;
  return taxpay_guest_private.story_correction_json(v_row);
-end; $$;
+end; $recipient_report$;
 revoke all on function public.taxpay_demo_received_payment_report_save(text,text,uuid,text) from public,anon,authenticated;
 grant execute on function public.taxpay_demo_received_payment_report_save(text,text,uuid,text) to service_role;
+
+create or replace view taxpay_guest_private.story_correction_notice_events with (security_invoker=true) as
+ select r.demo_id,r.id as request_id,'submitted:'||r.id::text as event_id,
+ case when r.case_kind='UNSOLICITED_PAYMENT_REPORT' then 'REPORT_RECORDED' when r.office_initiation is null then 'SUBMITTED' else 'OFFICE_INITIATED' end::text as code,
+ r.original_reference,r.created_at as occurred_at,r.reason as detail
+ from taxpay_guest_private.story_correction_requests r
+ union all
+ select r.demo_id,r.id,'office:'||r.id::text,case when r.case_kind='UNSOLICITED_PAYMENT_REPORT' then 'REPORT_OFFICE_RECEIVED' else 'OFFICE_RECEIVED' end,
+ r.original_reference,r.office_ack_at,null::text
+ from taxpay_guest_private.story_correction_requests r where r.office_ack_at is not null
+ union all
+ select r.demo_id,r.id,'decision:'||d.message_id::text,case when r.case_kind='UNSOLICITED_PAYMENT_REPORT' then 'REPORT_'||d.resulting_state else d.resulting_state end,
+ r.original_reference,d.recorded_at,d.command->>'reason'
+ from taxpay_guest_private.story_correction_decisions d join taxpay_guest_private.story_correction_requests r on r.id=d.request_id;
+revoke all on taxpay_guest_private.story_correction_notice_events from public,anon,authenticated;
 commit;

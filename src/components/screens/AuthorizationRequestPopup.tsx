@@ -130,7 +130,7 @@ export function AuthorizationRequestPopup(){
   // A first-login flag alone must not open a modal: check verified unread
   // payment notices or pending authorization requests for this account.
   if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'&&
-    (visibleIncoming!==null||(visibleReceived!==null&&visibleReceived.paymentStatus!=='SIMULATED_SUCCESS'))){
+    (visibleIncoming!==null||(visibleReceived!==null&&visibleReceived.paymentStatus===undefined))){
     const continueAfterWelcome=()=>{
       try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
       catch{/* Preview welcome is cosmetic, not a security control. */}
