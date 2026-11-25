@@ -1,6 +1,7 @@
 name: Sohojkor dynamic branding V2 regression
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
     paths:
       - src/components/layout/SiteLogo.tsx
@@ -19,6 +20,7 @@ concurrency:
 
 jobs:
   no-branding-websocket-storm:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Dynamic CMS REST and 402 regression (isolated)
     runs-on: ubuntu-24.04
     timeout-minutes: 15

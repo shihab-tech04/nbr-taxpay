@@ -516,7 +516,8 @@ test('User1 historical Activity exposes all three correction entries and persist
     const row=(reference:string)=>page.locator('.taxpayer-transaction-table tbody tr:visible,.taxpayer-transaction-mobile-record:visible').filter({hasText:reference});
     const form=()=>page.getByRole('dialog',{name:/^(Apply for Correction|সংশোধনের আবেদন)$/});
     for(const reference of ['DEMO-PAY-23-01','DEMO-AIT-23-01','DEMO-ETDS-23-01']){
-      const action=row(reference).getByTestId('activity-apply-correction');
+      await row(reference).getByRole('button',{name:/Details for |বিস্তারিত: /}).click();
+      const action=page.getByTestId('historical-detail-apply-correction');
       await expect(action).toBeVisible();
       await action.click();
       const dialog=form();
@@ -542,8 +543,11 @@ test('User1 historical Activity exposes all three correction entries and persist
     const envelope=await response.json();
     expect(envelope.data).toMatchObject({paymentId:null,originalReference:'DEMO-PAY-23-01',currentAY:'2023-2024',proposedAY:'2024-2025',officeSyncState:'PENDING'});
     await expect(dialog.getByRole('status').filter({hasText:/Request recorded|আবেদন নথিভুক্ত/})).toBeVisible();
-    await dialog.getByRole('button',{name:/Close correction form|সংশোধনের ফরম বন্ধ করুন/}).click();
-    await page.goto('/?action=corrections&scenarioYear=2023-2024');
+    await expect(dialog.getByTestId('preview-correction-register')).toHaveCount(0);
+    await expect(dialog.locator('.taxpay-modal__footer').getByRole('button',{name:/Submit correction request|সংশোধনের আবেদন জমা দিন/})).toBeVisible();
+    await dialog.getByRole('button',{name:/View correction requests|সংশোধনের আবেদন দেখুন/}).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page).toHaveURL(/action=corrections/);
     const register=page.getByTestId('preview-correction-register');
     await expect(register).toContainText(reason);
     await page.reload();

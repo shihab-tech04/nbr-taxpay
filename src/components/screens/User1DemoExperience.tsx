@@ -210,9 +210,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [historyYear,setHistoryYear]=useState(()=>initialActivityYear(
     new URLSearchParams(window.location.search).get('scenarioYear'),
     year,authorizedPreviewScenario&&!localQaScenario,false));
+  const [correctionYear,setCorrectionYear]=useState<string>(()=>new URLSearchParams(window.location.search).get('scenarioYear')?.match(/^20\d{2}-20\d{2}$/)?.[0]??'all');
+  useEffect(()=>{if(route==='corrections'&&typeof routeParams?.correctionRequestId==='string')setCorrectionYear('all');},[route,routeParams?.correctionRequestId]);
   const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
     if(route==='history')setHistoryYear(nextYear);
+    if(route==='corrections')setCorrectionYear(nextYear);
     if(nextYear!=='all'){setYear(nextYear);setLedgerYear(nextYear);}
     setMonthFilter('all');
     const url=new URL(window.location.href);
@@ -456,7 +459,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       className={action+' taxpayer-transaction-row__action disabled:opacity-50'}>
       {tr('Pay Again','আবার পরিশোধ')}
     </button>}
-    {canApplyCorrection(item)&&<button type="button" data-testid="activity-apply-correction" className={action+' taxpayer-transaction-row__action'} onClick={()=>applyForCorrection(item)} aria-label={tr('Apply for Correction: ','সংশোধনের আবেদন: ')+item.title}>{tr('Apply for Correction','সংশোধনের আবেদন')}</button>}
   </div>;
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
     day:'numeric',month:'short',year:'numeric',timeZone:'UTC'
@@ -475,7 +477,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const a=document.createElement('a');a.href=url;a.download='Sohojkor_user1_SYNTHETIC_'+historyYear+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
-    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={route==='history'?historyYear:year} onChange={e=>changeYear(e.target.value)}>{(route==='history'?['all',...availableYears]:['taxpayer_home','dashboard'].includes(route)?availableYears:taxYears.map(x=>x.year)).map(value=>
+    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={route==='history'?historyYear:route==='corrections'?correctionYear:year} onChange={e=>changeYear(e.target.value)}>{(route==='history'?['all',...availableYears]:route==='corrections'?['all',...new Set([...availableYears,...taxYears.map(x=>x.year)])]:['taxpayer_home','dashboard'].includes(route)?availableYears:taxYears.map(x=>x.year)).map(value=>
       <option key={value} value={value}>{value==='all'?tr('All years','সব করবর্ষ'):value==='—'?tr('Unknown assessment year','অজ্ঞাত করবর্ষ'):value}</option>)}</select>
   </label>;
   const transactionList=<section className={panel+' taxpayer-transaction-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-transaction-heading">
@@ -1087,7 +1089,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:
     route==='corrections'&&authorizedPreviewScenario&&(!localQaScenario||routeParams?.applyForCorrection===true)
-      ?<CorrectionRequests historicalRecords={historicalCorrectionRecords} recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
+      ?<CorrectionRequests historyOnly={routeParams?.applyForCorrection!==true} assessmentYear={correctionYear}
+        historicalRecords={historicalCorrectionRecords} recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
         preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
       :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-payment-source-state={sqlLoadError?'error':sqlLoading?'loading':'ready'} data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
@@ -1140,11 +1143,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         title={tr('Apply for Correction','সংশোধনের আবেদন')}
         onClose={() => setCorrectionTarget(null)}
         closeIconLabel={tr('Close correction form','সংশোধনের ফরম বন্ধ করুন')}
-        hideFooter
+        footer={<></>}
         className="taxpayer-correction-modal"
       >
         <CorrectionRequests
           embedded
+          onViewRequests={()=>{setCorrectionTarget(null);setCorrectionYear('all');navigate('corrections');}}
           recordedReceipts={correctionTarget.sql?.receipts??[]}
           historicalRecords={correctionTarget.sql?[]:historicalCorrectionRecords}
           preferredReference={correctionTarget.sql?.receipts[0]?.challanNo??correctionTarget.ref}

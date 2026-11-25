@@ -1,6 +1,7 @@
 name: v9.5.3 Taxpayer F178 remarks SQL acceptance
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
     paths:
       - 'tests/integration/v953TaxpayerRemarksFixture.sql'
@@ -12,6 +13,7 @@ permissions:
   contents: read
 jobs:
   taxpayer-remarks:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: F178 Taxpayer PG17 long BN EN remarks and malformed JSON denial
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -102,7 +102,8 @@ export function usePreviewCorrectionRegister(profileId:string|null,enabled=true)
     };
     load();
     window.addEventListener('taxpay:preview-corrections-changed',load);
-    return()=>{active=false;window.removeEventListener('taxpay:preview-corrections-changed',load);};
+    window.addEventListener('focus',load);
+    return()=>{active=false;window.removeEventListener('taxpay:preview-corrections-changed',load);window.removeEventListener('focus',load);};
   },[key,revision]);
   const visible=state.key===key?state:{key,phase:'loading' as const,rows:[]};
   return {phase:visible.phase,rows:visible.rows,count:key&&visible.phase==='ready'?visible.rows.length:null,

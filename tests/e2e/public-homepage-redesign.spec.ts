@@ -386,3 +386,45 @@ test('Home 2 primary banner omits the eyebrow and trust labels in both languages
     await expect(hero.locator('img')).toHaveCount(1);
   }
 });
+
+
+test('Home 3 is reachable from the original footer and preserves existing payment entry', async ({ page }) => {
+  await page.goto('/?action=landing&lang=en');
+  await page.getByRole('link', {name:'Home 3',exact:true}).click();
+  await expect(page).toHaveURL(/action=home-3/);
+  const home=page.getByTestId('home3-root');
+  await expect(home).toBeVisible();
+  await expect(home.getByRole('heading',{name:/Pay and Manage\s*Your Taxes Digitally/i})).toBeVisible();
+  await expect(home.getByText('Find Your Payment Record',{exact:true}).filter({visible:true})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'Payment History'})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'Tax Certificates'})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'Corrections & Requests'})).toBeVisible();
+  await expect(home.locator('a[href="#"]')).toHaveCount(0);
+  await expect.poll(()=>home.locator('img').evaluateAll(imgs=>imgs.every(i=>i instanceof HTMLImageElement&&i.complete&&i.naturalWidth>0))).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await expect(home.getByRole('link',{name:/Pay\s+Gift Tax/})).toBeVisible();
+  await expect(home.getByRole('link',{name:/Pay\s+Travel Tax/})).toBeVisible();
+  if ((page.viewportSize()?.width ?? 1280)>=640) {
+    await home.getByRole('button',{name:'Search',exact:true}).click();
+    await expect(home.getByRole('alert')).toHaveText('Enter a payment reference.');
+  } else {
+    await home.getByRole('link',{name:/Find Your Payment Record/}).click();
+    await expect(page).toHaveURL(/action=verify/);
+    await page.goto('/?action=home-3&lang=en');
+  }
+  await home.getByRole('link',{name:'Pay Income Tax',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'}).getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+  await page.getByRole('dialog',{name:'Pay Tax'}).getByRole('button',{name:'Close payment services'}).click();
+  await expect(home).toBeVisible();
+  await home.getByRole('link',{name:'Original Home',exact:true}).click();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(page.locator('.public-record-discovery')).toBeVisible();
+});
+test('Home 3 direct URL and Bengali translation retain the separate Home 2 route', async ({page})=>{
+  await page.goto('/?action=home-3&lang=bn');
+  await expect(page.getByTestId('home3-root').getByRole('heading',{name:/ডিজিটাল পদ্ধতিতে কর/})).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await page.getByTestId('home3-root').getByRole('link',{name:'Home 2',exact:true}).click();
+  await expect(page.getByTestId('home2-root')).toBeVisible();
+  await expect(page.getByRole('link',{name:'Home 3',exact:true})).toBeVisible();
+});
