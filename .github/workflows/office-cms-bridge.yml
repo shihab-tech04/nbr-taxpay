@@ -1,7 +1,7 @@
 name: Office-authorized CMS bridge security and runtime
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'supabase/functions/office-cms-publish/**'
       - 'supabase/migrations/20261107071500_office_authenticated_taxpay_banner_bridge.sql'

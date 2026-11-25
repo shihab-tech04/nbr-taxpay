@@ -10,20 +10,38 @@ isolate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(isolate)
 
 class IsolationTests(unittest.TestCase):
-    def test_real_config_only_two_fields_change(self):
+    def test_real_config_only_identity_and_ports_change(self):
         original = Path("supabase/config.toml").read_text()
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "config.toml"
             path.write_text(original)
-            port = isolate.prepare(path, "123456", "2")
+            ports = isolate.prepare(path, "123456", "2")
             expected = tomllib.loads(original)
             expected["project_id"] = "taxpay-ci-123456-2"
-            expected["local_smtp"]["port"] = port
+            for section, key, name in [("api", "port", "API"), ("db", "port", "DB"),
+                ("db", "shadow_port", "SHADOW"), ("studio", "port", "STUDIO"),
+                ("local_smtp", "port", "SMTP"), ("db.pooler", "port", "POOLER"),
+                ("edge_runtime", "inspector_port", "INSPECTOR"), ("analytics", "port", "ANALYTICS")]:
+                target = expected
+                for part in section.split("."):
+                    target = target[part]
+                target[key] = ports[name]
             self.assertEqual(tomllib.loads(path.read_text()), expected)
-            self.assertNotIn(port, {54324,54321,54322,55433})
-            self.assertGreaterEqual(port,1024)
+            self.assertEqual(len(set(ports.values())), 8)
+            self.assertTrue(set(ports.values()).isdisjoint({4173,4174,8083,54320,54321,54322,54323,54324,54325,54326,54327,54329,55433}))
             with socket.socket() as sock:
-                sock.bind(("0.0.0.0",port))
+                sock.bind(("0.0.0.0",ports["DB"]))
+
+    def test_does_not_reuse_an_occupied_port(self):
+        original = Path("supabase/config.toml").read_text()
+        with tempfile.TemporaryDirectory() as root, socket.socket() as listener:
+            listener.bind(("0.0.0.0", 0))
+            occupied = listener.getsockname()[1]
+            path = Path(root) / "config.toml"
+            path.write_text(original)
+            ports = isolate.prepare(path, "123456", "3")
+            self.assertNotIn(occupied, ports.values())
+            self.assertEqual(listener.getsockname()[1], occupied)
 
     def test_bad_identity_is_rejected_without_mutation(self):
         original = Path("supabase/config.toml").read_text()

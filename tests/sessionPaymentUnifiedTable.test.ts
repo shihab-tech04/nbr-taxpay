@@ -27,11 +27,30 @@ test('preview correction request history keeps existing form and records but use
  assert.match(src,/mobileTestId="preview-correction-cards"/);
  assert.match(src,/value=\{caseSearch\}/);
  assert.match(src,/renderMobileCard=/);
- assert.match(src,/visibleCorrections = corrections\.filter/);
+ assert.match(src,/localCorrections = corrections\.filter\(c=>visibleReceipts\.some/);
+ assert.match(src,/visibleCorrections:[^\n]+=serverMode/);
+ assert.match(src,/\?\(historyOwner===ownerKey\?serverRecords:\[\]\)\.map/);
+ assert.match(src,/:localCorrections;/);
+ assert.match(src,/listPreviewCorrections\(\)/);
+ assert.match(src,/await submitPreviewCorrection\(/);
+ assert.match(src,/setServerRecords\(rows=>\[saved,/);
  assert.match(src,/addCorrectionRequest\(/);
  assert.match(src,/c\.approverRemarks/);
  assert.match(src,/c\.currentCircle/);
  assert.match(src,/c\.proposedCircle/);
  assert.match(src,/c\.workflowStage/);
  assert.doesNotMatch(src,/\{visibleCorrections\.map\(/);
+});
+
+
+test('contextual correction form uses shared footer, while the account register reads authoritative history',()=>{
+ const src=readFileSync('src/components/screens/CorrectionRequests.tsx','utf8');
+ const workspace=readFileSync('src/components/screens/User1DemoExperience.tsx','utf8');
+ assert.match(src,/createPortal\(saveAction,footerTarget\)/);
+ assert.match(src,/<UiButton type="submit" form=\{formId\} variant="primary"/);
+ assert.match(src,/!embedded&&<section className="taxpayer-records-panel/);
+ assert.match(src,/taxpay:preview-corrections-changed/);
+ assert.doesNotMatch(src,/text-amber-300/);
+ assert.match(workspace,/footer=\{<><\/>\}\s+className="taxpayer-correction-modal"/);
+ assert.match(workspace,/<CorrectionRequests historyOnly=/);
 });

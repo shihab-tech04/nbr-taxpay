@@ -67,6 +67,11 @@ async function mockPrivateAccount(page:Page,profile:'user1'|'user2'|null,display
       expect(ownerFromToken()).toBe(owner.id);
       return json(currentOwner);
     }
+    if(url.pathname==='/rest/v1/rpc/taxpay_claim_office_initiated_corrections'&&request.method()==='POST'){
+      expect(ownerFromToken()).toBe(owner.id);
+      expect(request.postDataJSON()).toEqual({p_limit:20});
+      return json(0);
+    }
     if(url.pathname==='/rest/v1/rpc/sim_my_taxpayer_profile'&&request.method()==='POST'){
       expect(ownerFromToken()).toBe(owner.id);
       return profile?json(profile):json({code:'42501',message:'No approved synthetic profile binding'},403);

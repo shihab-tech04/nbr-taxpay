@@ -21,7 +21,7 @@ import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {UiButton,UiInput} from '../ui/Controls';
 import {SearchableSelect} from '../ui/SearchableSelect';
 import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
-import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,transferBeneficiaryGroup,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {BeneficiaryProfile} from './BeneficiaryProfile';
@@ -62,6 +62,14 @@ export function Beneficiaries(){
   const displayName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
   const [people,setPeople]=useState<Beneficiary[]>([]);
+  const groupLimitReached=lists.length>=5;
+  const groupLimitMessage=tr('Maximum five saved groups. Choose an existing group.','সর্বোচ্চ পাঁচটি সংরক্ষিত গ্রুপ। বিদ্যমান গ্রুপ বেছে নিন।');
+  const groupErrorMessage=(e:unknown)=>{
+    const message=e instanceof Error?e.message:String(e);
+    if(message.includes('BENEFICIARY_GROUP_LIMIT'))return groupLimitMessage;
+    if(message.includes('BENEFICIARY_GROUP_NOT_EMPTY'))return tr('Move the saved beneficiaries to another list before deleting this list.','এই তালিকা মুছে ফেলার আগে সংরক্ষিত উপকারভোগীদের অন্য তালিকায় স্থানান্তর করুন।');
+    return message;
+  };
   const [activeList,setActiveList]=useState('all');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
@@ -122,6 +130,8 @@ export function Beneficiaries(){
   const [editingList,setEditingList]=useState<BeneficiaryList|null>(null);
   const [editingListName,setEditingListName]=useState('');
   const [confirmListDelete,setConfirmListDelete]=useState(false);
+  const [transferTarget,setTransferTarget]=useState('');
+  const listEditOwnerRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const listMenuRef=useRef<HTMLDivElement>(null);
   const listTriggerRef=useRef<HTMLButtonElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
@@ -338,11 +348,13 @@ export function Beneficiaries(){
     listTriggerRef.current?.focus();
   }
   function openListEditor(list:BeneficiaryList){
-    setListMenuOpen(false);setEditingList(list);setEditingListName(list.name);setConfirmListDelete(false);setModalError('');
+    listEditOwnerRef.current={...currentOwnerContextRef.current};
+    setTransferTarget('');setListMenuOpen(false);setEditingList(list);setEditingListName(list.name);setConfirmListDelete(false);setModalError('');
   }
   async function saveListEdit(event:React.FormEvent){
     event.preventDefault();
     if(!editingList)return;
+    if(!beneficiaryOwnerContextUnchanged(listEditOwnerRef.current,currentOwnerContextRef.current)){setModalError(accountChangedMessage());return;}
     const normalized=editingListName.trim();
     if(!normalized||normalized.length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
     if(normalized===editingList.name){setEditingList(null);return;}
@@ -359,13 +371,22 @@ export function Beneficiaries(){
   }
   async function removeList(){
     if(!editingList)return;
+    const context=listEditOwnerRef.current;
+    if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)){setModalError(accountChangedMessage());return;}
     const toDelete=editingList.id;
+    const sourcePeople=people.filter(person=>person.list_id===toDelete);
+    const target=sourcePeople.length?transferTarget:'';
+    if(sourcePeople.length&&(!target||target===toDelete||!lists.some(list=>list.id===target))){setModalError(groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')));return;}
     setBusy(true);setModalError('');
     try{
-      await deleteBeneficiaryList(owner,toDelete);
-      await reload();setEditingList(null);setConfirmListDelete(false);setSearch('');
+      if(target)await transferBeneficiaryGroup(context.ownerUid,toDelete,target);
+      else await deleteBeneficiaryList(context.ownerUid,toDelete);
+      if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current))throw new Error(accountChangedMessage());
+      const saved=await reload(target||'all');
+      if(saved.lists.some(list=>list.id===toDelete)||sourcePeople.some(person=>!saved.people.some(row=>row.id===person.id&&row.list_id===target)))throw new Error(tr('Could not verify group transfer. Refresh before retrying.','গ্রুপ স্থানান্তর যাচাই করা যায়নি। আবার চেষ্টা করার আগে রিফ্রেশ করুন।'));
+      setEditingList(null);setConfirmListDelete(false);setTransferTarget('');setSearch('');
       setNotice({en:'Beneficiary list deleted.',bn:'উপকারভোগীর তালিকা মুছে ফেলা হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
   function open(next:Flow,prefill?:{tin:string;name:string},saveOwner:string|null=null){
@@ -400,6 +421,7 @@ export function Beneficiaries(){
   async function saveList(event:React.FormEvent){
     event.preventDefault();
     if(!maySaveFor(createListOwnerRef.current)){setModalError(accountChangedMessage());return;}
+    if(groupLimitReached){setModalError(groupLimitMessage);return;}
     if(!listName.trim()||listName.trim().length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
     setBusy(true);setModalError('');
     try{
@@ -409,7 +431,7 @@ export function Beneficiaries(){
       if(!saved.lists.some(value=>value.id===list.id))throw new Error(tr('List was not saved. Please retry.','তালিকাটি সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       setCreateListOpen(false);setListName('');
       setNotice({en:'List created.',bn:'তালিকা তৈরি হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -420,6 +442,7 @@ export function Beneficiaries(){
       if(!list)throw new Error(tr('Choose a valid list.','সঠিক তালিকা নির্বাচন করুন।'));
       return list.id;
     }
+    if(groupLimitReached)throw new Error(groupLimitMessage);
     if(!listName.trim())throw new Error(tr('Enter a list name.','তালিকার নাম লিখুন।'));
     const list=await createBeneficiaryList(owner,listName);
     setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
@@ -455,7 +478,7 @@ export function Beneficiaries(){
         throw new Error(tr('Saved beneficiary tag could not be verified. Refresh the list and try again.','সংরক্ষিত উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);setBeneficiarySaveOwner(null);
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -466,7 +489,7 @@ export function Beneficiaries(){
       const imported=await parseBeneficiaryWorkbook(file);
       if(!imported.length)throw new Error(tr('The Excel file contains no beneficiaries.','এক্সেল ফাইলে কোনো উপকারভোগী নেই।'));
       setRows(imported.map(row=>({...row,selected:true})));setFilename(file.name);
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -489,7 +512,7 @@ export function Beneficiaries(){
         throw new Error(tr('Some beneficiary tags could not be verified. Refresh the list and retry.','কিছু উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);
       setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -568,7 +591,7 @@ export function Beneficiaries(){
       if(!editOwnerIsCurrent()){
         closePersonEditor();
         setNotice({en:'Your account changed. Cancel and reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি বাতিল করে আবার খুলুন।'});
-      }else setModalError(e instanceof Error?e.message:String(e));
+      }else setModalError(groupErrorMessage(e));
     }
     finally{setBusy(false);}
   }
@@ -631,7 +654,7 @@ export function Beneficiaries(){
       setNotice({en:`${stillSelected.length} beneficiaries removed.`,bn:`${stillSelected.length} জন উপকারভোগী সরানো হয়েছে।`});
     }catch(e){
       if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
-      setModalError(e instanceof Error?e.message:String(e));
+      setModalError(groupErrorMessage(e));
       await reload().catch(()=>{});
       if(!ownerIsCurrent())closeStaleBulkRemove();
     }finally{setBusy(false);}
@@ -723,7 +746,7 @@ export function Beneficiaries(){
       title={tr('Beneficiaries','উপকারভোগী')}
       description={tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}
       actions={<div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
-        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading}
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading||groupLimitReached}
           onClick={()=>{createListOwnerRef.current=activeFormOwner();setCreateListOpen(true);setModalError('');setListName('');}}>
           <Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}
         </UiButton>
@@ -732,6 +755,7 @@ export function Beneficiaries(){
           <Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}
         </UiButton>
       </div>}/>
+    {!loading&&!checkingIdentity&&!error&&<p className="text-sm text-taxpay-text" role="status" data-testid="beneficiary-group-capacity">{bn?`${lists.length.toLocaleString("bn-BD")}/৫ গ্রুপ`:`${lists.length}/5 groups`}{groupLimitReached?` — ${groupLimitMessage}`:""}</p>}
 
     {preferenceError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{preferenceError[bn?'bn':'en']}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
@@ -783,7 +807,7 @@ export function Beneficiaries(){
                       <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
                     </button>
                     <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Edit ${list.name}`,`${list.name} সম্পাদনা`)} title={tr('Edit list','তালিকা সম্পাদনা')} onClick={()=>openListEditor(list)}><Pencil size={17} aria-hidden="true"/></button>
-                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Delete ${list.name}`,`${list.name} মুছুন`)} title={tr("Delete list","তালিকা মুছুন")} onClick={()=>{setEditingList(list);setConfirmListDelete(true);setListMenuOpen(false);setModalError("");}}><Trash2 size={17} aria-hidden="true"/></button>
+                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Delete ${list.name}`,`${list.name} মুছুন`)} title={tr("Delete list","তালিকা মুছুন")} onClick={()=>{openListEditor(list);setConfirmListDelete(true);}}><Trash2 size={17} aria-hidden="true"/></button>
                   </div>)}
                 </div>}
               </div>
@@ -939,7 +963,7 @@ export function Beneficiaries(){
 
     {createListOpen&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Create beneficiary list','উপকারভোগীর তালিকা তৈরি')} ariaLabel={tr('Create list','তালিকা তৈরি')}
       onClose={()=>{if(!busy){setCreateListOpen(false);setModalError('');}}} initialFocusSelector="#beneficiary-create-list-name"
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setCreateListOpen(false)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-create-list-form" variant="primary" disabled={busy}>{busy?tr('Creating…','তৈরি হচ্ছে…'):tr('Create list','তালিকা তৈরি')}</UiButton></div>}>
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setCreateListOpen(false)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-create-list-form" variant="primary" disabled={busy||groupLimitReached}>{busy?tr('Creating…','তৈরি হচ্ছে…'):tr('Create list','তালিকা তৈরি')}</UiButton></div>}>
       <form id="beneficiary-create-list-form" className="space-y-3 py-2" onSubmit={event=>void saveList(event)}>
         <div><label htmlFor="beneficiary-create-list-name" className="mb-1 block text-sm font-semibold">{tr('List name','তালিকার নাম')} *</label><UiInput id="beneficiary-create-list-name" maxLength={80} required value={listName} onChange={event=>setListName(event.target.value)} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')}/></div>
         {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
@@ -949,7 +973,7 @@ export function Beneficiaries(){
     {editingList&&!confirmListDelete&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary list','উপকারভোগীর তালিকা সম্পাদনা')} ariaLabel={tr('Edit beneficiary list','উপকারভোগীর তালিকা সম্পাদনা')}
       initialFocusSelector="#beneficiary-edit-list-name" onClose={()=>{if(!busy){setEditingList(null);setModalError('');}}}
       footer={<div className="beneficiary-list-edit__footer">
-        <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setModalError('');setConfirmListDelete(true);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete list','তালিকা মুছুন')}</UiButton>
+        <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setTransferTarget('');setModalError('');setConfirmListDelete(true);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete list','তালিকা মুছুন')}</UiButton>
         <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setEditingList(null)}>{tr('Cancel','বাতিল')}</UiButton>
           <UiButton type="submit" form="beneficiary-edit-list-form" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>
       </div>}>
@@ -962,8 +986,12 @@ export function Beneficiaries(){
     {editingList&&confirmListDelete&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Delete beneficiary list?','উপকারভোগীর তালিকা মুছবেন?')} ariaLabel={tr('Confirm list deletion','তালিকা মুছে ফেলা নিশ্চিত করুন')}
       onClose={()=>{if(!busy){setConfirmListDelete(false);setModalError('');}}}
       footer={<div className="flex w-full flex-wrap justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setConfirmListDelete(false)}>{tr('Cancel','বাতিল')}</UiButton>
-        <UiButton type="button" variant="primary" disabled={busy} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
-      <p className="text-sm text-slate-700">{tr(`Delete “${editingList.name}” and all its ${people.filter(person=>person.list_id===editingList.id).length} saved beneficiaries? This cannot be undone. Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা এবং এর ${people.filter(person=>person.list_id===editingList.id).length} জন সংরক্ষিত উপকারভোগী মুছে ফেলবেন? এটি ফিরিয়ে আনা যাবে না। বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
+        <UiButton type="button" variant="primary" disabled={busy||(people.some(person=>person.list_id===editingList.id)&&!lists.some(list=>list.id===transferTarget&&list.id!==editingList.id))} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
+      <p className="text-sm text-slate-700">{people.some(person=>person.list_id===editingList.id)?groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')):tr(`Delete “${editingList.name}”? This cannot be undone. Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা মুছে ফেলবেন? এটি ফিরিয়ে আনা যাবে না। বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
+      {people.some(person=>person.list_id===editingList.id)&&<div className="mt-3">
+        <label htmlFor="beneficiary-transfer-destination" className="mb-1 block text-sm font-semibold">{tr('Transfer to list','যে তালিকায় স্থানান্তর করবেন')}</label>
+        <SearchableSelect id="beneficiary-transfer-destination" value={transferTarget} onChange={value=>{setTransferTarget(value);setModalError('');}} ariaLabel={tr('Transfer to list','যে তালিকায় স্থানান্তর করবেন')} searchPlaceholder={tr('Search lists','তালিকা খুঁজুন')} options={lists.filter(list=>list.id!==editingList.id).map(list=>({value:list.id,label:list.name}))}/>
+      </div>}
       {modalError&&<p role="alert" className="mt-2 text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
 
@@ -991,7 +1019,7 @@ export function Beneficiaries(){
         <div><label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('Add to list','তালিকায় যোগ করুন')} *</label>
           <SearchableSelect id="beneficiary-target-list" value={targetList} onChange={setTargetList}
             ariaLabel={tr('Add to list','তালিকায় যোগ করুন')} searchPlaceholder={tr('Search lists','তালিকা খুঁজুন')}
-            options={[{value:'new',label:tr('Create new list','নতুন তালিকা তৈরি')},
+            options={[...(groupLimitReached?[]:[{value:'new',label:tr('Create new list','নতুন তালিকা তৈরি')}]),
               ...lists.map(list=>({value:list.id,label:list.name}))]}/> 
           {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
         </div>

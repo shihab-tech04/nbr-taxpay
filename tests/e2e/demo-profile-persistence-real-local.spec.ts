@@ -8,7 +8,7 @@ import {sampleTinForUserNumber} from '../../src/data/sampleTinSuggestions';
 
 /** Real browser + local Edge Function/Postgres only. Never use hosted credentials. */
 test('demo User ID retains nonempty lists, tagged beneficiary and language across sign-out, refresh and browsers',async({browser},info)=>{
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
   const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
   if(!raw||!key)throw new Error('Disposable local Supabase credentials required.');
@@ -187,6 +187,29 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await first.goto('/?action=history');
     await expect(first.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);
 
+    // Exercise the actual correction button, API and SQL-backed register
+    // against the disposable saved payment, including no-op rejection.
+    const correctionReference=profileReads[3].body.data.data.details.receiptSnapshot.challanNo as string;
+    const correctionReason='Incorrect assessment year '+randomUUID().slice(0,8);
+    await first.goto('/?action=corrections');
+    const picker=first.locator('#correction-challan');
+    await expect(picker.locator('option').filter({hasText:correctionReference})).toHaveCount(1);
+    await picker.selectOption(correctionReference);
+    await first.locator('#correction-reason').fill(correctionReason);
+    const submitCorrection=first.getByRole('button',{name:'Submit correction request'});
+    await submitCorrection.click();
+    await expect(first.getByRole('alert').filter({hasText:'Choose at least one different year'})).toBeVisible();
+    await first.locator('#correction-proposed-year').selectOption('2025-2026');
+    const acknowledgement=first.waitForResponse(response=>response.url().endsWith('/demo-story1-taxpay/corrections')&&response.request().method()==='POST');
+    await submitCorrection.click();
+    const correctionResponse=await acknowledgement;
+    expect(correctionResponse.status()).toBe(200);
+    const correctionId=(await correctionResponse.json()).data.id as string;
+    await expect(first.getByText('Request recorded:',{exact:false})).toContainText(correctionId);
+    await expect(first.getByTestId('preview-correction-register')).toContainText(correctionId);
+    await first.reload();
+    await expect(first.getByTestId('preview-correction-register')).toContainText(correctionId);
+
     await setLanguage(first,'bn');
     expect(firstProfile?.selectedListId).toBeTruthy();
 
@@ -214,6 +237,14 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(second.getByTestId('signed-in-payment-activity')).toContainText('123.45');
     await second.reload();
     await expect(second.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);
+    await second.goto('/?action=corrections');
+    await expect(second.getByTestId('preview-correction-register')).toContainText(correctionId);
+    await expect(second.getByRole('button',{name:'সংশোধনের আবেদন জমা দিন'})).toBeVisible();
+    await second.goto('/?action=taxpayer_home');
+    const correctionMetric=second.locator('.taxpay-summary-metric--requests');
+    await expect(correctionMetric.locator('strong')).not.toHaveText('—');
+    await correctionMetric.click();
+    await expect(second.getByTestId('dashboard-recorded-corrections')).toContainText(correctionReason);
 
     const otherContext=await makeContext();
     const other=await otherContext.newPage();
@@ -247,6 +278,9 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(otherBeneficiaries).not.toContainText(listName);
     await other.goto('/?action=history');
     await expect(other.getByTestId('signed-in-payment-activity')).not.toContainText(paymentReference);
+    await other.goto('/?action=corrections');
+    await expect(other.getByTestId('preview-correction-register')).not.toContainText(correctionId);
+    await expect(other.getByText('No correction requests saved yet.')).toBeVisible();
 
     // The actual read-only SQL RPC also confirms the new owner-scoped rows and
     // rejects the other profile's capability; no HTTP route is intercepted.
@@ -343,10 +377,15 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
       });
       return {status:response.status,body:await response.json()};
     },{url:target.origin,key,capability,action,fields});
+  // Each viewport owns only these newly created disposable fixture groups.
+  // Remove them after the cross-browser checks so the next viewport does not
+  // consume six groups on the same User1 account. Never delete preexisting lists.
+  let fixtureOwner: {page:Page;capability:string}|undefined;
+  const lists:{name:string;id:string}[]=[];
   try{
     const first=await (await newContext()).newPage();
     const user1=await signIn(first,'user1');
-    const lists:{name:string;id:string}[]=[];
+    fixtureOwner={page:first,capability:user1.capability};
     for(const category of categories){
       const created=await apiRequest(first,user1.capability,'create-list',{name:category.name});
       expect(created.status,JSON.stringify(created.body)).toBe(200);
@@ -453,6 +492,122 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     // No settled financial record is created: WS1/WS3 own associated
     // payment/allocation fixtures and payer/recipient readback.
   }finally{
-    await Promise.all(contexts.map(context=>context.close()));
+    try{
+      if(fixtureOwner&&lists.length){
+        const {page,capability}=fixtureOwner;
+        const read=await apiRequest(page,capability,'snapshot');
+        expect(read.status).toBe(200);
+        expect(read.body.success).toBe(true);
+        const ownedIds=new Set(lists.map(list=>list.id));
+        const owned=read.body.data.people as Array<{id:string;list_id:string}>;
+        for(const person of owned.filter(row=>ownedIds.has(row.list_id))){
+          const removed=await apiRequest(page,capability,'remove',{id:person.id});
+          expect(removed.status,JSON.stringify(removed.body)).toBe(200);
+        }
+        for(const list of lists){
+          const removed=await apiRequest(page,capability,'delete-list',{id:list.id});
+          expect(removed.status,JSON.stringify(removed.body)).toBe(200);
+        }
+        const after=await apiRequest(page,capability,'snapshot');
+        expect(after.status).toBe(200);
+        expect(after.body.success).toBe(true);
+        expect(after.body.data.lists.some((row:{id:string})=>ownedIds.has(row.id))).toBe(false);
+        expect(after.body.data.people.some((row:{list_id:string})=>ownedIds.has(row.list_id))).toBe(false);
+        const retained=read.body.data.lists.filter((row:{id:string})=>!ownedIds.has(row.id));
+        expect(after.body.data.lists).toEqual(expect.arrayContaining(retained));
+      }
+    }finally{
+      await Promise.all(contexts.map(context=>context.close()));
+    }
   }
+});
+
+
+// Regression for the actual User1 2023–2024 Activity screen. Historical
+// references must open the correction form without pretending to be receipts.
+test('User1 historical Activity exposes all three correction entries and persists reference-only request',async({browser},info)=>{
+  test.setTimeout(90000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  if(!raw||!['localhost','127.0.0.1','[::1]'].includes(new URL(raw).hostname))throw Error('Disposable local Supabase required');
+  const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
+  const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport,storageState:demoLoginOtpCompletedState});
+  try{
+    const page=await context.newPage();
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+    await page.getByLabel('Password',{exact:true}).fill('user1');
+    await page.getByRole('button',{name:'Sign In',exact:true}).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    await page.goto('/?action=history&scenarioYear=2023-2024');
+    await expect(page.getByTestId('user1-synthetic-workspace')).not.toContainText('DEMO-PAY-23-01');
+    await page.goto('/?action=history&scenarioYear=2023-2024&qaScenario=1');
+    const workspace=page.getByTestId('user1-synthetic-workspace');
+    await expect(workspace).toBeVisible();
+    await expect(workspace.getByRole('combobox',{name:/Assessment year|করবর্ষ/})).toHaveValue('2023-2024');
+    const row=(reference:string)=>page.locator('.taxpayer-transaction-table tbody tr:visible,.taxpayer-transaction-mobile-record:visible').filter({hasText:reference});
+    const form=()=>page.getByRole('dialog',{name:/^(Apply for Correction|সংশোধনের আবেদন)$/});
+    for(const reference of ['DEMO-PAY-23-01','DEMO-AIT-23-01','DEMO-ETDS-23-01']){
+      await row(reference).getByRole('button',{name:/Details for |বিস্তারিত: /}).click();
+      const action=page.getByTestId('historical-detail-apply-correction');
+      await expect(action).toBeVisible();
+      await action.click();
+      const dialog=form();
+      await expect(dialog).toBeVisible();
+      await expect(dialog.locator('#correction-challan')).toHaveValue(reference);
+      await expect(dialog.locator('#correction-current-year')).toHaveValue('2023-2024');
+      await expect(dialog.locator('#correction-current-circle')).toHaveValue('');
+      await expect(dialog.locator('#correction-current-head')).toHaveValue('');
+      await dialog.getByRole('button',{name:/Close correction form|সংশোধনের ফরম বন্ধ করুন/}).click();
+      await expect(dialog).toHaveCount(0);
+    }
+    await row('DEMO-PAY-23-01').getByRole('button',{name:/Details for |বিস্তারিত: /}).click();
+    await page.getByTestId('historical-detail-apply-correction').click();
+    const dialog=form();
+    await expect(dialog).toBeVisible();
+    const reason='Historical year review '+randomUUID();
+    await dialog.locator('#correction-proposed-year').selectOption('2024-2025');
+    await dialog.locator('#correction-reason').fill(reason);
+    const responsePromise=page.waitForResponse(r=>r.url().endsWith('/demo-story1-taxpay/corrections')&&r.request().method()==='POST');
+    await dialog.getByRole('button',{name:/Submit correction request|সংশোধনের আবেদন জমা দিন/}).click();
+    const response=await responsePromise;
+    expect(response.status()).toBe(200);
+    const envelope=await response.json();
+    expect(envelope.data).toMatchObject({paymentId:null,originalReference:'DEMO-PAY-23-01',currentAY:'2023-2024',proposedAY:'2024-2025',officeSyncState:'PENDING'});
+    await expect(dialog.getByRole('status').filter({hasText:/Request recorded|আবেদন নথিভুক্ত/})).toBeVisible();
+    await expect(dialog.getByTestId('preview-correction-register')).toHaveCount(0);
+    await expect(dialog.locator('.taxpay-modal__footer').getByRole('button',{name:/Submit correction request|সংশোধনের আবেদন জমা দিন/})).toBeVisible();
+    await dialog.getByRole('button',{name:/View correction requests|সংশোধনের আবেদন দেখুন/}).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page).toHaveURL(/action=corrections/);
+    const register=page.getByTestId('preview-correction-register');
+    await expect(register).toContainText(reason);
+    await page.reload();
+    await expect(register).toContainText(reason);
+    await expect(register).toContainText('DEMO-PAY-23-01');
+    // The real persisted historical request must appear on a different-year
+    // dashboard and lead back to the all-year SQL register, not sample cards.
+    await page.goto('/?action=taxpayer_home&scenarioYear=2026-2027');
+    const overview=page.getByTestId('taxpayer-overview-bento');
+    await overview.locator('.taxpay-summary-metric--requests').click();
+    await expect(overview.getByTestId('dashboard-recorded-corrections')).toContainText(reason);
+    await overview.getByRole('button',{name:/^View requests$/}).click();
+    await expect(page.getByRole('combobox',{name:/Assessment year|করবর্ষ/})).toHaveValue('all');
+    await expect(register).toContainText(reason);
+    await page.reload();
+    await expect(register).toContainText(reason);
+    await page.goto('/?action=account_notifications&scenarioYear=2023-2024');
+    const notificationRegister=page.getByTestId('correction-notifications');
+    const notice=notificationRegister.locator('li').filter({hasText:reason});
+    await expect(notice).toHaveCount(1);
+    const read=notice.getByRole('button',{name:/Mark as read|পঠিত হিসেবে চিহ্নিত করুন/});
+    await expect(read).toBeVisible();
+    await read.click();
+    await expect(read).toHaveCount(0);
+    await page.reload();
+    await expect(notice).toBeVisible();
+    await expect(read).toHaveCount(0);
+    await notice.getByRole('button',{name:/View correction|সংশোধন দেখুন/}).click();
+    await expect(page.getByTestId('preview-correction-register')).toContainText(envelope.data.id);
+    await expect(page.getByTestId('preview-correction-register').locator('input[type=search]')).toHaveValue(envelope.data.id);
+  }finally{await context.close();}
 });

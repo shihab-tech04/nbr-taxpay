@@ -114,6 +114,10 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
       success:true,simulationOnly:true,data:rows
     })});
   });
+  await page.route('**/functions/v1/demo-story1-taxpay/corrections**',route=>{
+    if(route.request().method()!=='GET')throw Error('The geometry check must not submit a correction');
+    return route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"simulationOnly":true,"data":[]}'});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?*',route=>
     route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[],"simulationOnly":true}'}));
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
@@ -286,6 +290,21 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(receiptFooter.getByRole('button')).toHaveCount(3);
   await expect(receiptFooter.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(receiptFooter.getByRole('button',{name:'Apply for Correction'})).toBeEnabled();
+  // Contextual correction is a form-only shared modal; the register belongs
+  // to the correction page. No save or payment write in this geometry check.
+  await receiptFooter.getByRole('button',{name:'Apply for Correction'}).click();
+  const correction=page.getByRole('dialog',{name:'Apply for Correction'});
+  await expect(correction.getByTestId('correction-request-form')).toBeVisible();
+  await expect(correction.getByTestId('preview-correction-register')).toHaveCount(0);
+  const save=correction.locator('.taxpay-modal__footer').getByRole('button',{name:'Submit correction request'});
+  await expect(save).toBeVisible();
+  await expect(save).toHaveCSS('color','rgb(255, 255, 255)');
+  expect(await save.evaluate((el:HTMLButtonElement)=>el.form?.getAttribute('data-testid'))).toBe('correction-request-form');
+  await expect(correction.locator('.taxpay-modal__body').getByRole('button',{name:'Submit correction request'})).toHaveCount(0);
+  await correction.getByRole('button',{name:'Close correction form'}).click();
+  await expect(correction).toHaveCount(0);
+  await paid.getByRole('button',{name:/^Details for /}).click();
+  await expect(detail).toBeVisible();
   await expect(detail.getByTestId('recorded-pay-again-detail')).toBeEnabled();
   await detail.getByTestId('recorded-pay-again-detail').click();
   const cloned=page.getByRole('dialog',{name:'Pay Tax'});
@@ -312,27 +331,42 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await savedDraftCard.getByRole('button',{name:'Continue'}).click();
   const resumed=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(resumed.getByTestId('pay-again-reuse-notice')).toContainText(payment);
-  const continueToAmount=resumed.getByRole('button',{name:'Continue to purpose & amount'});
+  // A compatible dashboard draft now resumes in the approved unified flow.
+  await expect(resumed.locator('.taxpay-modal__subtitle')).toHaveText('Signed-in Payment');
+  await expect(resumed.getByTestId('unified-account-own').getByRole('checkbox')).toBeChecked();
+  await expect(resumed.getByTestId('unified-taxpayer-count')).toHaveText('1');
+  const continueToAmount=resumed.getByRole('button',{name:'Continue to Payment Head'});
   await expect(continueToAmount,'Pay Again draft must restore a valid owner and beneficiary state').toBeEnabled({timeout:5000});
   await continueToAmount.click();
-  const continueToChannel=resumed.getByRole('button',{name:'Continue to payment channel'});
-  const resumedAllocation=resumed.getByTestId('other-tax-line').first();
+  const continueToPreview=resumed.getByRole('button',{name:'Continue to Final Preview'});
+  const group=resumed.getByTestId('other-tax-head-catalogue').locator('details[data-head-group="Others"]');
+  if (!(await group.evaluate(el=>el.hasAttribute('open')))) await group.locator('summary').click();
+  const resumedAllocation=resumed.getByTestId('other-tax-line');
+  await expect(resumedAllocation).toHaveCount(1);
+  await expect(resumedAllocation).toHaveAttribute('data-head-id','1');
   await expect(resumedAllocation.locator('select')).toHaveValue('2025-26');
   await expect(resumedAllocation.locator('input[type="text"]')).toHaveValue('100.00');
-  await expect(continueToChannel,'A supported recorded assessment year must remain valid after draft resume').toBeEnabled({timeout:5000});
-  await resumed.getByTestId('other-tax-head-catalogue')
-    .locator('details[data-head-group="Others"] > summary').click();
+  await expect(continueToPreview,'A supported recorded assessment year must remain valid after draft resume').toBeEnabled({timeout:5000});
   await resumedAllocation.locator('select').selectOption('2026-27');
   await resumedAllocation.locator('select').selectOption('2025-26');
   await expect(resumedAllocation.locator('input[type="text"]'),
     'Changing assessment year must retain the copied source amount').toHaveValue('100.00');
-  await expect(continueToChannel,'Restored payment allocations must become valid after year selection').toBeEnabled({timeout:5000});
-  await continueToChannel.click();
+  await expect(continueToPreview,'Restored payment allocations must become valid after year selection').toBeEnabled({timeout:5000});
+  await continueToPreview.click();
+  await expect(resumed.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+  await expect(resumed.getByTestId('unified-v3-payment-details')).toContainText('2025-26');
+  await resumed.getByRole('button',{name:'Make Payment',exact:true}).click();
+  await expect(resumed.getByTestId('unified-v5-payment-channel-screen')).toBeVisible();
   await resumed.getByRole('button',{name:'Pay online'}).click();
   await resumed.getByRole('button',{name:'Mobile banking'}).click();
   await resumed.getByRole('radio',{name:'bKash'}).check();
-  await resumed.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
-  await resumed.getByRole('button',{name:/^Pay/}).last().click();
+  const confirm=resumed.getByRole('button',{name:'Confirm payment',exact:true});
+  await expect(confirm).toBeDisabled();
+  const acknowledgement=resumed.getByRole('checkbox',{name:'I have checked the taxpayers, payment heads, assessment years and total amount.'});
+  await expect(acknowledgement).toBeVisible();
+  await acknowledgement.check();
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
   await expect(resumed.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:12000});
   expect(paymentSubmissions).toHaveLength(1);
   const payAgainSubmission=paymentSubmissions[0];

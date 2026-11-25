@@ -1,9 +1,10 @@
 // Disposable localhost-only Edge -> SQL demo-authorization identity test.
 // Must never target a hosted project, submit a payment, or alter Office data.
 import assert from 'node:assert/strict';
-const origin = process.env.TAXPAY_LOCAL_SUPABASE_URL ?? '';
+import {localSupabaseEndpoints} from './localSupabaseEndpoints.mjs';
+const {origin} = localSupabaseEndpoints();
 const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
-if(!/^http:\/\/(127\.0\.0\.1|localhost):54321\/?$/.test(origin)||!key)
+if(!process.env.TAXPAY_LOCAL_SUPABASE_URL||!key)
   throw new Error('LOCAL_ONLY_AUTHORIZATION_TEST');
 const endpoint = origin.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const profileEndpoint = origin.replace(/\/$/,'')+'/functions/v1/taxpay-guest-beneficiaries';

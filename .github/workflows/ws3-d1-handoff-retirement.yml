@@ -2,7 +2,7 @@ name: WS3 D1 retired handoff route boundary
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'supabase/functions/taxpay-handoff-api/index.ts'
