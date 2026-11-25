@@ -172,6 +172,14 @@ test('empty beneficiary lists direct signed-in payers to the dedicated managemen
   await expect(picker).toContainText('No beneficiary lists yet');
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
   await picker.getByRole('button',{name:'Create your first list'}).click();
+  const exit=page.getByRole('alertdialog',{name:'Save your tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Keep editing'}).click();
+  await expect(exit).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await picker.getByRole('button',{name:'Create your first list'}).click();
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });
