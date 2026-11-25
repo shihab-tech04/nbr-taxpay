@@ -1,7 +1,7 @@
 -- USER1 ONLY: REVIEW / TEST CANDIDATE, NOT AN APPLIED MIGRATION.
 -- Original: 9 groups / 27 memberships / 25 unique TINs.
--- Replacement: 9 groups / 26 memberships / 24 unique TINs.
--- Read-only preview found zero destination/TIN collisions on both 25 Nov 2026.
+-- Replacement: 9 groups / 27 memberships / 24 unique TINs (refreshed 25 Nov 2026).
+-- Read-only preview: original 7 moves, replacement 6 moves; zero destination/TIN collisions and zero unmapped memberships on both.
 -- Keep the existing five lists named below. Do not merge across owner sessions
 -- or reconcile distinct cross-database records by overwriting either dataset.
 -- Prerequisite: exact private row backup independently restored, cap/RLS tests,
@@ -20,22 +20,29 @@ WITH owner_session AS (
 ), planned AS (
   SELECT *,CASE WHEN lower(name)='family' THEN 'Parents & Siblings'
     WHEN name='Professional Contacts' THEN 'Corporate Clients'
-    WHEN name='client' THEN 'Other Contacts' ELSE name END AS destination
+    WHEN name='client' OR (name='QA-User1-20261121' AND tag='others')
+      THEN 'Other Contacts' ELSE name END AS destination
   FROM records
 ), collisions AS (
   SELECT destination,tin FROM planned GROUP BY destination,tin HAVING count(*)>1
 )
-SELECT (SELECT count(*) FROM records) memberships,
+SELECT (SELECT count(*) FROM owner_session) owners,
+       (SELECT count(*) FROM taxpay_guest_private.lists l JOIN owner_session o ON l.session_id=o.id) lists,
+       (SELECT count(*) FROM records) memberships,
        (SELECT count(DISTINCT tin) FROM records) unique_tins,
        (SELECT count(*) FROM planned WHERE name<>destination) moving,
-       (SELECT count(*) FROM collisions) destination_collisions;
+       (SELECT count(*) FROM collisions) destination_collisions,
+       (SELECT count(*) FROM planned WHERE destination NOT IN
+         ('Corporate Clients','Friends','Other Contacts','Parents & Siblings','Spouse & Children')) unmapped_memberships;
 
 -- Survivors: Corporate Clients, Friends, Other Contacts,
 -- Parents & Siblings, Spouse & Children.
 -- Original: client -> Other Contacts; Family -> Parents & Siblings;
 -- Professional Contacts -> Corporate Clients; Kuddus empty.
 -- Replacement: family -> Parents & Siblings; Professional Contacts ->
--- Corporate Clients; customer and QA-User1-20261121 empty.
+-- Corporate Clients; customer empty; QA-User1-20261121 contains one member
+-- tagged others: move to Other Contacts only after locked revalidation.
+-- Reject any QA membership with a different tag; never delete nonempty QA list.
 -- Move rows by immutable ID, same session, no reclassification; verify every
 -- original ID and classification before deleting empty source groups.
 -- Preserve all original duplicate memberships in different lists.
