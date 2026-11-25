@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, AlertTriangle, BookOpen, Search } from 'lucide-react';
+import MuiPaper from '@mui/material/Paper';
 import { CitizenMuiScope, MuiButton, MuiInputBase, MuiNativeSelect } from '../../design-system/mui';
 import { useTaxState } from '../../services/taxState';
 import { getVerifiedHeadReferences, isV11HeadReviewBlocked, V11_HEAD_GROUPS, V11_HEAD_SOURCE, V11_SOURCE_HEADS, type V11Head } from '../../data/v11SourceHeads';
@@ -77,12 +78,12 @@ export const HeadCatalogue: React.FC = () => {
   return (
     <CitizenMuiScope>
     <section data-mui-citizen-region="head-catalogue" aria-labelledby="source-heads-title" className="space-y-5 pb-12">
-      <MuiButton type="button" variant="outlined" onClick={() => navigate('landing')}
+      <MuiButton data-mui-coverage="MUI-CATALOGUE-BACK" type="button" variant="outlined" onClick={() => navigate('landing')}
         className="min-h-11 inline-flex items-center gap-2 rounded-md px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
         <ArrowLeft aria-hidden="true" className="w-4 h-4" />{t.back}
       </MuiButton>
 
-      <header className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-3">
+      <MuiPaper component="header" elevation={0} data-mui-coverage="MUI-CATALOGUE-PAPER-INTRO" sx={{borderRadius:'12px',backgroundColor:'var(--color-white,#fff)',backgroundImage:'none',color:'inherit'}} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-3">
         <div className="flex items-start gap-3">
           <BookOpen aria-hidden="true" className="w-7 h-7 shrink-0 text-taxpay-dark" />
           <div className="space-y-2 min-w-0">
@@ -104,15 +105,15 @@ export const HeadCatalogue: React.FC = () => {
             <p className="text-xs text-amber-900">Source SHA-256: <code className="break-all">{V11_HEAD_SOURCE.sourceSha256}</code></p>
           </div>
         </div>
-      </header>
+      </MuiPaper>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+      <MuiPaper component="section" elevation={0} data-mui-coverage="MUI-CATALOGUE-PAPER-FILTERS" sx={{borderRadius:'12px',backgroundColor:'var(--color-white,#fff)',backgroundImage:'none',color:'inherit'}} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label htmlFor="v11-head-query" className="block text-sm font-semibold text-slate-800">{t.search}</label>
             <div className="relative">
               <Search aria-hidden="true" className="absolute left-3 top-3.5 w-4 h-4 text-slate-500"/>
-              <MuiInputBase id="v11-head-query" type="search" value={query} fullWidth
+              <MuiInputBase data-mui-coverage="MUI-CATALOGUE-SEARCH" id="v11-head-query" type="search" value={query} fullWidth
                 onChange={e => {setQuery(e.target.value);setPage(1);}}
                 placeholder={t.searchPlaceholder}
                 inputProps={{className:"min-h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"}} sx={{"& .MuiInputBase-input":{boxSizing:"border-box",height:"44px",paddingLeft:"40px",paddingRight:"12px"}}}/>
@@ -120,7 +121,7 @@ export const HeadCatalogue: React.FC = () => {
           </div>
           <div className="space-y-2">
             <label htmlFor="v11-head-group" className="block text-sm font-semibold text-slate-800">{t.group}</label>
-            <MuiNativeSelect input={<MuiInputBase />} inputProps={{id:"v11-head-group"}} fullWidth value={group} onChange={e => {setGroup(e.target.value);setPage(1);}}
+            <MuiNativeSelect data-mui-coverage="MUI-CATALOGUE-GROUP" input={<MuiInputBase />} inputProps={{id:"v11-head-group"}} fullWidth value={group} onChange={e => {setGroup(e.target.value);setPage(1);}}
               sx={{"& .MuiNativeSelect-select":{minHeight:"44px",boxSizing:"border-box",border:"1px solid #cbd5e1",borderRadius:"8px",padding:"8px 32px 8px 12px",backgroundColor:"white"}}}>
               <option value="ALL">{t.all}</option>
               {V11_HEAD_GROUPS.map(name=><option key={name} value={name}>
@@ -132,19 +133,19 @@ export const HeadCatalogue: React.FC = () => {
         <p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-dark">
           {t.matching}: {visible.length} / {V11_HEAD_SOURCE.records}
         </p>
-      </section>
+      </MuiPaper>
 
       {displayed.length === 0 ? (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
+        <MuiPaper component="section" elevation={0} data-mui-coverage="MUI-CATALOGUE-PAPER-EMPTY" sx={{borderRadius:'8px',backgroundColor:'var(--color-white,#fff)',backgroundImage:'none',color:'inherit'}} className="rounded-lg border border-slate-200 bg-white p-6">
           <h2 className="font-semibold text-slate-900">{t.noMatch}</h2>
-        </section>
+        </MuiPaper>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
           {displayed.map(head => {
             const blocked = isV11HeadReviewBlocked(head);
             const refs = getVerifiedHeadReferences(head);
             return (
-              <article key={head.id} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+              <MuiPaper component="article" elevation={0} data-mui-coverage="MUI-CATALOGUE-PAPER-RECORD" sx={{borderRadius:'12px',backgroundColor:'var(--color-white,#fff)',backgroundImage:'none',color:'inherit'}} key={head.id} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs text-slate-600">ID {head.id} · {language==='bn'?head.grpBn:head.grpEn}</p>
@@ -180,19 +181,19 @@ export const HeadCatalogue: React.FC = () => {
                     <p className="text-xs text-slate-700 leading-5">{head.note}</p>
                   </div>
                 )}
-              </article>
+              </MuiPaper>
             );
           })}
         </div>
       )}
 
-      <nav aria-label="Catalogue pagination" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-        <MuiButton type="button" variant="outlined" disabled={safePage<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}
+      <MuiPaper component="nav" elevation={0} data-mui-coverage="MUI-CATALOGUE-PAPER-PAGINATION" sx={{borderRadius:'8px',backgroundColor:'var(--color-white,#fff)',backgroundImage:'none',color:'inherit'}} aria-label="Catalogue pagination" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+        <MuiButton data-mui-coverage="MUI-CATALOGUE-PREVIOUS" type="button" variant="outlined" disabled={safePage<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}
           className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">{t.previous}</MuiButton>
         <p className="text-sm font-medium text-slate-700" aria-live="polite">{t.page} {safePage} {t.of} {pages}</p>
-        <MuiButton type="button" variant="outlined" disabled={safePage>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}
+        <MuiButton data-mui-coverage="MUI-CATALOGUE-NEXT" type="button" variant="outlined" disabled={safePage>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}
           className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">{t.next}</MuiButton>
-      </nav>
+      </MuiPaper>
     </section>
     </CitizenMuiScope>
   );

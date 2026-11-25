@@ -2138,6 +2138,266 @@
       "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
       "owner": "MUI migration",
       "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-CATALOGUE-PAPER-INTRO",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiPaper",
+      "control": "source introduction",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "responsive",
+        "light/dark",
+        "ready",
+        "empty where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v70-catalogue-surfaces.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official MUI Paper owns existing surface with same semantic HTML tag, classes, radius and no elevation"
+    },
+    {
+      "id": "MUI-CATALOGUE-PAPER-FILTERS",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiPaper",
+      "control": "search and group filters",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "responsive",
+        "light/dark",
+        "ready",
+        "empty where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v70-catalogue-surfaces.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official MUI Paper owns existing surface with same semantic HTML tag, classes, radius and no elevation"
+    },
+    {
+      "id": "MUI-CATALOGUE-PAPER-EMPTY",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiPaper",
+      "control": "no results",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "responsive",
+        "light/dark",
+        "ready",
+        "empty where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v70-catalogue-surfaces.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official MUI Paper owns existing surface with same semantic HTML tag, classes, radius and no elevation"
+    },
+    {
+      "id": "MUI-CATALOGUE-PAPER-RECORD",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiPaper",
+      "control": "source record",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "responsive",
+        "light/dark",
+        "ready",
+        "empty where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v70-catalogue-surfaces.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official MUI Paper owns existing surface with same semantic HTML tag, classes, radius and no elevation"
+    },
+    {
+      "id": "MUI-CATALOGUE-PAPER-PAGINATION",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiPaper",
+      "control": "pagination",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "responsive",
+        "light/dark",
+        "ready",
+        "empty where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v70-catalogue-surfaces.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official MUI Paper owns existing surface with same semantic HTML tag, classes, radius and no elevation"
+    },
+    {
+      "id": "MUI-CATALOGUE-BACK",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiButton",
+      "control": "back",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "focus",
+        "responsive",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "HISTORICAL_PASS_CURRENT_PENDING",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v4-guide-catalogue.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Previously migrated official MUI control, now explicitly registered; not counted as new migration"
+    },
+    {
+      "id": "MUI-CATALOGUE-SEARCH",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiInputBase",
+      "control": "search",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "focus",
+        "responsive",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "HISTORICAL_PASS_CURRENT_PENDING",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v4-guide-catalogue.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Previously migrated official MUI control, now explicitly registered; not counted as new migration"
+    },
+    {
+      "id": "MUI-CATALOGUE-GROUP",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiNativeSelect",
+      "control": "group",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "focus",
+        "responsive",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "HISTORICAL_PASS_CURRENT_PENDING",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v4-guide-catalogue.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Previously migrated official MUI control, now explicitly registered; not counted as new migration"
+    },
+    {
+      "id": "MUI-CATALOGUE-PREVIOUS",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiButton",
+      "control": "previous",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "focus",
+        "responsive",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "HISTORICAL_PASS_CURRENT_PENDING",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v4-guide-catalogue.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Previously migrated official MUI control, now explicitly registered; not counted as new migration"
+    },
+    {
+      "id": "MUI-CATALOGUE-NEXT",
+      "file": "src/components/screens/HeadCatalogue.tsx",
+      "symbol": "HeadCatalogue",
+      "component": "MuiButton",
+      "control": "next",
+      "route": "head_catalogue",
+      "classification": "GENERIC-MIGRATE",
+      "role": "public",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "focus",
+        "responsive",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "HISTORICAL_PASS_CURRENT_PENDING",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v4-guide-catalogue.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Previously migrated official MUI control, now explicitly registered; not counted as new migration"
     }
   ],
   "unresolved": [
@@ -2204,6 +2464,21 @@
     {
       "file": "src/components/screens/DashboardPaymentDrafts.tsx",
       "reason": "All six direct action sites implemented; shared dashboard native layout, owner isolation, real draft-resume/delete and production evidence remain unverified",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/AccountActivitySummary.tsx",
+      "reason": "Existing PR #463 and #779 overlap; preserve and reconcile owner changes before direct controls migrate",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/OfficeLoginPage.tsx",
+      "reason": "Former Office login deep link now routes to frozen taxpayer login popup; standalone screen not imported by App; runtime reachability must be independently resolved before denominator",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/ReceivedPaymentNoticeRegister.tsx",
+      "reason": "Existing #779 overlap and #1102 recipient lifecycle dependency; retain current behavior",
       "status": "UNVERIFIED"
     }
   ]
