@@ -1,114 +1,29 @@
-name: MUI v4 protected homepage visual baseline
+name: MUI strict homepage previous-run pixel diagnosis
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
 permissions:
+  actions: read
   contents: read
 jobs:
-  baseline:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        width: [320, 375, 768, 1280, 1920]
-    env:
-      VITE_SUPABASE_DISABLED: 'true'
-      VITE_SUPABASE_URL: ''
-      VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASELINE_WIDTH: ${{ matrix.width }}
-      CI: 'true'
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: bb3fcb774695350e93f00d3fd3c27fadbac56ee0
           persist-credentials: false
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-      - run: npm ci --no-audit --no-fund
-      - run: npm run build
-      - run: npx playwright install chromium --only-shell
-      - name: Define isolated capture suite (no application modifications)
-        shell: bash
+      - name: Fetch exact failed visual evidence without rerunning screenshots
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 'bb3fcb774695350e93f00d3fd3c27fadbac56ee0'
-          mkdir -p mui-baseline
-          cat > playwright.mui-baseline.config.ts <<'EOF'
-          import {defineConfig} from '@playwright/test';
-          import {demoLoginOtpCompletedState} from './tests/e2e/demo-login-test-state';
-          const width=Number(process.env.BASELINE_WIDTH);
-          export default defineConfig({
-            testDir:'./tests/e2e',testMatch:'mui-v4-baseline.spec.ts',
-            timeout:150000,expect:{timeout:12000},workers:1,retries:0,reporter:'list',
-            use:{baseURL:'http://127.0.0.1:4173',browserName:'chromium',
-              viewport:{width,height:width<768?812:900},reducedMotion:'reduce',
-              storageState:demoLoginOtpCompletedState,trace:'retain-on-failure'},
-            webServer:{command:'npm run preview -- --port=4173 --host=127.0.0.1',
-              url:'http://127.0.0.1:4173',timeout:60000,reuseExistingServer:false}
-          });
-          EOF
-          cat > tests/e2e/mui-v4-baseline.spec.ts <<'EOF'
-          import {test,expect} from '@playwright/test';
-          import {writeFileSync} from 'node:fs';
-          import {mockPublishedBannerCms} from './mock-published-banners';
-          const sha='bb3fcb774695350e93f00d3fd3c27fadbac56ee0';
-          const width=Number(process.env.BASELINE_WIDTH);
-          const homes=[
-            {name:'default',query:'',root:'.public-record-discovery'},
-            {name:'landing',query:'action=landing&',root:'.public-record-discovery'},
-            {name:'home2',query:'action=home-2&',root:'[data-testid="home2-root"]'},
-            {name:'home3',query:'action=home-3&',root:'[data-testid="home3-root"]'}
-          ];
-          for(const lang of ['en','bn'] as const)
-          for(const theme of ['light','dark'] as const)
-          for(const signedIn of [false,true])
-          test('capture '+lang+' '+theme+' '+(signedIn?'local-account':'guest'),async({page})=>{
-            await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});
-            await page.route('**/*.supabase.co/**',route=>route.abort());
-            await mockPublishedBannerCms(page);
-            if(signedIn){
-              await page.goto('/?action=taxpayer_login&lang='+lang);
-              const login=page.getByRole('dialog');
-              await login.locator('#taxpayer-login-user-id').fill('user1');
-              await login.locator('#taxpayer-login-password').fill('user1');
-              await login.getByTestId('taxpayer-login-submit').click();
-              await expect(page).toHaveURL(/action=taxpayer_home/);
-              expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user1');
-            }
-            for(const h of homes){
-              await page.goto('/?'+h.query+'lang='+lang,{waitUntil:'domcontentloaded'});
-              await expect(page.locator(h.root)).toBeVisible();
-              await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',lang);
-              expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe(signedIn?'user1':null);
-              await page.evaluate(()=>document.fonts.ready);
-              const stem=h.name+'-'+width+'-'+lang+'-'+theme+'-'+(signedIn?'local-account':'guest');
-              await page.screenshot({path:'mui-baseline/'+stem+'.png',fullPage:true,animations:'disabled',caret:'hide'});
-              const data=await page.evaluate(()=>{
-                const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
-                return {viewport:{width:innerWidth,height:innerHeight},lang:document.documentElement.lang,
-                  overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
-                  font:getComputedStyle(document.querySelector('.taxpay-citizen-shell')!).fontFamily,
-                  darkPreference:matchMedia('(prefers-color-scheme: dark)').matches,
-                  timing:nav?{domContentLoaded:nav.domContentLoadedEventEnd,load:nav.loadEventEnd,transferSize:nav.transferSize}:null,
-                  rootBackground:getComputedStyle(document.querySelector('.taxpay-citizen-shell')!).backgroundColor,
-                  buttons:document.querySelectorAll('button').length,inputs:document.querySelectorAll('input').length,
-                  links:document.querySelectorAll('a').length};
-              });
-              writeFileSync('mui-baseline/'+stem+'.json',JSON.stringify({sha,route:h.name,fixture:signedIn?'offline sample user1':'signed-out',themePreference:theme,...data},null,2));
-              expect(data.overflow,'horizontal overflow '+stem).toBeLessThanOrEqual(2);
-            }
-          });
-          EOF
-          du -sb dist > mui-baseline/build-bytes.txt
-          find dist/assets -type f -printf '%s %p\n' | sort -nr > mui-baseline/asset-bytes.txt
-          npx playwright test --config playwright.mui-baseline.config.ts
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/15054482971/zip" -o "$RUNNER_TEMP/visual.zip"
+          printf '%s  %s\n' 'bf67a73498df5678c2baf4fd87e6e578b680d37f9d73f1239e5fb8682c186739' "$RUNNER_TEMP/visual.zip" | sha256sum -c -
+          node scripts/ci/mui-v53-visual-diagnose.mjs "$RUNNER_TEMP/visual.zip" > pixel-diagnosis.json
+          cat pixel-diagnosis.json
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: mui-v4-home-baseline-${{ matrix.width }}-bb3fcb77
-          path: mui-baseline/
-          if-no-files-found: error
-          retention-days: 7
+          name: mui-v53-pixel-diagnosis-45680680337
+          path: pixel-diagnosis.json
+          retention-days: 30
