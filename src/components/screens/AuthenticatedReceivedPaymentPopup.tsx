@@ -56,7 +56,7 @@ export function AuthenticatedReceivedPaymentPopup() {
   if(!uid||owner!==uid)return null;
   const next=items.find(x=>!dismissed.includes(x.eventId))??null;
   // A stored sign-in greeting cannot open without a verified unread notice.
-  if(welcomeOwner===uid && next!==null && next.paymentStatus!=='SIMULATED_SUCCESS' && currentRoute!=='taxpayer_login' && currentRoute!=='corrections') {
+  if(welcomeOwner===uid && next!==null && next.paymentStatus===undefined && currentRoute!=='taxpayer_login' && currentRoute!=='corrections') {
     const close=()=>{
       try{sessionStorage.removeItem(WELCOME_KEY);}catch{/* Greeting is optional. */}
       setWelcomeOwner(null);

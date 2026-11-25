@@ -9,7 +9,7 @@ export type ReceivedPaymentNotice = {
   assessmentYear:string; amountMinor:number; receiptReference:string|null;
   createdAt:string; isRead:false;
   /** Optional during original/V2 rollout; do not invent a missing payer or state. */
-  payerName?:string|null; paymentStatus?:'SIMULATED_SUCCESS';
+  payerName?:string|null; paymentStatus?:'SIMULATED_SUCCESS'|'SIMULATED_INITIATED';
 };
 
 export function parseReceivedPaymentNotice(value:unknown):ReceivedPaymentNotice {
@@ -31,7 +31,7 @@ export function parseReceivedPaymentNotice(value:unknown):ReceivedPaymentNotice 
     amountMinor:row.amountMinor,receiptReference:optional('receiptReference'),
     createdAt:row.createdAt,isRead:false,
     ...(Object.hasOwn(row,'payerName')?{payerName:optional('payerName')}:{}),
-    ...(row.paymentStatus==='SIMULATED_SUCCESS'?{paymentStatus:row.paymentStatus}:{}),
+    ...((row.paymentStatus==='SIMULATED_SUCCESS'||row.paymentStatus==='SIMULATED_INITIATED')?{paymentStatus:row.paymentStatus}:{}),
   };
 }
 

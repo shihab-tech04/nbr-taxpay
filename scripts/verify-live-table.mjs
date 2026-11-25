@@ -11,8 +11,19 @@ if(base.protocol!=='https:'||base.hostname!=='shihab-tech04.github.io'||!base.pa
 const url=(action)=>{const target=new URL(base);target.searchParams.set('action',action);return target.toString();};
 await mkdir('test-results',{recursive:true});
 const browser=await chromium.launch({headless:true});
+// Isolate only the unrelated modal overlay for this transaction table regression.
+// The dedicated live recipient smoke uses the real unread feed with no interception.
+async function isolateTableOverlay(page){
+ await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+  const request=route.request();
+  let input;try{input=request.method()==='POST'?request.postDataJSON():null;}catch{}
+  if(input?.action==='received-notices-unread')return route.fulfill({json:{success:true,data:{items:[],total:0,offset:input.offset,limit:input.limit,hasMore:false}}});
+  return route.fallback();
+ });
+}
 try{
   const page=await browser.newPage({viewport:{width:1280,height:900}});
+  await isolateTableOverlay(page);
   // Budget guard: live readback tests use bundled image fallback rather than remote CMS bytes.
   await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
   await page.goto(url('taxpayer_login'),{waitUntil:'domcontentloaded',timeout:45000});
@@ -113,6 +124,7 @@ try{
   // verified account-scoped rows or the legitimate empty state. This catches
   // the previously observed live blank page (a hidden render error is FAIL).
   const user2=await browser.newPage({viewport:{width:1280,height:900}});
+  await isolateTableOverlay(user2);
   await user2.goto(url('taxpayer_login'),{waitUntil:'domcontentloaded',timeout:45000});
   const signIn2=user2.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(signIn2.getByRole('textbox',{name:'User ID'})).toBeVisible({timeout:30000});

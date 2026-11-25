@@ -22,3 +22,14 @@ test('the panel can present a dismissed notice without changing its payment stat
  assert.equal(read.isRead,true);
  assert.equal(receivedNoticeDhakaDay(notice.createdAt),'2026-11-26');
 });
+
+test('initiated notice has exact approved title in both languages and never implies completion',()=>{
+ const initiated={...notice,paymentStatus:'SIMULATED_INITIATED' as const};
+ const en=receivedPaymentNoticePresentation(initiated,'en');
+ assert.equal(en.title,'A payment has been initiated on your behalf');
+ assert.equal(en.status,'Initiated (simulated)');
+ const bn=receivedPaymentNoticePresentation(initiated,'bn');
+ assert.equal(bn.title,'আপনার পক্ষ থেকে একটি পেমেন্ট শুরু হয়েছে');
+ assert.equal(bn.status,'শুরু হয়েছে (সিমুলেটেড)');
+ assert.equal(en.reference,notice.receiptReference);
+});

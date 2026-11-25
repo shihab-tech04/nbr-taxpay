@@ -177,10 +177,12 @@ Deno.serve(async(req)=>{
    try{input=JSON.parse(raw);}catch{return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);}
    if(!input||typeof input!=="object"||Array.isArray(input)||typeof input.requestKey!=="string"||!uuid.test(input.requestKey))
     return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
+   const report=input.caseKind==='UNSOLICITED_PAYMENT_REPORT';
+   if(report&&(typeof input.eventId!=='string'||typeof input.reason!=='string'))return respond({success:false,error:'INVALID_CORRECTION_REQUEST'},400);
    const historical=input.paymentId===null&&typeof input.historicalReference==="string"&&/^DEMO-[A-Z0-9-]{3,70}$/.test(input.historicalReference);
-   if(!historical&&(typeof input.paymentId!=="string"||!uuid.test(input.paymentId)||input.historicalReference!==undefined))
+   if(!report&&!historical&&(typeof input.paymentId!=="string"||!uuid.test(input.paymentId)||input.historicalReference!==undefined))
     return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
-   const {data,error}=historical
+   const {data,error}=report?await admin.rpc('taxpay_demo_received_payment_report_save',{p_capability_hash,p_event_id:input.eventId,p_request_key:input.requestKey,p_reason:input.reason}):historical
      ?await admin.rpc("taxpay_demo_historical_correction_save",{p_capability_hash,p_reference:input.historicalReference,p_request_key:input.requestKey,p_input:input})
      :await admin.rpc("taxpay_demo_correction_save",{p_capability_hash,p_payment_id:input.paymentId,p_request_key:input.requestKey,p_input:input});
    if(error){
@@ -313,7 +315,14 @@ Deno.serve(async(req)=>{
     if(!acceptPaymentRequestSize(raw.length,body))return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const p_capability_hash=await capabilityHash(req);
     const client=p_capability_hash?serviceClient(url):db;
-    const {data,error}=p_capability_hash
+    const initiated=body?.origin==='TAXPAY_UI'
+      ?(p_capability_hash
+        ?await client.rpc('taxpay_demo_story1_initiate',{p_capability_hash,p_input:body})
+        :await client.rpc('demo_story1_initiate',{p_input:body}))
+      :null;
+    // Stage and completion are separate SQL transactions. A lost connection
+    // leaves a durable initiated event; the same key resumes without replay.
+    const {data,error}=initiated?.error?initiated:p_capability_hash
       ?await client.rpc("taxpay_demo_story1_submit",{p_capability_hash,p_input:body})
       :await client.rpc("demo_story1_submit",{p_input:body});
     if(error){

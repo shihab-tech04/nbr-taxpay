@@ -4,6 +4,7 @@ import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentN
 import {projectRecipientPaymentActivity,formatRecipientCompletedMinor} from '../../services/recipientPaymentActivity';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {ReceivedPaymentNoticeDetails} from './ReceivedPaymentNoticeDetails';
+import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
@@ -34,6 +35,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language,c
   const enabled=scope!==null;
   const owner=scope?.ownerKey??'';
   const mode=scope?.mode??null;
+  const reports=usePreviewCorrectionRegister(mode==='preview'&&enabled?profileId??null:null,mode==='preview'&&enabled);
   const [state,setState]=useState<Snapshot>({owner:null,status:'loading',rows:[]});
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState<string|null>(null);
@@ -85,7 +87,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language,c
     if(state.owner!==owner||!enabled)return;
     try{
       queueReceivedPaymentCaseIntent(notice,caseKind);
-      if(authenticatedUser)navigate('corrections');
+      if(authenticatedUser||caseKind==='UNSOLICITED_PAYMENT_REPORT')navigate('corrections');
       else navigate('secure_workspace',{returnTo:'corrections'});
     }catch{
       setAckError(tr('Could not prepare the request. Please retry.',
@@ -122,6 +124,11 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language,c
   const current=state.owner===owner?state:{owner,status:'loading' as const,rows:[]};
   const projection=context==='notifications'?null:projectRecipientPaymentActivity(current.rows,assessmentYear);
   const rows=projection?.rows??current.rows;
+  const reportFor=(row:StoredReceivedPaymentNotice)=>reports.phase==='ready'?reports.rows.find(r=>r.caseKind==='UNSOLICITED_PAYMENT_REPORT'&&r.recipientEventId===row.eventId&&r.paymentId===row.paymentId&&r.allocationId===row.allocationId):undefined;
+  const reportStatus=(row:StoredReceivedPaymentNotice)=>{
+    const report=reportFor(row);
+    return report?<p className="text-sm text-taxpay-muted" data-testid="recipient-report-status">{tr('Report status','রিপোর্টের অবস্থা')}: {previewCorrectionStatus(report,language)} · {report.id}</p>:null;
+  };
   const selected=detail?.owner===owner?rows.find(row=>row.eventId===detail.eventId):undefined;
   const heading=context==='notifications'?tr('Received payment notices','প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি'):tr('Payments made on your behalf','আপনার পক্ষ থেকে করা পেমেন্ট');
   const filtered=filterStoredReceivedPaymentNotices(rows,{
@@ -216,6 +223,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language,c
                 <div className="flex flex-wrap items-center gap-2">
                   {context!=='notifications'&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary" onClick={()=>setDetail({owner,eventId:row.eventId})}>{tr('Details','বিস্তারিত')}</button>}
                   <span className="w-full text-sm font-semibold">{receivedPaymentNoticePresentation(row,language).status}</span>
+                  {reportStatus(row)}
                   {row.isRead
                     ?<span className="text-sm text-taxpay-muted">{tr('Read','পঠিত')}</span>
                     :<button type="button" disabled={busy!==null}
@@ -238,7 +246,7 @@ export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language,c
     {selected&&<TaxPayModal title={tr('Payment details','পেমেন্টের বিস্তারিত')} onClose={()=>setDetail(null)}
       footer={<><button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-4" onClick={()=>setDetail(null)}>{tr('Close','বন্ধ করুন')}</button>
         <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-4 text-white" onClick={()=>{setDetail(null);openCase(selected,'UNSOLICITED_PAYMENT_REPORT');}}>{tr('Report Payment','পেমেন্ট রিপোর্ট করুন')}</button></>}>
-      <ReceivedPaymentNoticeDetails notice={selected} language={language}/>
+      <ReceivedPaymentNoticeDetails notice={selected} language={language}/>{reportStatus(selected)}
     </TaxPayModal>}
   </section>;
 }
