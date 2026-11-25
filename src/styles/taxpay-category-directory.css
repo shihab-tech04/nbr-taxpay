@@ -10,7 +10,7 @@
   line-height: 1.4;
 }
 /* Shared signed-in and walk-in directory section spacing. */
-.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 h3.other-tax-category-heading {
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__body.space-y-4 > h3.other-tax-category-heading {
   margin: 16px 0 12px;
 }
 /* Keep the restored grouped Tax Head editor compact. Global responsive
@@ -22,7 +22,7 @@
   line-height: 1.45;
   padding: 12px 0 0;
 }
-.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-selection-status {
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__body.space-y-4 > .other-tax-selection-status {
   margin: 8px 0 0;
   font-size: 14px;
   font-weight: 400;
