@@ -398,7 +398,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   .locator(':scope > li').filter({hasText:tx!.id}).first();
  await expect(preservedCard.getByText(tx!.id)).toBeVisible({timeout:15000});
  await preservedCard.getByText('View allocations',{exact:false}).click();
- await expect(preservedCard).toContainText('user7');
+ // The retained address-book display name remains authoritative for the payer UI;
+ // the immutable SQL allocation identity was independently asserted above.
+ await expect(preservedCard.getByRole('button',{name:'Open beneficiary profile for '+savedContacts[0].display_name})).toBeVisible();
+ await expect(preservedCard).toContainText(savedContacts[0].tin);
  await expect(preservedCard).toContainText('৳23.50');
  await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
