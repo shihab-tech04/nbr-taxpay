@@ -1,0 +1,37 @@
+name: Pay Again Gift Tax isolated migration and rollback rehearsal
+on:
+  push:
+    branches: [recovery/pay-again-gift-lineage-rollback-20261125]
+permissions:
+  contents: read
+jobs:
+  rehearse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+      - name: Prepare isolated local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          python3 scripts/ci/isolate-local-supabase.py
+          supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - name: Generate migration and prove exact schema rollback
+        shell: bash
+        run: bash scripts/recovery/rehearse-gift-pay-again-local.sh
+      - name: Retain migration and sanitized recovery evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: gift-pay-again-migration-and-rollback-proof
+          path: ${{ runner.temp }}/gift-pay-again-proof/
+          if-no-files-found: error
+      - name: Stop disposable services
+        if: always()
+        run: supabase stop --no-backup
