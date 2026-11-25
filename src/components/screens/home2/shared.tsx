@@ -29,14 +29,14 @@ export const promoSlides = [
   {
     key: 'cert',
     icon: FileCheck2,
-    tone: 'bg-[#1f3c7a] text-white',
-    chip: 'bg-white/15 text-white',
+    tone: 'bg-[#e5e2f0] text-[#152033]',
+    chip: 'bg-white/15 text-[#152033]',
     cta: 'bg-white text-[#141b2d] hover:bg-white/90',
   },
   {
     key: 'again',
     icon: Repeat2,
-    tone: 'bg-[#e4efe6] text-[#17402a]',
+    tone: 'bg-[#dfeae3] text-[#17402a]',
     chip: 'bg-[#17402a]/10 text-[#17402a]',
     cta: 'bg-[#17402a] text-white hover:bg-[#0f2e1d]',
   },
