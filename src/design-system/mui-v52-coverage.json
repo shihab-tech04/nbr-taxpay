@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 2,
+  "scope": "classified subset; global eligible denominator UNVERIFIED",
+  "base": "594fcca473e3349923c32783aff6817baa98f9e1",
+  "items": [
+    {
+      "id": "MUI-ACCOUNT-ACTIVITY-RETRY",
+      "file": "src/components/screens/AccountRecentActivity.tsx",
+      "symbol": "AccountRecentActivity",
+      "route": "account_profile",
+      "control": "retry",
+      "states": [
+        "error",
+        "loading",
+        "success",
+        "empty",
+        "focus"
+      ],
+      "role": "verified owner",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "ISOLATED_PASS",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320",
+      "evidence": "45677909022"
+    },
+    {
+      "id": "MUI-REVIEW-REFRESH",
+      "file": "src/components/screens/SharedReviewRequests.tsx",
+      "symbol": "SharedReviewRequests",
+      "route": "secure_workspace",
+      "control": "refresh",
+      "states": [
+        "enabled",
+        "focus",
+        "loading",
+        "error",
+        "success"
+      ],
+      "role": "verified owner",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "ISOLATED_PASS",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320",
+      "evidence": "45677909022"
+    },
+    {
+      "id": "MUI-REVIEW-SUBMIT",
+      "file": "src/components/screens/SharedReviewRequests.tsx",
+      "symbol": "SharedReviewRequests",
+      "route": "secure_workspace",
+      "control": "submit",
+      "states": [
+        "enabled",
+        "busy",
+        "disabled",
+        "submitted",
+        "error",
+        "focus"
+      ],
+      "role": "verified owner",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "ISOLATED_PASS",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320",
+      "evidence": "45677909022"
+    },
+    {
+      "id": "MUI-REVIEW-READ",
+      "file": "src/components/screens/SharedReviewRequests.tsx",
+      "symbol": "SharedReviewRequests",
+      "route": "secure_workspace",
+      "control": "markRead",
+      "states": [
+        "unread",
+        "busy",
+        "read",
+        "disabled",
+        "focus",
+        "error"
+      ],
+      "role": "verified recipient",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "ISOLATED_PASS",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320",
+      "evidence": "45677909022"
+    },
+    {
+      "id": "MUI-PROPOSAL-SEARCH",
+      "file": "src/components/screens/SourceChangeProposals.tsx",
+      "symbol": "SourceChangeProposals",
+      "route": "secure_workspace",
+      "control": "search",
+      "state": "query",
+      "component": "MuiInputBase",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "empty",
+        "filled",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+    },
+    {
+      "id": "MUI-PROPOSAL-HEAD",
+      "file": "src/components/screens/SourceChangeProposals.tsx",
+      "symbol": "SourceChangeProposals",
+      "route": "secure_workspace",
+      "control": "select",
+      "state": "headId",
+      "component": "MuiNativeSelect",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "empty",
+        "selected",
+        "required",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+    },
+    {
+      "id": "MUI-PROPOSAL-HASH",
+      "file": "src/components/screens/SourceChangeProposals.tsx",
+      "symbol": "SourceChangeProposals",
+      "route": "secure_workspace",
+      "control": "text",
+      "state": "sha",
+      "component": "MuiInputBase",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "empty",
+        "invalid",
+        "valid",
+        "required",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+    },
+    {
+      "id": "MUI-PROPOSAL-LABEL",
+      "file": "src/components/screens/SourceChangeProposals.tsx",
+      "symbol": "SourceChangeProposals",
+      "route": "secure_workspace",
+      "control": "text",
+      "state": "suggestedLabel",
+      "component": "MuiInputBase",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "empty",
+        "filled",
+        "required",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+    },
+    {
+      "id": "MUI-PROPOSAL-REASON",
+      "file": "src/components/screens/SourceChangeProposals.tsx",
+      "symbol": "SourceChangeProposals",
+      "route": "secure_workspace",
+      "control": "textarea",
+      "state": "reason",
+      "component": "MuiInputBase",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "empty",
+        "invalid",
+        "filled",
+        "required",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+    },
+    {
+      "id": "MUI-PROPOSAL-SUBMIT",
+      "file": "src/components/screens/SourceChangeProposals.tsx",
+      "symbol": "SourceChangeProposals",
+      "route": "secure_workspace",
+      "control": "submit",
+      "state": "busy",
+      "component": "MuiButtonBase",
+      "classification": "GENERIC-MIGRATE",
+      "role": "verified owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "busy",
+        "disabled",
+        "success",
+        "error",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v52-source-proposals.spec.ts"
+    }
+  ],
+  "unresolved": [
+    {
+      "file": "src/components/screens/AccountBeneficiaryHistory.tsx",
+      "reason": "overlapping active PR #786",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/AccountCenter.tsx",
+      "reason": "multiple active owners; preserve their work",
+      "status": "UNVERIFIED"
+    }
+  ]
+}

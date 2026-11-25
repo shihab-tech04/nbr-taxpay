@@ -1,4 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {CitizenMuiScope,MuiButton,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
 import {AccountCenter} from './AccountCenter';
 import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
@@ -20,7 +22,8 @@ import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedT
 import {simulationCategoryLabels,type SimulationTransaction} from '../../contracts/paymentSimulationContract';
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
-export const NotificationsView:React.FC=()=>{
+export const NotificationsView:React.FC=()=> <CitizenMuiScope><NotificationsContent/></CitizenMuiScope>;
+const NotificationsContent:React.FC=()=>{
   const {demoUser,previewAccount,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
@@ -229,25 +232,25 @@ export const NotificationsView:React.FC=()=>{
       <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
         <label className="taxpayer-transaction-filter">
           <span>{label('Search authorizations','অনুমোদন খুঁজুন')}</span>
-          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+          <MuiInputBase type="search" fullWidth sx={{minWidth:0,"& .MuiInputBase-input":{boxSizing:"border-box",minHeight:"44px",border:"1px solid #E1E6EE",borderRadius:"8px",backgroundColor:"white",padding:"8px 12px",fontSize:"14px","&:focus-visible":{outline:"2px solid #2C5EAD",outlineOffset:2}}}}
             value={authorizationSearch} onChange={e=>setAuthorizationSearch(e.target.value)}
             placeholder={label('Search payer or taxpayer','পরিশোধকারী বা করদাতা খুঁজুন')}/>
         </label>
         <label className="taxpayer-transaction-filter">
           <span>{label('Status','অবস্থা')}</span>
-          <select className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+          <MuiNativeSelect fullWidth input={<MuiInputBase/>} sx={{minWidth:0,"& .MuiNativeSelect-select":{boxSizing:"border-box",minHeight:"44px",border:"1px solid #E1E6EE",borderRadius:"8px",backgroundColor:"white",padding:"8px 32px 8px 12px",fontSize:"14px"}}}
             value={authorizationFilter} onChange={e=>setAuthorizationFilter(e.target.value)}>
             <option value="all">{label('All statuses','সব অবস্থা')}</option>
             {['ACTIVE','PENDING','CODE_ISSUED','APPROVED','REJECTED','EXPIRED','REVOKED'].map(state=>
               <option key={state} value={state}>{authorizationStatus(state)}</option>)}
-          </select>
+          </MuiNativeSelect>
         </label>
-        {(authorizationSearch||authorizationFilter!=='all')&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
-          onClick={()=>{setAuthorizationSearch('');setAuthorizationFilter('all');}}>{label('Clear filters','ফিল্টার মুছুন')}</button>}
+        {(authorizationSearch||authorizationFilter!=='all')&&<MuiButton type="button" variant="outlined" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+          onClick={()=>{setAuthorizationSearch('');setAuthorizationFilter('all');}}>{label('Clear filters','ফিল্টার মুছুন')}</MuiButton>}
       </TaxPayTableControls>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
       {!visibleAuthorizations.length?<p role="status" className="taxpay-table-state">{authorizationNotices.length?label('No authorization requests match your filters.','ফিল্টারে কোনো অনুমোদনের অনুরোধ মেলেনি।'):label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
-      <TaxPayDataGrid variant="tabular" rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
+      <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
         ariaLabel={label('Authorization requests','অনুমোদনের অনুরোধ')}
         columns={[
           {key:'request',header:label('Authorization','অনুমোদন'),renderCell:r=><div>
@@ -262,8 +265,8 @@ export const NotificationsView:React.FC=()=>{
           </div>},
           {key:'status',header:label('Status','অবস্থা'),renderCell:r=><p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>},
           {key:'requested',header:label('Requested','অনুরোধের সময়'),renderCell:r=><time dateTime={new Date(r.requestedAt).toISOString()} className="text-sm text-taxpay-muted">{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
-          {key:'actions',header:label('Actions','কার্যক্রম'),renderCell:()=><button type="button" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
-            onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>}
+          {key:'actions',header:label('Actions','কার্যক্রম'),renderCell:()=><MuiButton type="button" variant="outlined" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+            onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</MuiButton>}
         ]}/>}
     </section>
     <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
@@ -272,16 +275,16 @@ export const NotificationsView:React.FC=()=>{
       <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
         <label className="taxpayer-transaction-filter">
           <span>{label('Search payment updates','পেমেন্টের হালনাগাদ খুঁজুন')}</span>
-          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+          <MuiInputBase type="search" fullWidth sx={{minWidth:0,"& .MuiInputBase-input":{boxSizing:"border-box",minHeight:"44px",border:"1px solid #E1E6EE",borderRadius:"8px",backgroundColor:"white",padding:"8px 12px",fontSize:"14px","&:focus-visible":{outline:"2px solid #2C5EAD",outlineOffset:2}}}}
             value={paymentSearch} onChange={e=>setPaymentSearch(e.target.value)}
             placeholder={label('Search payer or reference','পরিশোধকারী বা রেফারেন্স খুঁজুন')}/>
         </label>
-        {paymentSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
-          onClick={()=>setPaymentSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>}
+        {paymentSearch&&<MuiButton type="button" variant="outlined" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+          onClick={()=>setPaymentSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</MuiButton>}
       </TaxPayTableControls>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
        !visiblePayments.length?<p role="status" className="taxpay-table-state">{previewPaymentEvents.length?label('No payment updates match this search.','এই অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।'):label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
-       <TaxPayDataGrid variant="tabular" rows={visiblePayments}
+       <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={visiblePayments}
          getRowKey={p=>p.transactionId+':'+p.perspective}
          ariaLabel={label('Recorded payment updates','সংরক্ষিত পেমেন্টের হালনাগাদ')}
          columns={[
@@ -309,14 +312,14 @@ export const NotificationsView:React.FC=()=>{
   if(!authenticatedUser&&!hasGuestPayment)return <main className="mx-auto max-w-4xl space-y-3 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
     <h1 className="text-2xl font-bold text-taxpay-text">{label('Sign in to view payment notifications','পেমেন্ট বিজ্ঞপ্তি দেখতে সাইন ইন করুন')}</h1>
     <p className="text-sm text-taxpay-muted">{label('Sign in with your assigned account to view notifications.','বিজ্ঞপ্তি দেখতে নির্ধারিত অ্যাকাউন্টে সাইন ইন করুন।')}</p>
-    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{label('Open sign-in','সাইন ইন খুলুন')}</button>
+    <MuiButton type="button" variant="contained" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{label('Open sign-in','সাইন ইন খুলুন')}</MuiButton>
   </main>;
   if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <TaxPayDataGrid variant="tabular" rows={guestNotices} getRowKey={n=>String(n.id)}
+        <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={guestNotices} getRowKey={n=>String(n.id)}
           ariaLabel={label('Payment notices','পেমেন্ট বিজ্ঞপ্তি')}
           columns={[
             {key:'update',header:label('Update','হালনাগাদ'),renderCell:()=><h2 className="text-sm font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>},
@@ -347,7 +350,7 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading||noticeOwner!==id?<p role="status">{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !privateNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <TaxPayDataGrid variant="tabular" rows={privateNotices} getRowKey={n=>String(n.id)}
+        <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={privateNotices} getRowKey={n=>String(n.id)}
           ariaLabel={label('Account payment notifications','অ্যাকাউন্টের পেমেন্ট বিজ্ঞপ্তি')}
           columns={[
             {key:'update',header:label('Update','হালনাগাদ'),renderCell:n=><div>
@@ -362,10 +365,10 @@ export const NotificationsView:React.FC=()=>{
               <time className="text-sm text-taxpay-muted" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
             </div>},
             {key:'action',header:label('Actions','কার্যক্রম'),renderCell:n=><div className="flex flex-col gap-2 sm:flex-row">
-              <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
-                onClick={()=>openRelatedPayment(n)}>{label('View payment details','পেমেন্টের বিবরণ দেখুন')}</button>
-              <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50"
-                disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>
+              <MuiButton type="button" variant="outlined" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+                onClick={()=>openRelatedPayment(n)}>{label('View payment details','পেমেন্টের বিবরণ দেখুন')}</MuiButton>
+              <MuiButton type="button" variant="outlined" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50"
+                disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</MuiButton>
             </div>}
           ]}/>}
     </section>

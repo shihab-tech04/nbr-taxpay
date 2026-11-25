@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {CitizenMuiScope,MuiButtonBase} from '../../design-system/mui';
 import {loadAccountActivities,type AccountActivityItem,type AccountActivityType} from '../../services/accountActivity';
 
 const labels:Record<AccountActivityType,{en:string;bn:string}>={
@@ -61,7 +62,9 @@ export function AccountRecentActivity({ownerUid,language}:{ownerUid:string;langu
       :current.error
         ?<div role="alert">
             <p>{bn?'কার্যক্রম লোড করা যায়নি।':'Could not load saved activity.'}</p>
-            <button type="button" onClick={()=>setRevision(value=>value+1)}>{retry}</button>
+            <CitizenMuiScope><MuiButtonBase type="button" disableRipple
+              sx={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'8px',width:'fit-content',maxWidth:'100%',minHeight:'44px',padding:'9px 16px',border:'1px solid var(--citizen-primary)',borderRadius:'9px',backgroundColor:'var(--citizen-primary)',color:'var(--citizen-surface)',fontFamily:'inherit',fontSize:'14px',fontWeight:650,'&.Mui-focusVisible':{outline:'2px solid var(--citizen-primary)',outlineOffset:2}}}
+              onClick={()=>setRevision(value=>value+1)}>{retry}</MuiButtonBase></CitizenMuiScope>
           </div>
         :current.rows.length===0
           ?<p role="status">{bn?'এখনো কোনো সংরক্ষিত কার্যক্রম নেই।':'No saved activity yet.'}</p>

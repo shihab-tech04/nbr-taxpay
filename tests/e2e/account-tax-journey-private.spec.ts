@@ -119,6 +119,7 @@ test('verified account sees only real owner review events and correct chronologi
   await expect(timeline).not.toContainText('Tax credit recognized');
   await items.nth(1).getByText('View event details').click();
   await expect(items.nth(1)).toContainText('OFFICER INFO REQUESTED');
+  await expect(page.getByRole('combobox',{name:'Journey assessment year'})).toHaveClass(/MuiNativeSelect-select/);
   await page.getByRole('combobox',{name:'Journey assessment year'}).selectOption('all');
   await page.reload();
   await expect(page.getByTestId('account-tax-journey').getByRole('listitem')).toHaveCount(2);
@@ -195,6 +196,7 @@ test('owner SQL payment events show beneficiary allocations with the same refere
   await expect(saved).toContainText('৳ 15.00');
   await expect(saved).toContainText('৳ 35.00');
   await expect(saved).toContainText(sharedPayment.id);
+  await expect(saved.getByRole('combobox',{name:'Payment journey assessment year'})).toHaveClass(/MuiNativeSelect-select/);
   await saved.getByRole('combobox',{name:'Payment journey assessment year'}).selectOption('2025-26');
   await expect(saved.getByRole('listitem')).toHaveCount(1);
   await expect(saved).toContainText('Beneficiary B');
@@ -564,3 +566,29 @@ test('notification register keeps payment reviews available before correction co
   await expect(reviews).not.toContainText('case-a1');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
+
+for(const language of ['en','bn'] as const){
+  test('submitted review history uses scoped MUI controls and preserves filtering '+language,async({page})=>{
+    await mockAccount(page,true);
+    await page.route(backend+'/rest/v1/rpc/sim_my_taxpayer_profile**',route=>route.fulfill({status:200,contentType:'application/json',body:'null'}));
+    await page.goto('/?action=history&lang='+language);
+    const history=page.getByTestId('account-owner-review-history');
+    await expect(history).toBeVisible();
+    const desktop=(page.viewportSize()?.width??1280)>=768;
+    const records=page.getByTestId(desktop?'account-owner-review-table':'account-owner-review-mobile-cards');
+    await expect(records).toBeVisible();
+    await expect(records).toContainText(request.id);
+    if(desktop)await expect(records).toHaveClass(/MuiTable-root/);
+    await history.getByRole('button',{name:language==='bn'?'ফিল্টার':'Filter',exact:true}).click();
+    const year=history.getByRole('combobox',{name:language==='bn'?'করবর্ষ অনুযায়ী অনুরোধ ফিল্টার করুন':'Filter requests by year'});
+    await expect(year).toHaveClass(/MuiNativeSelect-select/);
+    await year.selectOption(request.assessment_year);
+    await expect(records).toContainText(request.id);
+    const clear=history.getByRole('button',{name:language==='bn'?'ফিল্টার মুছুন':'Clear filters',exact:true});
+    await expect(clear).toHaveClass(/MuiButtonBase-root/);
+    await clear.click();
+    await expect(year).toHaveValue('all');
+    await expect(records).toContainText(request.id);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  });
+}

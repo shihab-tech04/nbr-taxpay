@@ -1,0 +1,52 @@
+name: MUI v4 account journey and notification controls
+on:
+  push:
+    branches: [ops/mui-v4-public-forms-next-766f320]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+          npm run test:domain
+          VITE_SUPABASE_DISABLED=true VITE_SUPABASE_URL='' VITE_SUPABASE_PUBLISHABLE_KEY='' npm run build
+      - run: npx playwright install chromium
+      - name: Verify owner-scoped account journey using synthetic transport
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/account-tax-journey-private.spec.ts tests/e2e/mui-v51-review-controls.spec.ts --workers=2
+      - name: Verify notification filters, table records and unchanged payment-service entry
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/taxpay-notification-register-ux.spec.ts --workers=2
+      - name: Verify public service directory
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/citizen-copy-cleanup.spec.ts --workers=2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mui-v4-account-route-evidence
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

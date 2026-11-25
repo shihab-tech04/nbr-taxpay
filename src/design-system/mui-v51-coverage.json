@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "scope": "incremental classified controls only; global denominator UNVERIFIED",
+  "base": "94badb7be65fb82da6f1d434a879ef23b81cf410",
+  "items": [
+    {
+      "id": "MUI-ACCOUNT-ACTIVITY-RETRY",
+      "file": "src/components/screens/AccountRecentActivity.tsx",
+      "symbol": "AccountRecentActivity",
+      "route": "account_profile",
+      "control": "retry",
+      "states": [
+        "error",
+        "loading",
+        "success",
+        "empty",
+        "focus"
+      ],
+      "role": "verified owner",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320"
+    },
+    {
+      "id": "MUI-REVIEW-REFRESH",
+      "file": "src/components/screens/SharedReviewRequests.tsx",
+      "symbol": "SharedReviewRequests",
+      "route": "secure_workspace",
+      "control": "refresh",
+      "states": [
+        "enabled",
+        "focus",
+        "loading",
+        "error",
+        "success"
+      ],
+      "role": "verified owner",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320"
+    },
+    {
+      "id": "MUI-REVIEW-SUBMIT",
+      "file": "src/components/screens/SharedReviewRequests.tsx",
+      "symbol": "SharedReviewRequests",
+      "route": "secure_workspace",
+      "control": "submit",
+      "states": [
+        "enabled",
+        "busy",
+        "disabled",
+        "submitted",
+        "error",
+        "focus"
+      ],
+      "role": "verified owner",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320"
+    },
+    {
+      "id": "MUI-REVIEW-READ",
+      "file": "src/components/screens/SharedReviewRequests.tsx",
+      "symbol": "SharedReviewRequests",
+      "route": "secure_workspace",
+      "control": "markRead",
+      "states": [
+        "unread",
+        "busy",
+        "read",
+        "disabled",
+        "focus",
+        "error"
+      ],
+      "role": "verified recipient",
+      "classification": "GENERIC-MIGRATE",
+      "component": "@mui/material/ButtonBase",
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "test": "tests/e2e/mui-v51-review-controls.spec.ts",
+      "owner": "MUI migration",
+      "implementationBranch": "ops/mui-v4-public-forms-next-766f320"
+    }
+  ],
+  "unresolved": [
+    {
+      "file": "src/components/screens/AccountBeneficiaryHistory.tsx",
+      "reason": "overlapping active PR #786",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/AccountCenter.tsx",
+      "reason": "multiple active owners; preserve their work",
+      "status": "UNVERIFIED"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import React, {useEffect,useMemo,useState} from 'react';
+import {CitizenMuiScope,MuiButton,MuiNativeSelect,MuiInputBase} from '../../design-system/mui';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadAccountTaxJourney,type AccountJourneyItem} from '../../services/accountTaxJourney';
@@ -46,7 +47,7 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
     };
     return tr(...(labels[code]??labels.UNVERIFIED));
   };
-  return <div className="mx-auto max-w-4xl space-y-5 pb-12">
+  return <CitizenMuiScope><div data-mui-citizen-region="tax-journey" className="mx-auto max-w-4xl space-y-5 pb-12">
     <TaxpayerPageHeading id="taxpay-journey-title" title={tr('My tax journey','আমার কর কার্যক্রম')}
       description={tr('Recorded account activity.','অ্যাকাউন্টের নথিভুক্ত কার্যক্রম।')}/>
     {activityTabs&&<TaxpayerActivityTabs />}
@@ -58,12 +59,12 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
           <p className="mt-1 text-sm text-taxpay-muted">{tr('Submitted review requests and recorded status events, oldest first.','জমা দেওয়া পর্যালোচনা অনুরোধ ও নথিভুক্ত অবস্থার পরিবর্তন, পুরোনো থেকে নতুন।')}</p></div>
         {state.phase==='ready'&&years.length>0&&<label className="flex flex-col gap-1 text-sm font-medium text-taxpay-text">
           {tr('Assessment year','করবর্ষ')}
-          <select aria-label={tr('Journey assessment year','যাত্রার করবর্ষ')}
-            className="min-h-11 min-w-32 rounded-lg border border-taxpay-border bg-white px-3"
+          <MuiNativeSelect input={<MuiInputBase/>} inputProps={{'aria-label':tr('Journey assessment year','যাত্রার করবর্ষ')}}
+            sx={{minWidth:128,"& .MuiNativeSelect-select":{boxSizing:"border-box",minHeight:"44px",border:"1px solid #E1E6EE",borderRadius:"8px",backgroundColor:"white",padding:"8px 32px 8px 12px"}}}
             value={selectedYear} onChange={event=>setYear(event.target.value)}>
             <option value="all">{tr('All years','সব করবর্ষ')}</option>
             {years.map(value=><option key={value} value={value}>{value}</option>)}
-          </select>
+          </MuiNativeSelect>
         </label>}
       </div>
       <p className="mt-3 text-sm text-taxpay-muted" role="note">
@@ -73,8 +74,8 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
       {state.phase==='loading'&&<p role="status" className="mt-5 text-sm text-taxpay-muted">{tr('Loading account events…','অ্যাকাউন্টের ঘটনা লোড হচ্ছে…')}</p>}
       {state.phase==='error'&&<div role="alert" className="mt-5 space-y-2">
         <p className="text-sm text-taxpay-error">{tr('Your account timeline could not be verified.','আপনার অ্যাকাউন্টের ঘটনাক্রম যাচাই করা যায়নি।')}</p>
-        <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-taxpay-primary"
-          onClick={()=>setRevision(x=>x+1)}>{tr('Try again','আবার চেষ্টা করুন')}</button>
+        <MuiButton type="button" variant="outlined" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-taxpay-primary"
+          onClick={()=>setRevision(x=>x+1)}>{tr('Try again','আবার চেষ্টা করুন')}</MuiButton>
       </div>}
       {state.phase==='ready'&&visible.length===0&&<p role="status" className="mt-5 rounded-lg border border-dashed border-taxpay-border bg-slate-50 p-5 text-sm text-taxpay-muted">
         {tr('No recorded review activity for this selection.','এই নির্বাচনের জন্য কোনো নথিভুক্ত পর্যালোচনা কার্যক্রম নেই।')}
@@ -108,5 +109,5 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
         </li>)}
       </ol>}
     </section>}
-  </div>;
+  </div></CitizenMuiScope>;
 };

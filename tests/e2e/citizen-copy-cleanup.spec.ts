@@ -51,6 +51,7 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
 test('retired connection-status page is replaced by two entry choices with preserved tax purpose coverage',async({page})=>{
   await page.goto('/?action=services&demoUser=user1');
   await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Select a service'})).toHaveClass(/MuiButton-root/);
   await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(2);
    await expect(page.locator('.taxpayer-service-directory__card[data-payment-service="TAX_WITH_RETURN"]')).toBeVisible();
    await expect(page.locator('.taxpayer-service-directory__card[data-payment-service="OTHER_TAX"]')).toBeVisible();

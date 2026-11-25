@@ -3,7 +3,12 @@ import { supabase } from '../../services/supabaseClient';
 import { sameAuthenticatedOwner } from '../../services/secureWorkspacePolicy';
 import { validateSourceChangeProposal } from '../../services/sourceChangeProposal';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
-import { UiButton, UiInput, UiSelect, UiTextarea } from '../ui/Controls';
+import {CitizenMuiScope,MuiButtonBase,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
+
+const fieldSx={mt:2,minHeight:44,minWidth:0,border:'1px solid #CBD5E1',borderRadius:'8px',backgroundColor:'var(--taxpay-surface,#fff)',color:'inherit',font:'inherit',fontWeight:400,
+ '& .MuiInputBase-input':{boxSizing:'border-box',height:'auto',padding:'10px 12px',font:'inherit',minWidth:0},
+ '&.Mui-focused':{outline:'2px solid #065F46',outlineOffset:2}} as const;
+const selectSx={...fieldSx,'& .MuiNativeSelect-select':{boxSizing:'border-box',minHeight:44,padding:'10px 32px 10px 12px',font:'inherit',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} as const;
 
 type Props = { readonly authenticatedUserId: string; readonly language: 'en' | 'bn' };
 type ProposalRow = {
@@ -128,7 +133,7 @@ export const SourceChangeProposals: React.FC<Props> = ({ authenticatedUserId, la
     }
   };
 
-  return <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="source-proposals-title">
+  return <CitizenMuiScope><section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="source-proposals-title">
     <header className="space-y-2">
       <h2 id="source-proposals-title" className="font-serif-fraunces text-xl font-bold text-emerald-950">{t.title}</h2>
       <p className="text-sm leading-6 text-amber-900">{t.intro}</p>
@@ -137,40 +142,41 @@ export const SourceChangeProposals: React.FC<Props> = ({ authenticatedUserId, la
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <label className="block text-sm font-semibold text-slate-800">
           {t.search}
-          <UiInput type="search" value={query} onChange={e => setQuery(e.target.value)}
-            className="mt-2 block min-h-11 w-full rounded-lg border border-slate-300 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-800"/>
+          <MuiInputBase data-mui-coverage="MUI-PROPOSAL-SEARCH" fullWidth type="search" value={query} onChange={e => setQuery(e.target.value)}
+            inputProps={{'aria-label':t.search}} sx={fieldSx}/>
         </label>
         <label className="block text-sm font-semibold text-slate-800">
           {t.choose}
-          <UiSelect required value={headId || ''} onChange={e => setHeadId(Number(e.target.value))}
-            className="mt-2 block min-h-11 w-full rounded-lg border border-slate-300 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-800">
+          <MuiNativeSelect data-mui-coverage="MUI-PROPOSAL-HEAD" required fullWidth input={<MuiInputBase/>} value={headId || ''} onChange={e => setHeadId(Number(e.target.value))}
+            inputProps={{'aria-label':t.choose,required:true}} sx={selectSx}>
             <option value="" disabled>{t.select}</option>
             {filtered.map(x => <option key={x.id} value={x.id}>{x.id} — {x.en}</option>)}
-          </UiSelect>
+          </MuiNativeSelect>
         </label>
         <label className="block text-sm font-semibold text-slate-800">
           {t.hash}
-          <UiInput required type="text" inputMode="text" spellCheck={false} minLength={64} maxLength={64}
+          <MuiInputBase data-mui-coverage="MUI-PROPOSAL-HASH" required fullWidth type="text"
+            inputProps={{'aria-label':t.hash,inputMode:'text',spellCheck:false,minLength:64,maxLength:64}}
             value={sha} onChange={e => setSha(e.target.value.toLowerCase())}
-            className="mt-2 block min-h-11 w-full rounded-lg border border-slate-300 p-3 font-mono-plex text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-800"/>
+            sx={{...fieldSx,fontFamily:'var(--font-mono,monospace)',fontSize:12}}/>
         </label>
         <label className="block text-sm font-semibold text-slate-800">
           {t.label}
-          <UiInput required type="text" value={suggestedLabel} maxLength={400}
-            onChange={e => setSuggestedLabel(e.target.value)}
-            className="mt-2 block min-h-11 w-full rounded-lg border border-slate-300 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-800"/>
+          <MuiInputBase data-mui-coverage="MUI-PROPOSAL-LABEL" required fullWidth type="text" value={suggestedLabel}
+            inputProps={{'aria-label':t.label,maxLength:400}} onChange={e => setSuggestedLabel(e.target.value)} sx={fieldSx}/>
         </label>
       </div>
       <label className="block text-sm font-semibold text-slate-800">
         {t.reason}
-        <UiTextarea required minLength={10} maxLength={1000} rows={3} value={reason}
-          onChange={e => setReason(e.target.value)}
-          className="mt-2 block w-full rounded-lg border border-slate-300 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-800"/>
+        <MuiInputBase data-mui-coverage="MUI-PROPOSAL-REASON" required fullWidth multiline rows={3} value={reason}
+          inputProps={{'aria-label':t.reason,minLength:10,maxLength:1000}} onChange={e => setReason(e.target.value)}
+          sx={{...fieldSx,padding:0,'& .MuiInputBase-inputMultiline':{boxSizing:'border-box',width:'100%',padding:'12px',resize:'vertical'}}}/>
       </label>
-      <UiButton type="submit" disabled={busy}
-        className="min-h-11 rounded-lg bg-emerald-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">
+      <MuiButtonBase data-mui-coverage="MUI-PROPOSAL-SUBMIT" type="submit" disableRipple disabled={busy}
+        className="min-h-11 rounded-lg bg-emerald-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        sx={{minHeight:44,maxWidth:'100%',padding:'12px 20px',borderRadius:'8px',backgroundColor:'#022C22',color:'#fff',fontFamily:'inherit',fontSize:14,fontWeight:600,'&.Mui-disabled':{opacity:0.5},'&.Mui-focusVisible':{outline:'2px solid #F59E0B',outlineOffset:2}}}>
         {t.submit}
-      </UiButton>
+      </MuiButtonBase>
     </form>
     {message && <p role="status" aria-live="polite" className="rounded-lg border border-slate-200 p-3 text-sm text-slate-800 break-words">{message}</p>}
     <section aria-labelledby="source-proposal-history" className="space-y-3">
@@ -184,5 +190,5 @@ export const SourceChangeProposals: React.FC<Props> = ({ authenticatedUserId, la
           </li>)}
         </ul>}
     </section>
-  </section>;
+  </section></CitizenMuiScope>;
 };

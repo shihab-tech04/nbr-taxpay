@@ -28,6 +28,7 @@ jobs:
           git merge-base --is-ancestor "$BASE_SHA" HEAD
           test -z "$(git diff "$BASE_SHA" HEAD -- src/App.tsx src/index.css src/styles src/components/layout src/services supabase src/components/screens/PublicLanding.tsx src/components/screens/Home2Layout.tsx src/components/screens/home2 src/components/screens/home3 src/components/screens/PublicHeroCarousel.tsx src/components/screens/PaymentServiceChoiceDialog.tsx src/components/screens/TaxpayerLoginDialog.tsx)"
           npm ci --no-audit --no-fund
+          node scripts/ci/mui-v52-source-inventory.mjs
           npm run lint
           env -u VITE_SUPABASE_DISABLED -u VITE_SUPABASE_URL -u VITE_SUPABASE_PUBLISHABLE_KEY npm run test:domain
           npm run build
@@ -43,6 +44,14 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
           MUI_SYNTHETIC_CATALOGUE: 'true'
         run: npx playwright test tests/e2e/head-catalogue.spec.ts --workers=2
+      - name: Verify integrated account controls and source proposal forms
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/account-tax-journey-private.spec.ts tests/e2e/mui-v51-review-controls.spec.ts tests/e2e/mui-v52-source-proposals.spec.ts tests/e2e/taxpay-notification-register-ux.spec.ts --workers=2
+      - name: Verify integrated public service directory
+        run: npx playwright test tests/e2e/citizen-copy-cleanup.spec.ts --workers=2
       - name: Compare unchanged Main and combined candidate across full home matrix
         run: |
           set -euo pipefail
