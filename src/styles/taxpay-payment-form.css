@@ -738,3 +738,60 @@
   .payment-flow-embedded--receipt .walkin-result-benefits__actions { flex-direction: column; }
   .payment-flow-embedded--receipt .walkin-result-benefits__actions button { width: 100%; justify-content: center; }
 }
+
+/* Restore the native taxpayer disclosure within the approved compact v5 card.
+ * Reuse the existing selected-head renderer; don't reintroduce a second editor,
+ * alter the legacy summary or add new TIN controls. Scope also covers the
+ * mobile calculation portal, outside the embedded workspace ancestor. */
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner {
+  padding:0;
+  min-width:0;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner > summary {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:0;
+  min-height:44px;
+  padding:12px 13px;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner-top {
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  width:100%;
+  gap:8px;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner-identity {
+  flex:1 1 auto;
+  min-width:0;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner-chevron {
+  flex:none;
+  color:var(--citizen-primary);
+  transition:transform .15s ease;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner[open] > summary .payment-form-summary__compact-owner-chevron {
+  transform:rotate(180deg);
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner-warning {
+  display:block;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner .payment-form-summary__taxpayer-label {
+  min-width:0;
+  overflow-wrap:anywhere;
+  text-align:start;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owners {
+  min-width:0;
+  align-content:start;
+  flex:0 0 auto;
+}
+.taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__taxpayer-entries[data-expanded="true"] {
+  max-height:min(36dvh,340px);
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+@media(prefers-reduced-motion:reduce) {
+  .taxpay-citizen-shell .payment-form-summary--v5-compact .payment-form-summary__compact-owner-chevron {transition:none;}
+}

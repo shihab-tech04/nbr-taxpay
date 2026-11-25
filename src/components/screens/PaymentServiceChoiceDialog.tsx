@@ -15,6 +15,7 @@ import { TravelTax } from './TravelTax';
 import {travelTaxModalTitle,travelTaxModalStages} from './travelTaxModalContract';
 import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { activePreviewSession } from '../../services/previewAccountSession';
 import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import type {PaymentReuse} from '../../services/paymentReuse';
@@ -53,22 +54,29 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const parallelEntry = Boolean(paymentBeneficiaryPrefill?.parallelSource && paymentBeneficiaryPrefill.parallelAllocations?.length);
   // A Travel Tax shortcut enters the existing passenger journey directly.
   const directTravelEntry = initialService === 'TRAVEL_TAX' && !initialDraft && !initialReuse;
+  // A saved-beneficiary shortcut starts the same signed-in Taxpayer Information
+  // workspace as Pay Tax. A prefill is a selection, not proof of ownership:
+  // GuestPayment still loads the current owner's saved TINs and validates them.
+  // Do not reinterpret parallel allocations, guest shortcuts or stored drafts.
+  const beneficiaryAccountEntry = Boolean(paymentBeneficiaryPrefill?.tin &&
+    !paymentBeneficiaryPrefill.parallelSource && !initialService && !initialDraft && !initialReuse &&
+    (verifiedUser || (previewAccount && activePreviewSession()?.profileId === previewAccount.id)));
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? (paymentBeneficiaryPrefill.parallelSource ? Boolean(paymentBeneficiaryPrefill.parallelForSelf) : false) : null);
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : initialReuse ? (initialReuse.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : unifiedEntryRequested ? 'OTHER_TAX' : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  // Only the new Home "All Tax Payments" entry uses the consolidated three-step flow.
-  // Resume compatible account drafts in the approved signed-in workspace.
-  // Explicit legacy entry remains supported for other service-specific drafts.
+  // Modern Home and signed-in saved-beneficiary entries use the shared
+  // consolidated workspace. Compatible saved drafts resume in that same editor.
+  // Dedicated and explicitly legacy routes remain intact.
   const genericAccountEntry = Boolean(unifiedEntryRequested && (verifiedUser||previewAccount)&&!initialService&&!initialDraft&&!initialReuse&&!paymentBeneficiaryPrefill&&!onPublicOtherTaxContinue);
   const publicUnifiedEntry = unifiedEntryRequested && !initialService && !initialDraft && !initialReuse && !parallelEntry;
   const initialUnifiedAccount = initialDraft?.form_payload.unifiedFlowVersion===5 || initialReuse?.formPayload.unifiedFlowVersion===5;
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
-    initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : publicUnifiedEntry && !genericAccountEntry ? 'entry' : 'payer');
+    initialDraft || initialReuse || directTravelEntry || parallelEntry || beneficiaryAccountEntry ? 'payment' : publicUnifiedEntry && !genericAccountEntry ? 'entry' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [travelCheckoutOpen, setTravelCheckoutOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse || (parallelEntry && (verifiedUser || previewAccount))));
+  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse || beneficiaryAccountEntry || (parallelEntry && (verifiedUser || previewAccount))));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
@@ -77,7 +85,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
   const unifiedEntry = draftToResume
     ? useUnifiedDraftEditor(draftToResume, Boolean(initialDraft || genericAccountEntry))
-    : initialReuse ? initialReuse.service==='OTHER_TAX_PAYMENT'&&initialUnifiedAccount : publicUnifiedEntry||genericAccountEntry||initialUnifiedAccount;
+    : initialReuse ? initialReuse.service==='OTHER_TAX_PAYMENT'&&initialUnifiedAccount : beneficiaryAccountEntry||publicUnifiedEntry||genericAccountEntry||initialUnifiedAccount;
   // All signed-out Walk-in payment journeys share the ONE two-action exit;
   // account-owned payments retain the separate Save Draft policy.
   const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;
