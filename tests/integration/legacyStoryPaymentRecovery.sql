@@ -310,3 +310,62 @@ begin
 end
 $recovery$;
 rollback;
+
+-- Cross-project archive test: disposable PostgreSQL only. Schema and rows
+-- roll back together; no hosted credentials or payment replay.
+begin;
+\ir ../../scripts/recovery/story1-legacy-history.sql
+do $archive$
+declare
+ a jsonb; b jsonb; h_a text; h_b text; sid uuid;
+ pid uuid:=gen_random_uuid(); idem uuid:=gen_random_uuid(); payload jsonb;
+ initial_count bigint; got jsonb;
+ bad_pid uuid:=gen_random_uuid(); bad_idem uuid:=gen_random_uuid(); bad_sid uuid:=gen_random_uuid(); bad_payload jsonb;
+begin
+ a:=public.taxpay_demo_profile_login('user1','user1');
+ b:=public.taxpay_demo_profile_login('user2','user2');
+ h_a:=encode(extensions.digest(convert_to(a->>'capability','UTF8'),'sha256'),'hex');
+ h_b:=encode(extensions.digest(convert_to(b->>'capability','UTF8'),'sha256'),'hex');
+ select payment_session_id into sid from taxpay_guest_private.demo_profiles where demo_id='user1';
+ initial_count:=(public.taxpay_demo_story1_session_payments(h_a,1,100)->>'total')::bigint;
+ payload:=jsonb_build_object('origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',100,
+ 'sessionId',sid,'idempotencyKey',idem,'details',jsonb_build_object('payerId','user1',
+ 'receiptReference','ARCHIVE-'||pid::text,'receiptSnapshot',jsonb_build_object('challanNo','ARCHIVE-'||pid::text),
+ 'lines',jsonb_build_array(jsonb_build_object('beneficiary','user1','category','TAX_WITH_RETURN',
+ 'assessmentYear','2025-26','amountMinor',100))));
+ insert into demo_payment.story1_legacy_history(id,idempotency_key,session_id,service_code,amount_minor,data,status,created_at,owner_demo_id,source_project,source_payload_sha256)
+ values(pid,idem,sid,'TAX_WITH_RETURN',100,payload,'SIMULATED_SUCCESS',now(),'user1','eyqhoavnitkrajvyqvxn',
+ encode(extensions.digest(convert_to(payload::text,'UTF8'),'sha256'),'hex'));
+ -- A forged or unmapped session must fail at import, not merely disappear
+ -- from the history projection and reserve its ID.
+ bad_payload:=jsonb_set(jsonb_set(payload,'{sessionId}',to_jsonb(bad_sid::text)),'{idempotencyKey}',to_jsonb(bad_idem::text));
+ begin
+  insert into demo_payment.story1_legacy_history(id,idempotency_key,session_id,service_code,amount_minor,data,status,created_at,owner_demo_id,source_project,source_payload_sha256)
+  values(bad_pid,bad_idem,bad_sid,'TAX_WITH_RETURN',100,bad_payload,'SIMULATED_SUCCESS',now(),'user1','eyqhoavnitkrajvyqvxn',
+  encode(extensions.digest(convert_to(bad_payload::text,'UTF8'),'sha256'),'hex'));
+  raise exception 'Unmapped session was accepted into archive';
+ exception when others then if sqlerrm not like '%LEGACY_OWNER_SESSION_UNVERIFIED%' then raise; end if; end;
+ if exists(select 1 from demo_payment.story1_legacy_history where id=bad_pid or idempotency_key=bad_idem) then
+  raise exception 'Rejected import reserved a historical identity';
+ end if;
+ if (public.taxpay_demo_story1_session_payments(h_a,1,100)->>'total')::bigint<>initial_count+1 then raise exception 'Archive not in payer list'; end if;
+ got:=public.taxpay_demo_story1_session_payment(h_a,pid);
+ if got->'data' is distinct from payload then raise exception 'Archive receipt was altered'; end if;
+ if public.taxpay_demo_story1_reference_payment(h_a,'ARCHIVE-'||pid::text,null)->>'id' is distinct from pid::text then raise exception 'Archive reference missing'; end if;
+ if public.taxpay_demo_story1_reference_payment(h_b,pid::text,null) is not null then raise exception 'Cross-account reference access'; end if;
+ if not exists(select 1 from jsonb_array_elements(public.taxpay_demo_story1_history_page(h_a,'payer')) x where x->>'transactionId'=pid::text) then raise exception 'Missing payer history'; end if;
+ if exists(select 1 from jsonb_array_elements(public.taxpay_demo_story1_history_page(h_a,'beneficiary')) x where x->>'transactionId'=pid::text) then raise exception 'Unverified historical recipient projection'; end if;
+ if exists(select 1 from demo_payment.story_payments where id=pid) or exists(select 1 from demo_payment.mirror_outbox where entity_id=pid) or exists(select 1 from demo_payment.story_notifications where payment_id=pid) then raise exception 'Archive generated new payment side effects'; end if;
+ if has_table_privilege('anon','demo_payment.story1_legacy_history','SELECT') or has_table_privilege('authenticated','demo_payment.story1_history_source','SELECT') or has_table_privilege('service_role','demo_payment.story1_legacy_history','INSERT') then raise exception 'Archive privileges exposed'; end if;
+ begin
+  perform public.taxpay_demo_story1_session_payment(h_b,pid);
+  raise exception 'Cross-account detail access';
+ exception when others then if sqlerrm not like '%NOT_FOUND%' then raise; end if; end;
+ begin
+  insert into demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status)
+  values(pid,idem,sid,'TAX_WITH_RETURN',100,payload,'SIMULATED_SUCCESS');
+  raise exception 'Historical payment was duplicated';
+ exception when others then if sqlerrm not like '%LEGACY_PAYMENT_READ_ONLY%' then raise; end if; end;
+ raise notice 'PASS: historical payer list/detail/reference, isolation, no payment replay, duplicate guard and private grants';
+end $archive$;
+rollback;
