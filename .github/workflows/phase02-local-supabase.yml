@@ -14,7 +14,7 @@ permissions:
 concurrency:
   # Superseded PR checks may be replaced; never interrupt an in-progress
   # production-branch security check when another commit lands on main.
-  group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}
+  group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

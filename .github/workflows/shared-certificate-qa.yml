@@ -25,7 +25,7 @@ permissions:
 
 # Replace only superseded runs of the same PR; manual acceptance is independent.
 concurrency:
-  group: taxpay-shared-certificate-${{ github.event.pull_request.number || github.run_id }}
+  group: taxpay-shared-certificate-${{ github.event.pull_request.number || github.run_id }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
