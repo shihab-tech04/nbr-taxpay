@@ -35,7 +35,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   useEffect(()=>{
     let active=true;
     setReceiptState({key:ownerKey,phase:ownerKey?'loading':'ready',rows:[]});
-    if(!ownerKey)return()=>{active=false;};
+    if(!ownerKey||historyOnly){setReceiptState({key:ownerKey,phase:'ready',rows:[]});return()=>{active=false;};}
     // The existing preview capability authorizes this owner-scoped read.
     // Do not infer a receipt from route parameters or from illustrative cases.
     void getDetailedStorySessionPayments().then(payments=>{
@@ -46,7 +46,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
       setReceiptState({key:ownerKey,phase:'ready',rows});
     }).catch(()=>{if(active)setReceiptState({key:ownerKey,phase:'error',rows:[]});});
     return()=>{active=false;};
-  },[ownerKey,receiptRetry]);
+  },[ownerKey,receiptRetry,historyOnly]);
   const receiptPhase=receiptState.key===ownerKey?receiptState.phase:'loading';
   // Server-mode receipt ownership comes from the private session API, not a
   // client-supplied e-TIN or an illustrative profile's legacy identifier.
@@ -78,7 +78,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     load();
     window.addEventListener('taxpay:preview-corrections-changed',load);
     window.addEventListener('focus',load);
-    return()=>{active=false;window.removeEventListener('taxpay:preview-corrections-changed',load);window.removeEventListener('focus',load);};
+    const refreshVisible=()=>{if(document.visibilityState==='visible')load();};
+    document.addEventListener('visibilitychange',refreshVisible);
+    const timer=window.setInterval(refreshVisible,60000);
+    return()=>{active=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',refreshVisible);window.removeEventListener('taxpay:preview-corrections-changed',load);window.removeEventListener('focus',load);};
   },[ownerKey,serverMode,historyRetry,embedded,Boolean(previewAccount)]);
   const localCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
   const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean;officeSyncState?:PreviewCorrectionRecord['officeSyncState'];reviewState?:PreviewCorrectionRecord['reviewState'];initiatedBy?:PreviewCorrectionRecord['initiatedBy'];requestedOutcome?:string|null;evidenceNote?:string|null})[]=serverMode

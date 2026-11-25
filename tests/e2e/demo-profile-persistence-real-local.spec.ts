@@ -553,6 +553,17 @@ test('User1 historical Activity exposes all three correction entries and persist
     await page.reload();
     await expect(register).toContainText(reason);
     await expect(register).toContainText('DEMO-PAY-23-01');
+    // The real persisted historical request must appear on a different-year
+    // dashboard and lead back to the all-year SQL register, not sample cards.
+    await page.goto('/?action=taxpayer_home&scenarioYear=2026-2027');
+    const overview=page.getByTestId('taxpayer-overview-bento');
+    await overview.locator('.taxpay-summary-metric--requests').click();
+    await expect(overview.getByTestId('dashboard-recorded-corrections')).toContainText(reason);
+    await overview.getByRole('button',{name:/^View requests$/}).click();
+    await expect(page.getByRole('combobox',{name:/Assessment year|করবর্ষ/})).toHaveValue('all');
+    await expect(register).toContainText(reason);
+    await page.reload();
+    await expect(register).toContainText(reason);
     await page.goto('/?action=account_notifications&scenarioYear=2023-2024');
     const notificationRegister=page.getByTestId('correction-notifications');
     const notice=notificationRegister.locator('li').filter({hasText:reason});

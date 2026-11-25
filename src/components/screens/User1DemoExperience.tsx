@@ -1,5 +1,5 @@
 import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
-import {usePreviewCorrectionRegister,previewCorrectionStatus,correctionsForAssessmentYear} from '../../services/previewCorrections';
+import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
 import {TaxPayCompactCellList,TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useState} from 'react';
 import '../../styles/taxpay-dashboard-bento.css';
@@ -210,12 +210,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [historyYear,setHistoryYear]=useState(()=>initialActivityYear(
     new URLSearchParams(window.location.search).get('scenarioYear'),
     year,authorizedPreviewScenario&&!localQaScenario,false));
-  const [correctionYear,setCorrectionYear]=useState<string>(()=>new URLSearchParams(window.location.search).get('scenarioYear')?.match(/^20\d{2}-20\d{2}$/)?.[0]??'all');
-  useEffect(()=>{if(route==='corrections'&&typeof routeParams?.correctionRequestId==='string')setCorrectionYear('all');},[route,routeParams?.correctionRequestId]);
+  const readCorrectionYear=()=>new URLSearchParams(window.location.search).get('correctionYear')?.match(/^20\d{2}-20\d{2}$/)?.[0]??'all';
+  const [correctionYear,setCorrectionYear]=useState<string>(readCorrectionYear);
+  useEffect(()=>{if(route==='corrections')setCorrectionYear(typeof routeParams?.correctionRequestId==='string'?'all':readCorrectionYear());},[route,routeParams?.correctionRequestId]);
   const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
     if(route==='history')setHistoryYear(nextYear);
-    if(route==='corrections')setCorrectionYear(nextYear);
+    if(route==='corrections'){
+      setCorrectionYear(nextYear);
+      const url=new URL(window.location.href);
+      if(nextYear==='all')url.searchParams.delete('correctionYear');
+      else url.searchParams.set('correctionYear',nextYear);
+      window.history.replaceState(window.history.state,'',url);
+      return;
+    }
     if(nextYear!=='all'){setYear(nextYear);setLedgerYear(nextYear);}
     setMonthFilter('all');
     const url=new URL(window.location.href);
@@ -622,9 +630,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const compactEmptyOverview=overviewSource==='recorded'&&!localQaScenario&&!hasItemizedAccountAllocations&&Boolean(onResumePaymentDraft);
   const correctionRequests=overviewSource==='example'
     ?scoped.filter(x=>x.state==='REQUESTED'&&(x.kind==='refund'||x.kind==='adjustment')):[];
-  const scopedRecordedCorrections=correctionsForAssessmentYear(recordedCorrections.rows,year);
   const correctionRequestCount:number|null=authorizedPreviewScenario&&!localQaScenario
-    ?recordedCorrections.count===null?null:scopedRecordedCorrections.length
+    ?recordedCorrections.count
     :overviewSource==='example'?correctionRequests.length:null;
   const openOverviewPayments=()=>navigate('history',{
     dashboardSource:overviewSource,dashboardOnlyCompleted:true
@@ -791,9 +798,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} hidden={followupTab!=='requests'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       {authorizedPreviewScenario&&!localQaScenario?<div className="mt-2 space-y-3">
+        <p className="text-sm text-taxpay-muted">{tr('Correction requests from all assessment years.','সব করবর্ষের সংশোধনের আবেদন।')}</p>
         {recordedCorrections.phase==='loading'?<p role="status" className="text-sm text-taxpay-muted">{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</p>
           :recordedCorrections.phase==='error'?<div role="alert" className="text-sm"><p>{tr('Correction request history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><button type="button" className={action+' mt-2'} onClick={recordedCorrections.retry}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>
-          :scopedRecordedCorrections.length?<ul data-testid="dashboard-recorded-corrections" className="space-y-2">{scopedRecordedCorrections.slice(0,3).map(request=><li key={request.id} className="rounded-lg border border-taxpay-border p-3 min-w-0">
+          :recordedCorrections.rows.length?<ul data-testid="dashboard-recorded-corrections" className="space-y-2">{recordedCorrections.rows.slice(0,3).map(request=><li key={request.id} className="rounded-lg border border-taxpay-border p-3 min-w-0">
             <p className="break-all text-sm font-semibold">{request.originalReference}</p><p className="text-sm text-taxpay-muted">{previewCorrectionStatus(request,language)} · {request.currentAY} → {request.proposedAY}</p><p className="text-sm break-words">{request.reason}</p>
           </li>)}</ul>:<p role="status" className="text-sm text-taxpay-muted">{tr('No correction requests yet.','এখনো কোনো সংশোধনের আবেদন নেই।')}</p>}
         <button type="button" className={action} onClick={()=>navigate('corrections')}>{tr('View requests','আবেদন দেখুন')}<ArrowRight size={15} aria-hidden="true"/></button>
@@ -816,7 +824,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </li>)}
       </ul> : overviewSource==='example'
         ?<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>
-        :<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests are recorded for this session.','এই সেশনের জন্য কোনো সংশোধন আবেদন সংরক্ষিত নেই।')}</p>}</>}
+        :null}</>}
     </section>
     </div>
     </div>

@@ -19,6 +19,10 @@ export function correctionsForAssessmentYear(rows:readonly PreviewCorrectionReco
  const normalize=(value:string)=>value.trim().replace(/^(20\d{2})-(\d{2})$/,(_,start:string,end:string)=>start+'-20'+end);
  return rows.filter(row=>normalize(row.currentAY)===normalize(year));
 }
+/** Follow-ups is an account-wide queue, independent of the payment chart's year. */
+export function recentPreviewCorrections(rows:readonly PreviewCorrectionRecord[]) {
+  return [...rows].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.id.localeCompare(b.id));
+}
 export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'>,language:'en'|'bn'){
   const bn=language==='bn';
   if(record.officeSyncState!=='ACKNOWLEDGED')return bn?'অফিসে পাঠানো হচ্ছে':'Awaiting Office';
@@ -65,9 +69,12 @@ export async function listPreviewCorrections():Promise<PreviewCorrectionRecord[]
     const page=await request('?limit=100&offset='+offset,'GET');
     if(!Array.isArray(page)||page.length>100)throw Error('Invalid correction history');
     const current=activePreviewSession();
-    if(current?.profileId!==session.profileId||current.capability!==session.capability)throw Error('Correction session changed');
+    if(current?.profileId!==session.profileId||current.capability!==session.capability||current.paymentSessionId!==session.paymentSessionId)throw Error('Correction session changed');
     rows.push(...page.map(checked));
-    if(page.length<100)return rows;
+    if(page.length<100){
+      if(new Set(rows.map(row=>row.id)).size!==rows.length)throw Error('Correction history changed during pagination');
+      return recentPreviewCorrections(rows);
+    }
   }
   throw Error('Correction history limit reached');
 }
@@ -83,7 +90,7 @@ export async function submitPreviewCorrection(input:PreviewCorrectionInput):Prom
 /** Account-bound dashboard read model. An unavailable API is never counted as zero. */
 export function usePreviewCorrectionRegister(profileId:string|null,enabled=true){
   const session=activePreviewSession();
-  const key=enabled&&session&&session.profileId===profileId?session.capability:null;
+  const key=enabled&&session&&session.profileId===profileId?session.profileId+':'+session.paymentSessionId+':'+session.capability:null;
   type State={key:string|null;phase:'loading'|'ready'|'error';rows:PreviewCorrectionRecord[]};
   const [state,setState]=useState<State>({key:null,phase:'loading',rows:[]});
   const [revision,setRevision]=useState(0);
@@ -103,7 +110,10 @@ export function usePreviewCorrectionRegister(profileId:string|null,enabled=true)
     load();
     window.addEventListener('taxpay:preview-corrections-changed',load);
     window.addEventListener('focus',load);
-    return()=>{active=false;window.removeEventListener('taxpay:preview-corrections-changed',load);window.removeEventListener('focus',load);};
+    const refreshVisible=()=>{if(document.visibilityState==='visible')load();};
+    document.addEventListener('visibilitychange',refreshVisible);
+    const timer=window.setInterval(refreshVisible,60000);
+    return()=>{active=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',refreshVisible);window.removeEventListener('taxpay:preview-corrections-changed',load);window.removeEventListener('focus',load);};
   },[key,revision]);
   const visible=state.key===key?state:{key,phase:'loading' as const,rows:[]};
   return {phase:visible.phase,rows:visible.rows,count:key&&visible.phase==='ready'?visible.rows.length:null,

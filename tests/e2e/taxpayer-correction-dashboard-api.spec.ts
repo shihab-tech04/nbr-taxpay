@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-test('connected User1 correction dashboard uses authoritative year-scoped history and retries unavailable data',async({page})=>{
+test('connected User1 correction dashboard uses authoritative all-year history and refreshes newly submitted requests',async({page})=>{
   await page.addInitScript(()=>{
     sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
     sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
@@ -56,14 +56,19 @@ test('connected User1 correction dashboard uses authoritative year-scoped histor
   await expect(page.getByTestId('user1-synthetic-workspace')).not.toContainText('DEMO-PAY-');
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
 
-  // Changing the selected year updates the same preview projection and never
-  // treats pending/failed/withheld transactions as completed payments.
+  // Payment metrics stay year-scoped; the correction queue covers all years.
   await page.goto('/?action=taxpayer_home&scenarioYear=2024-2025');
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
   await expect(page.getByTestId('taxpayer-overview-bento')
     .locator('.taxpay-summary-metric--completed strong')).toHaveText('0');
   await expect(page.getByTestId('taxpayer-overview-bento')
-    .locator('.taxpay-summary-metric--requests strong')).toHaveText('0');
+    .locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
+  await overview.locator('.taxpay-summary-metric--requests').click();
+  await expect(overview.getByTestId('dashboard-recorded-corrections').getByRole('listitem')).toHaveCount(2);
+  correctionRows.push({...correctionRows[0],id:'00000000-0000-4000-8000-000000000004',originalReference:'DEMO-PAY-NEW',currentAY:'2023-2024',createdAt:'2026-11-25T01:00:00Z'});
+  await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:preview-corrections-changed')));
+  await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('3');
+  await expect(overview.getByTestId('dashboard-recorded-corrections').getByRole('listitem').first()).toContainText('DEMO-PAY-NEW');
   // A failed authoritative read is neither zero nor a sample count.
   correctionUnavailable=true;
   await page.reload();
@@ -72,6 +77,6 @@ test('connected User1 correction dashboard uses authoritative year-scoped histor
   await expect(overview.getByRole('alert').filter({hasText:'Correction request history unavailable.'})).toBeVisible();
   correctionUnavailable=false;
   await overview.getByRole('button',{name:'Retry',exact:true}).click();
-  await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('0');
+  await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('3');
 });
 
