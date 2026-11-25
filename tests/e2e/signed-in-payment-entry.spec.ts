@@ -103,7 +103,13 @@ for (const language of ['en','bn'] as const) {
     await expect(modal.locator('.taxpay-unified-entry__signed-in')).toHaveCount(0);
     await expect(modal.locator('.taxpay-unified-entry__walkin')).toHaveCount(0);
     await expect(modal.getByTestId('account-draft-entry')).toBeVisible();
-    await modal.getByTestId('account-draft-entry').locator('[data-draft-entry-option="NEW"]').click();
+    // This suite explicitly disables Supabase; preview login does not issue a
+    // server capability in that mode. The existing fail-closed draft recovery
+    // must offer Start new without fabricating a successful catalog read.
+    const draftGate=modal.getByTestId('account-draft-entry');
+    await expect(draftGate.getByRole('alert')).toContainText(language==='bn'
+      ? 'সংরক্ষিত খসড়া লোড করা যায়নি' : 'Saved drafts could not be loaded');
+    await draftGate.getByRole('button',{name:language==='bn'?'নতুন কর পরিশোধ শুরু করুন':'Start new Tax payment',exact:true}).click();
     await expect(modal.locator('[data-view="payment"]')).toBeVisible();
     await expect(modal.locator('.taxpay-modal__subtitle')).toHaveText(language==='bn'?'সাইন-ইন পেমেন্ট':'Signed-in Payment');
     expect(await page.evaluate(()=> (window as unknown as {__payTaxAccessRegression:{seen:boolean}}).__payTaxAccessRegression.seen)).toBe(false);
