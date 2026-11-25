@@ -1,7 +1,9 @@
+import { expectTaxHeadSpacing } from './payment-head-spacing-assertion';
 import { expect, test, type Page } from '@playwright/test';
 import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
+import { assertAccountDraftFooter } from './account-draft-footer-assertion';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
   await page.goto('/');
@@ -277,6 +279,8 @@ test('all five original non-return liability groups keep an editable year and am
 });
 
 test('switching taxpayer preserves each person’s head, year and amount without a target dropdown', async ({ page }) => {
+  // Full mobile journey; prior CI timed out after reaching purpose and amount.
+  test.setTimeout(90000);
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
@@ -1076,6 +1080,7 @@ test('F-039 unified account dashboard: own TIN and saved recipients share the ap
   await expect(dialog.getByTestId('unified-v5-tin-blocks').locator('span')).toHaveCount(12);
   await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible();
   await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('0');
+  await assertAccountDraftFooter(dialog);
   await own.check();
   await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('1');
   const saved=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'});
@@ -1088,6 +1093,8 @@ test('F-039 unified account dashboard: own TIN and saved recipients share the ap
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
   await expect(batch.getByTestId('unified-v5-return-group')).toBeVisible();
+  await assertAccountDraftFooter(dialog);
+  await expectTaxHeadSpacing(batch);
   await expect(dialog.getByTestId('frequent-category-section')).toHaveCount(0);
   expect(writes).toEqual([]);
 });
