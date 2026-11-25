@@ -160,6 +160,10 @@ BEGIN
      OR notice3->'items'->0->>'assessmentYear' IS DISTINCT FROM '2025-26'
      OR notice2->'items'->0->>'recipientTin' IS DISTINCT FROM '222222222222'
      OR notice3->'items'->0->>'recipientTin' IS DISTINCT FROM '333333333333'
+     OR notice2->'items'->0->>'payerName' IS DISTINCT FROM 'WS3 disposable payer'
+     OR notice2->'items'->0->>'paymentStatus' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+     OR notice2->'items'->0->>'serviceCode' IS DISTINCT FROM 'ADVANCE_TAX'
+     OR (notice2->'items'->0->>'createdAt')::timestamptz IS DISTINCT FROM (SELECT created_at FROM demo_payment.story_payments WHERE id=payment_id)
      OR notice2->'items'->0->>'paymentId' IS DISTINCT FROM payment_id::text
      OR notice2->'items'->0->>'receiptReference' IS DISTINCT FROM 'SIM-'||payment_key::text
      OR notice2->'items'->0 ? 'payerTin'
@@ -196,4 +200,165 @@ BEGIN
   RAISE NOTICE 'PASS: capability recipient allocation isolation, exact AY/head/tin/amount, stable event IDs, read/ack replay, unread resume and original payment immutability';
 END;
 $demo_recipient_notice$;
+
+-- Exercise the function installed by the normal ordered migration chain.
+-- No test-only DDL injection: this verifies clean database reproducibility.
+-- Preserve the separate savepoint for synthetic walk-in rows because the
+-- paired runner may capture/commit the registered source fixture.
+CREATE TEMP TABLE p0_notice_restore_check ON COMMIT DROP AS
+SELECT pg_get_functiondef('public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)'::regprocedure) AS definition,
+  (SELECT count(*) FROM demo_payment.story_payments) AS payment_count,
+  (SELECT count(*) FROM demo_payment.story_notifications) AS notice_count,
+  (SELECT count(*) FROM demo_payment.mirror_outbox) AS outbox_count,
+  (SELECT count(*) FROM taxpay_guest_private.demo_received_payment_notice_ack) AS ack_count;
+SAVEPOINT p0_walkin_candidate;
+DO $p0_walkin$
+DECLARE
+  payer jsonb; recipient2 jsonb; recipient3 jsonb;
+  payer_hash text; recipient2_hash text; recipient3_hash text;
+  source jsonb; guest jsonb; result jsonb; replay jsonb;
+  guest_key uuid:=gen_random_uuid(); guest_session uuid:=gen_random_uuid();
+  guest_id uuid; source_id uuid; event2 text; event3 text;
+  notice2 jsonb; notice3 jsonb; saved_ack jsonb;
+  before_data jsonb; denied boolean:=false;
+  guest_v5 jsonb; guest_v5_id uuid; guest_v5_key uuid:=gen_random_uuid();
+  self_payload jsonb; self_id uuid; self_key uuid:=gen_random_uuid();
+BEGIN
+  payer:=public.taxpay_demo_profile_login('user1','user1');
+  recipient2:=public.taxpay_demo_profile_login('user2','user2');
+  recipient3:=public.taxpay_demo_profile_login('user3','user3');
+  payer_hash:=encode(extensions.digest(convert_to(payer->>'capability','UTF8'),'sha256'),'hex');
+  recipient2_hash:=encode(extensions.digest(convert_to(recipient2->>'capability','UTF8'),'sha256'),'hex');
+  recipient3_hash:=encode(extensions.digest(convert_to(recipient3->>'capability','UTF8'),'sha256'),'hex');
+  SELECT id,data INTO STRICT source_id,source FROM demo_payment.story_payments
+    WHERE data->'details'->'allocations'->0->>'allocationId'='ws3-recipient-2';
+  -- Recheck privileges on the replacement, not only the original function.
+  IF has_function_privilege('anon',
+       'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
+    OR has_function_privilege('authenticated',
+       'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
+    OR NOT has_function_privilege('service_role',
+       'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
+  THEN RAISE EXCEPTION 'P0_CANDIDATE_NOTICE_DIRECT_ACCESS'; END IF;
+  -- SQL NULL must not pass the action allowlist through three-valued logic.
+  BEGIN
+    PERFORM public.taxpay_demo_received_payment_notices(recipient2_hash,NULL);
+    RAISE EXCEPTION 'P0_NULL_ACTION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM IS DISTINCT FROM 'INVALID_NOTICE_REQUEST' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM public.taxpay_demo_received_payment_notices(recipient2_hash,'invalid-action');
+    RAISE EXCEPTION 'P0_INVALID_ACTION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM IS DISTINCT FROM 'INVALID_NOTICE_REQUEST' THEN RAISE; END IF;
+  END;
+  -- Prove registered-source ACK and visibility survive the replacement.
+  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n
+    WHERE n->>'paymentId'=source_id::text AND n->>'isRead'='true')
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=source_id::text)
+  THEN RAISE EXCEPTION 'P0_REGISTERED_NOTICE_REGRESSION'; END IF;
+  guest:=jsonb_set(source,'{idempotencyKey}',to_jsonb(guest_key::text));
+  guest:=jsonb_set(guest,'{sessionId}',to_jsonb(guest_session::text));
+  guest:=guest #- '{details,payerId}';
+  guest:=jsonb_set(guest,'{details,payerName}',to_jsonb('User 4'::text));
+  guest:=jsonb_set(guest,'{details,payerTin}',to_jsonb('444444444444'::text));
+  guest:=jsonb_set(guest,'{details,receiptReference}',to_jsonb('SIM-'||guest_key::text));
+  guest:=jsonb_set(guest,'{details,receiptSnapshot,payerName}',to_jsonb('User 4'::text));
+  guest:=jsonb_set(guest,'{details,receiptSnapshot,payerTin}',to_jsonb('444444444444'::text));
+  guest:=jsonb_set(guest,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||guest_key::text));
+  result:=public.demo_story1_submit(guest);
+  guest_id:=(result->>'id')::uuid;
+  replay:=public.demo_story1_submit(guest);
+  IF result->>'status' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+    OR replay->>'id' IS DISTINCT FROM guest_id::text
+    OR replay->>'replayed' IS DISTINCT FROM 'true'
+  THEN RAISE EXCEPTION 'P0_WALKIN_SOURCE_REPLAY_FAILED'; END IF;
+  SELECT data INTO STRICT before_data FROM demo_payment.story_payments WHERE id=guest_id;
+  SELECT n INTO STRICT notice2 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=guest_id::text;
+  SELECT n INTO STRICT notice3 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=guest_id::text;
+  event2:=notice2->>'eventId'; event3:=notice3->>'eventId';
+  IF event2=event3 OR event2 IS NULL OR event3 IS NULL
+    OR notice2->>'allocationId' IS DISTINCT FROM 'ws3-recipient-2'
+    OR notice3->>'allocationId' IS DISTINCT FROM 'ws3-recipient-3'
+    OR notice2->>'amountMinor' IS DISTINCT FROM '1500'
+    OR notice3->>'amountMinor' IS DISTINCT FROM '3500'
+    OR notice2->>'assessmentYear' IS DISTINCT FROM '2026-27'
+    OR notice3->>'assessmentYear' IS DISTINCT FROM '2025-26'
+    OR notice2->>'payerName' IS DISTINCT FROM 'User 4'
+    OR notice2->>'paymentStatus' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+    OR notice2->>'serviceCode' IS DISTINCT FROM 'ADVANCE_TAX'
+    OR (notice2->>'createdAt')::timestamptz IS DISTINCT FROM (SELECT created_at FROM demo_payment.story_payments WHERE id=guest_id)
+    OR notice2->>'receiptReference' IS DISTINCT FROM 'SIM-'||guest_key::text
+    OR notice2 ? 'payerTin' OR notice2 ? 'allocations'
+    OR EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(payer_hash,'list')->'items') n
+      WHERE n->>'paymentId'=guest_id::text)
+  THEN RAISE EXCEPTION 'P0_WALKIN_NOTICE_SCOPE_FAILED'; END IF;
+  BEGIN
+    PERFORM public.taxpay_demo_received_payment_notices(recipient2_hash,'ack',event3);
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='NOTICE_NOT_FOUND' THEN denied:=true; ELSE RAISE; END IF;
+  END;
+  IF NOT denied THEN RAISE EXCEPTION 'P0_WALKIN_CROSS_ACK_ACCEPTED'; END IF;
+  saved_ack:=public.taxpay_demo_received_payment_notices(recipient2_hash,'ack',event2);
+  IF saved_ack->>'isRead' IS DISTINCT FROM 'true'
+    OR public.taxpay_demo_received_payment_notices(recipient2_hash,'ack',event2) IS DISTINCT FROM saved_ack
+    OR EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'unread')->'items') n WHERE n->>'eventId'=event2)
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n WHERE n->>'eventId'=event2 AND n->>'isRead'='true')
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n WHERE n->>'eventId'=event3)
+    OR (SELECT data FROM demo_payment.story_payments WHERE id=guest_id) IS DISTINCT FROM before_data
+    OR (SELECT data FROM demo_payment.story_payments WHERE id=source_id) IS DISTINCT FROM source
+  THEN RAISE EXCEPTION 'P0_WALKIN_ACK_OR_SOURCE_IMMUTABILITY_FAILED'; END IF;
+  -- A v5 anonymous walk-in uses the same exact allocation integrity rules,
+  -- and never gains account identity by leaving the optional payer TIN blank.
+  guest_v5:=jsonb_set(guest,'{idempotencyKey}',to_jsonb(guest_v5_key::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,allocationContractVersion}','5'::jsonb);
+  guest_v5:=jsonb_set(guest_v5,'{details,payerTin}',to_jsonb('GUEST'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,payerName}',to_jsonb('Disposable walk-in payer'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptSnapshot,payerTin}',to_jsonb('GUEST'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptSnapshot,payerName}',to_jsonb('Disposable walk-in payer'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptReference}',to_jsonb('SIM-'||guest_v5_key::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||guest_v5_key::text));
+  guest_v5_id:=(public.demo_story1_submit(guest_v5)->>'id')::uuid;
+  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=guest_v5_id::text AND n->>'allocationId'='ws3-recipient-2' AND n->>'amountMinor'='1500')
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=guest_v5_id::text AND n->>'allocationId'='ws3-recipient-3' AND n->>'amountMinor'='3500')
+  THEN RAISE EXCEPTION 'P0_WALKIN_V5_GUEST_ALLOCATION_FAILED'; END IF;
+  -- Even an exact lookup-matched guest name/TIN is not an authenticated
+  -- payer. A guest could otherwise suppress the recipient's warning by
+  -- declaring that recipient's identity. Both notices must remain visible.
+  self_payload:=jsonb_set(guest,'{idempotencyKey}',to_jsonb(self_key::text));
+  self_payload:=jsonb_set(self_payload,'{details,payerTin}',to_jsonb('222222222222'::text));
+  self_payload:=jsonb_set(self_payload,'{details,payerName}',to_jsonb('User 2'::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,payerTin}',to_jsonb('222222222222'::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,payerName}',to_jsonb('User 2'::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptReference}',to_jsonb('SIM-'||self_key::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||self_key::text));
+  self_id:=(public.demo_story1_submit(self_payload)->>'id')::uuid;
+  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n
+    WHERE n->>'paymentId'=self_id::text AND n->>'allocationId'='ws3-recipient-2')
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=self_id::text AND n->>'allocationId'='ws3-recipient-3')
+  THEN RAISE EXCEPTION 'P0_WALKIN_DECLARED_IDENTITY_SUPPRESSED_NOTICE'; END IF;
+  RAISE NOTICE 'PASS: recorded walk-in v3/v5 allocation isolation, source replay, registered ACK preservation, cross-owner denial, declared identity cannot suppress notice and immutable originals';
+END;
+$p0_walkin$;
+ROLLBACK TO SAVEPOINT p0_walkin_candidate;
+RELEASE SAVEPOINT p0_walkin_candidate;
+DO $p0_restore$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_temp.p0_notice_restore_check c
+    WHERE c.definition = pg_get_functiondef('public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)'::regprocedure)
+      AND c.payment_count = (SELECT count(*) FROM demo_payment.story_payments)
+      AND c.notice_count = (SELECT count(*) FROM demo_payment.story_notifications)
+      AND c.outbox_count = (SELECT count(*) FROM demo_payment.mirror_outbox)
+      AND c.ack_count = (SELECT count(*) FROM taxpay_guest_private.demo_received_payment_notice_ack))
+  THEN RAISE EXCEPTION 'P0_WALKIN_CANDIDATE_ROLLBACK_FAILED'; END IF;
+  RAISE NOTICE 'PASS: candidate definition and synthetic row counts restored before paired capture/commit';
+END;
+$p0_restore$;
 ROLLBACK;

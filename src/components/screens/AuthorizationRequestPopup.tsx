@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {AuthenticatedReceivedPaymentPopup} from './AuthenticatedReceivedPaymentPopup';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -6,7 +6,8 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
 import type {CorrectionCaseKind} from '../../services/correctionInquiryValidation';
-import {formatCurrency} from '../../services/numberFormat';
+import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentNoticePresentation';
+import {ReceivedPaymentNoticeDetails} from './ReceivedPaymentNoticeDetails';
 import {unreadReceivedPaymentNotices,acknowledgeReceivedPaymentNotice,type ReceivedPaymentNotice}
   from '../../services/demoReceivedPaymentNotices';
 import {
@@ -21,6 +22,8 @@ export function AuthorizationRequestPopup(){
   // session so recipient notices never mix two identities.
   const actor=authenticatedUser?undefined:previewAccount?.id;
   const bn=language==='bn';
+  const currentActor=useRef(actor);currentActor.current=actor;
+  const ackLock=useRef<object|null>(null);
   const [incoming,setIncoming]=useState<HostedAuthorization|null>(null);
   const [dismissed,setDismissed]=useState<string[]>([]);
   const [code,setCode]=useState<string|null>(null);
@@ -33,6 +36,7 @@ export function AuthorizationRequestPopup(){
   const [receivedError,setReceivedError]=useState('');
   const [welcomeOwner,setWelcomeOwner]=useState<string|null>(null);
   useEffect(()=>{
+    ackLock.current=null;
     setIncoming(null);setDismissed([]);setCode(null);setError('');
     setReceived(null);setReceivedOwner(null);setDismissedReceived([]);setReceivedError('');setReceivedBusy(false);
   },[actor]);
@@ -86,13 +90,8 @@ export function AuthorizationRequestPopup(){
   // Guard synchronously during a profile switch, before the reset effect runs.
   // A recipient who opened the correction/report form must not be covered by
   // the same unread notice modal while entering the request.
-  const visibleReceived=receivedOwner===actor&&currentRoute!=='corrections'?received:null;
+  const visibleReceived=receivedOwner===actor&&currentRoute!=='corrections'&&received&&!dismissedReceived.includes(received.eventId)?received:null;
   const visibleIncoming=incoming?.taxpayerId===actor?incoming:null;
-  const dismissReceived=()=>{
-    if(!visibleReceived||receivedBusy)return;
-    setDismissedReceived(previous=>[...previous,visibleReceived.eventId]);
-    setReceived(null);setReceivedError('');
-  };
   // This carries only an untrusted, short-lived form draft. The linked SQL
   // inquiry independently verifies the real Auth UID and payment allocation.
   const openReceivedCase=(caseKind:CorrectionCaseKind)=>{
@@ -100,14 +99,15 @@ export function AuthorizationRequestPopup(){
     try{
       queueReceivedPaymentCaseIntent(visibleReceived,caseKind);
       setReceivedError('');
-      if(authenticatedUser)navigate('corrections');
+      if(authenticatedUser||caseKind==='UNSOLICITED_PAYMENT_REPORT')navigate('corrections');
       else navigate('secure_workspace',{returnTo:'corrections'});
     }catch{
       setReceivedError(bn?'অনুরোধের তথ্য প্রস্তুত করা যায়নি। আবার চেষ্টা করুন।':'Could not prepare the request. Please retry.');
     }
   };
   const acknowledgeReceived=async()=>{
-    if(!actor||!visibleReceived||receivedBusy)return;
+    if(!actor||!visibleReceived||ackLock.current)return;
+    const operation={};ackLock.current=operation;
     const eventId=visibleReceived.eventId;
     setReceivedBusy(true);setReceivedError('');
     try{
@@ -115,18 +115,22 @@ export function AuthorizationRequestPopup(){
       const remaining=await unreadReceivedPaymentNotices(actor);
       if(remaining.some(item=>item.eventId===eventId))
         throw new Error('Notice acknowledgement has not been confirmed.');
-      setReceivedOwner(actor);
-      setReceived(remaining.find(item=>!dismissedReceived.includes(item.eventId))??null);
+      if(currentActor.current===actor&&ackLock.current===operation){
+        setDismissedReceived(old=>[...old,eventId]);
+        setReceivedOwner(actor);
+        setReceived(remaining.find(item=>!dismissedReceived.includes(item.eventId))??null);
+      }
     }catch(cause){
-      setReceivedError(cause instanceof Error?cause.message:'Could not confirm notice read state.');
-    }finally{setReceivedBusy(false);}
+      if(currentActor.current===actor&&ackLock.current===operation)
+        setReceivedError(cause instanceof Error?cause.message:'Could not confirm notice read state.');
+    }finally{if(ackLock.current===operation){ackLock.current=null;setReceivedBusy(false);}}
   };
 
   if(!actor)return <AuthenticatedReceivedPaymentPopup/>;
   // A first-login flag alone must not open a modal: check verified unread
   // payment notices or pending authorization requests for this account.
   if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'&&
-    (visibleReceived!==null||visibleIncoming!==null)){
+    (visibleIncoming!==null||(visibleReceived!==null&&visibleReceived.paymentStatus===undefined))){
     const continueAfterWelcome=()=>{
       try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
       catch{/* Preview welcome is cosmetic, not a security control. */}
@@ -143,41 +147,26 @@ export function AuthorizationRequestPopup(){
     </TaxPayModal>;
   }
   if(!visibleIncoming&&visibleReceived){
-    const money=formatCurrency(visibleReceived.amountMinor/100,language);
     return <TaxPayModal
-      title={bn?'প্রাপ্ত কর পরিশোধের বিজ্ঞপ্তি':'Received tax payment notice'}
-      onClose={dismissReceived}
+      title={receivedPaymentNoticePresentation(visibleReceived,language).title}
+      onClose={()=>void acknowledgeReceived()}
       closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
       className="taxpayer-authorization-modal"
       footer={<div className="tax-service-choice__actions flex flex-wrap gap-2">
         <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
-          onClick={dismissReceived}>{bn?'পরে দেখব':'Dismiss for now'}</button>
-        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
-          onClick={()=>openReceivedCase('CORRECTION_REVIEW')}>
-          {bn?'সংশোধনের অনুরোধ':'Request correction'}
-        </button>
-        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
-          onClick={()=>openReceivedCase('UNSOLICITED_PAYMENT_REPORT')}>
-          {bn?'পেমেন্ট রিপোর্ট করুন':'Report payment'}
-        </button>
-        <button type="button" disabled={receivedBusy}
-          className="tax-service-choice__continue" onClick={()=>void acknowledgeReceived()}>
-          {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
-        </button>
+          data-testid="received-notice-close" onClick={()=>void acknowledgeReceived()}>{receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'বন্ধ করুন':'Close')}</button>
+        <button type="button" disabled={receivedBusy} className="tax-service-choice__continue"
+          onClick={()=>openReceivedCase('UNSOLICITED_PAYMENT_REPORT')}>{bn?'পেমেন্ট রিপোর্ট করুন':'Report Payment'}</button>
       </div>}
     >
       <div className="mt-4 space-y-3" data-testid="received-payment-notice">
         <p className="text-sm leading-6 text-taxpay-text">
           {bn?'আপনার করদাতা প্রোফাইলের জন্য একটি পরিশোধ রেকর্ড হয়েছে।':'A payment has been recorded for your taxpayer profile.'}
         </p>
-        <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-          <div><dt>{bn?'পরিমাণ':'Amount'}</dt><dd className="font-semibold">{money}</dd></div>
-          <div><dt>{bn?'করবর্ষ':'Assessment year'}</dt><dd>{visibleReceived.assessmentYear}</dd></div>
-          <div><dt>{bn?'খাত':'Payment head'}</dt><dd>{visibleReceived.headId??'—'}</dd></div>
-          <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{visibleReceived.receiptReference??visibleReceived.paymentId}</dd></div>
-        </dl>
+        <p className="text-sm text-taxpay-text">{bn?'পেমেন্টের বিবরণ যাচাই করুন। পেমেন্টটি অপরিচিত বা আপনার অনুমতি ছাড়া করা হয়েছে বলে মনে হলে রিপোর্ট করতে পারেন।':'Please review the payment details below. If you do not recognize this payment or believe it was initiated without your authorization, you can report it.'}</p>
+        <ReceivedPaymentNoticeDetails notice={visibleReceived} language={language}/>
         <p className="text-xs text-taxpay-muted">{bn?'এটি নথিভুক্ত পেমেন্টের তথ্য; সরকারি নিষ্পত্তির প্রমাণ নয়।':'This is a recorded payment, not confirmation of government settlement.'}</p>
-        <p className="text-xs text-taxpay-muted">{bn?'সংশোধন বা রিপোর্ট জমা দিতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন করতে হবে।':'Submitting a correction or report requires a verified account sign-in.'}</p>
+        <p className="text-xs text-taxpay-muted">{bn?'এই সিমুলেটেড পেমেন্টের রিপোর্ট আপনার বর্তমান অ্যাকাউন্ট থেকেই জমা দিন।':'Report this simulated payment from your current account.'}</p>
         {receivedError&&<p role="alert" className="text-sm text-taxpay-error">{receivedError}</p>}
       </div>
     </TaxPayModal>;

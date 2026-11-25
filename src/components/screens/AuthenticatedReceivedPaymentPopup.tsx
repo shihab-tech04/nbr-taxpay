@@ -2,7 +2,8 @@ import {useEffect,useRef,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {formatCurrency} from '../../services/numberFormat';
+import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentNoticePresentation';
+import {ReceivedPaymentNoticeDetails} from './ReceivedPaymentNoticeDetails';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
 import {loadAccountUnreadReceivedPayments,acknowledgeAccountReceivedPayment}
   from '../../services/accountReceivedPaymentNotices';
@@ -28,9 +29,11 @@ export function AuthenticatedReceivedPaymentPopup() {
   const [items,setItems]=useState<ReceivedPaymentNotice[]>([]);
   const [dismissed,setDismissed]=useState<string[]>([]);
   const [busy,setBusy]=useState(false);
+  const ackLock=useRef<object|null>(null);
   const [error,setError]=useState('');
 
   useEffect(()=>{
+    ackLock.current=null;
     setOwner(uid);setItems([]);setDismissed([]);setError('');setBusy(false);
     try {setWelcomeOwner(uid&&sessionStorage.getItem(WELCOME_KEY)===uid?uid:null);}
     catch {setWelcomeOwner(null);}
@@ -53,7 +56,7 @@ export function AuthenticatedReceivedPaymentPopup() {
   if(!uid||owner!==uid)return null;
   const next=items.find(x=>!dismissed.includes(x.eventId))??null;
   // A stored sign-in greeting cannot open without a verified unread notice.
-  if(welcomeOwner===uid && next!==null && currentRoute!=='taxpayer_login' && currentRoute!=='corrections') {
+  if(welcomeOwner===uid && next!==null && next.paymentStatus===undefined && currentRoute!=='taxpayer_login' && currentRoute!=='corrections') {
     const close=()=>{
       try{sessionStorage.removeItem(WELCOME_KEY);}catch{/* Greeting is optional. */}
       setWelcomeOwner(null);
@@ -71,7 +74,6 @@ export function AuthenticatedReceivedPaymentPopup() {
     </TaxPayModal>;
   }
   if(!next||currentRoute==='corrections')return null;
-  const dismiss=()=>{setDismissed(old=>[...old,next.eventId]);setError('');};
   const openCase=(kind:CorrectionCaseKind)=>{
     try {
       queueReceivedPaymentCaseIntent(next,kind);
@@ -81,41 +83,37 @@ export function AuthenticatedReceivedPaymentPopup() {
     }
   };
   const ack=async()=>{
-    if(busy)return;
+    if(ackLock.current)return;
+    const operation={};ackLock.current=operation;
     setBusy(true);setError('');
     try{
       await acknowledgeAccountReceivedPayment(uid,next.eventId);
       const updated=await loadAccountUnreadReceivedPayments(uid);
       if(updated.some(item=>item.eventId===next.eventId))
         throw Error('Acknowledgment was not verified.');
-      if(activeUid.current===uid)setItems(updated);
+      if(activeUid.current===uid&&ackLock.current===operation){
+        setDismissed(old=>[...old,next.eventId]);setItems(updated);
+      }
     }catch{
-      setError(bn?'বিজ্ঞপ্তির পঠন নিশ্চিত করা যায়নি। আবার চেষ্টা করুন।':'Could not confirm the notice read state. Please retry.');
-    }finally{setBusy(false);}
+      if(activeUid.current===uid&&ackLock.current===operation)
+        setError(bn?'বিজ্ঞপ্তির পঠন নিশ্চিত করা যায়নি। আবার চেষ্টা করুন।':'Could not confirm the notice read state. Please retry.');
+    }finally{if(ackLock.current===operation){ackLock.current=null;setBusy(false);}}
   };
-  return <TaxPayModal title={bn?'প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি':'Received payment notice'}
-    onClose={dismiss} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
+  return <TaxPayModal title={receivedPaymentNoticePresentation(next,language,true).title}
+    onClose={()=>void ack()} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
     className="taxpayer-authorization-modal"
     footer={<div className="tax-service-choice__actions flex flex-wrap gap-2">
       <button type="button" className="taxpay-modal__footer-close" disabled={busy}
-        onClick={dismiss}>{bn?'পরে দেখব':'Dismiss for now'}</button>
-      <button type="button" className="taxpay-modal__footer-close" disabled={busy}
-        onClick={()=>openCase('CORRECTION_REVIEW')}>{bn?'সংশোধনের অনুরোধ':'Request correction'}</button>
-      <button type="button" className="taxpay-modal__footer-close" disabled={busy}
-        onClick={()=>openCase('UNSOLICITED_PAYMENT_REPORT')}>{bn?'পেমেন্ট রিপোর্ট করুন':'Report payment'}</button>
+        data-testid="received-notice-close" onClick={()=>void ack()}>{busy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'বন্ধ করুন':'Close')}</button>
       <button type="button" className="tax-service-choice__continue" disabled={busy}
-        onClick={()=>void ack()}>{bn?'পড়েছি, পরবর্তী':'Acknowledge and continue'}</button>
+        onClick={()=>openCase('UNSOLICITED_PAYMENT_REPORT')}>{bn?'পেমেন্ট রিপোর্ট করুন':'Report Payment'}</button>
     </div>}>
     <div className="mt-4 space-y-3" data-testid="authenticated-received-payment-notice">
       <p className="text-sm text-taxpay-text">
         {bn?'আপনার যাচাইকৃত করদাতা প্রোফাইলে একটি পেমেন্ট রেকর্ড হয়েছে।':'A payment has been recorded for your verified taxpayer profile.'}
       </p>
-      <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-        <div><dt>{bn?'পরিমাণ':'Amount'}</dt><dd className="font-semibold">{formatCurrency(next.amountMinor/100,language)}</dd></div>
-        <div><dt>{bn?'করবর্ষ':'Assessment year'}</dt><dd>{next.assessmentYear}</dd></div>
-        <div><dt>{bn?'খাত':'Head'}</dt><dd>{next.headId??'—'}</dd></div>
-        <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{next.receiptReference??next.paymentId}</dd></div>
-      </dl>
+      <p className="text-sm text-taxpay-text">{bn?'পেমেন্টের বিবরণ যাচাই করুন। পেমেন্টটি অপরিচিত বা আপনার অনুমতি ছাড়া করা হয়েছে বলে মনে হলে রিপোর্ট করতে পারেন।':'Please review the payment details below. If you do not recognize this payment or believe it was initiated without your authorization, you can report it.'}</p>
+        <ReceivedPaymentNoticeDetails notice={next} language={language}/>
       <p className="text-xs text-taxpay-muted">
         {bn?'শুধু নথিভুক্ত পেমেন্ট; সরকারি নিষ্পত্তি বা কর ক্রেডিট নিশ্চিত নয়।':'Recorded payment only; settlement and tax credit are not confirmed.'}
       </p>

@@ -6,7 +6,9 @@ export type PreviewCorrectionInput = {
   paymentId:string|null; historicalReference?:string; requestKey:string; allocationIndex:number|null; allocationId:string|null;
   proposedAY:string; proposedCircle:string; proposedHeadCode:string; reason:string;
 };
+export type PreviewReportInput={caseKind:'UNSOLICITED_PAYMENT_REPORT';eventId:string;requestKey:string;reason:string};
 export type PreviewCorrectionRecord = {
+  caseKind?:'CORRECTION_REVIEW'|'UNSOLICITED_PAYMENT_REPORT';recipientEventId?:string|null;paymentCompleted?:boolean;
   id:string; paymentId:string|null; originalReference:string; allocationIndex:number|null; allocationId:string|null;
   currentAY:string; proposedAY:string; currentCircle:string; proposedCircle:string;
   currentHeadCode:string; proposedHeadCode:string; reason:string; createdAt:string; status:'RECORDED';
@@ -23,8 +25,9 @@ export function correctionsForAssessmentYear(rows:readonly PreviewCorrectionReco
 export function recentPreviewCorrections(rows:readonly PreviewCorrectionRecord[]) {
   return [...rows].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.id.localeCompare(b.id));
 }
-export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'>,language:'en'|'bn'){
+export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'|'paymentCompleted'>,language:'en'|'bn'){
   const bn=language==='bn';
+  if(record.paymentCompleted===false)return bn?'পেমেন্ট সম্পন্ন হওয়ার অপেক্ষায়':'Awaiting payment completion';
   if(record.officeSyncState!=='ACKNOWLEDGED')return bn?'অফিসে পাঠানো হচ্ছে':'Awaiting Office';
   switch(record.reviewState){
     case 'MAKER_ACKNOWLEDGED':return bn?'অফিস গ্রহণ করেছে':'Acknowledged';
@@ -45,9 +48,12 @@ function checked(raw:unknown):PreviewCorrectionRecord{
   if(row.officeSyncState!==undefined&&!['PENDING','ACKNOWLEDGED'].includes(String(row.officeSyncState)))throw Error('Invalid Office delivery state');
   if(row.reviewState!==undefined&&!['PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','REJECTED'].includes(String(row.reviewState)))throw Error('Invalid Office review state');
   if(row.reviewReason!==undefined&&row.reviewReason!==null&&typeof row.reviewReason!=='string')throw Error('Invalid Office review reason');
+  if(row.paymentCompleted!==undefined&&typeof row.paymentCompleted!=='boolean')throw Error('Invalid report payment state');
+  if(row.caseKind!==undefined&&!['CORRECTION_REVIEW','UNSOLICITED_PAYMENT_REPORT'].includes(String(row.caseKind)))throw Error('Invalid case kind');
+  if(row.caseKind==='UNSOLICITED_PAYMENT_REPORT'&&(typeof row.recipientEventId!=='string'||!row.recipientEventId.startsWith(String(row.paymentId)+':')))throw Error('Invalid report event identity');
   return row as unknown as PreviewCorrectionRecord;
 }
-async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|{eventId:string}):Promise<unknown>{
+async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|PreviewReportInput|{eventId:string}):Promise<unknown>{
   const session=activePreviewSession();
   const {url,publishableKey}=TAXPAY_PUBLIC_ENDPOINT;
   if(!session||!url||!publishableKey)throw Error('Correction session unavailable');
@@ -77,6 +83,12 @@ export async function listPreviewCorrections():Promise<PreviewCorrectionRecord[]
     }
   }
   throw Error('Correction history limit reached');
+}
+export async function submitPreviewReceivedPaymentReport(input:PreviewReportInput):Promise<PreviewCorrectionRecord>{
+ const row=checked(await request('','POST',input));
+ if(row.caseKind!=='UNSOLICITED_PAYMENT_REPORT'||row.recipientEventId!==input.eventId)throw Error('Report acknowledgement mismatch');
+ window.dispatchEvent(new Event('taxpay:preview-corrections-changed'));
+ return row;
 }
 export async function submitPreviewCorrection(input:PreviewCorrectionInput):Promise<PreviewCorrectionRecord>{
   const row=checked(await request('','POST',input));
@@ -122,7 +134,7 @@ export function usePreviewCorrectionRegister(profileId:string|null,enabled=true)
 
 export type CorrectionNotice={eventId:string;requestId:string;code:string;reference:string;createdAt:string;detail:string|null;isRead:boolean};
 export function correctionNoticeTitle(code:string,language:'en'|'bn'){
- const labels:Record<string,[string,string]>={SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_INITIATED:['Office initiated correction','অফিস সংশোধনের আবেদন শুরু করেছে'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
+ const labels:Record<string,[string,string]>={REPORT_RECORDED:['Payment report recorded','পেমেন্ট রিপোর্ট নথিভুক্ত'],REPORT_OFFICE_RECEIVED:['Office received payment report','অফিস পেমেন্ট রিপোর্ট পেয়েছে'],REPORT_MAKER_ACKNOWLEDGED:['Payment report acknowledged','পেমেন্ট রিপোর্ট গ্রহণ করা হয়েছে'],REPORT_REVIEWER_VERIFIED:['Payment report reviewed','পেমেন্ট রিপোর্ট পর্যালোচিত হয়েছে'],REPORT_APPROVER_CLOSED:['Payment report closed','পেমেন্ট রিপোর্ট নিষ্পত্তি হয়েছে'],REPORT_REJECTED:['Payment report rejected','পেমেন্ট রিপোর্ট প্রত্যাখ্যাত'],SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_INITIATED:['Office initiated correction','অফিস সংশোধনের আবেদন শুরু করেছে'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
  return (labels[code]??[code,code])[language==='bn'?1:0];
 }
 async function noticePage(offset=0,limit=100){
