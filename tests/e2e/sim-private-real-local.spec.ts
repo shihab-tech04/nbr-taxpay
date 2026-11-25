@@ -278,8 +278,12 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
  // transaction. A supported historical year remains selected and editable.
- await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
- await one.page.getByTestId('pay-again-mobile').first().click();
+ const repeatCard=one.page.getByTestId('signed-in-payment-activity-cards')
+  .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(repeatCard.locator('.taxpay-mobile-table-card__actions button')).toHaveCount(1,{timeout:15000});
+ await repeatCard.getByRole('button',{name:'View details',exact:true}).click();
+ await expect(one.page.getByRole('dialog').getByTestId('pay-again-details')).toBeEnabled();
+ await one.page.getByRole('dialog').getByTestId('pay-again-details').click();
  await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
  await expect(one.page.getByLabel('Payment category').nth(0)).toHaveValue('ADVANCE_TAX');
  await expect(one.page.getByLabel('Payment category').nth(1)).toHaveValue('PENALTY');
@@ -386,5 +390,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(preservedCard).toContainText('user7');
  await expect(preservedCard).toContainText('৳23.50');
  await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
+ const recipientCard=two.page.getByTestId('signed-in-payment-activity-cards')
+   .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(recipientCard.getByRole('button',{name:'View details',exact:true})).toBeVisible();
+ await recipientCard.getByRole('button',{name:'View details',exact:true}).click();
+ await expect(two.page.getByRole('dialog').getByTestId('pay-again-details')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });
