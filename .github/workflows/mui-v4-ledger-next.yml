@@ -13,7 +13,7 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 69e547027bde3ff46cfd5a4d7269de280d2ef5a7
+      BASE_SHA: 1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,6 +30,7 @@ jobs:
           npm ci --no-audit --no-fund
           node scripts/ci/mui-v52-source-inventory.mjs
           npm run lint
+          node --input-type=module -e 'import {createServer} from "vite"; const server=await createServer({server:{middlewareMode:true},appType:"custom"}); try { const m=await server.ssrLoadModule("/tests/muiV53RecordControls.test.tsx"); m.verifyRecordControls(); } finally { await server.close(); }'
           env -u VITE_SUPABASE_DISABLED -u VITE_SUPABASE_URL -u VITE_SUPABASE_PUBLISHABLE_KEY npm run test:domain
           npm run build
           du -sb dist

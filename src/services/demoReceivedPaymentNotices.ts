@@ -1,5 +1,6 @@
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 import {activePreviewSession} from './previewAccountSession';
+import {receivedNoticeDhakaDay,receivedPaymentNoticePresentation} from './receivedPaymentNoticePresentation';
 
 /** The server resolves recipients from the existing fictional-profile capability. */
 export type ReceivedPaymentNotice = {
@@ -215,7 +216,7 @@ export async function listReceivedPaymentNotices(profileId:string):Promise<Store
 
 export type ReceivedNoticeFilter={
   query:string;readStatus:'all'|'read'|'unread';
-  dateFrom?:string;dateTo?:string;
+  dateFrom?:string;dateTo?:string;displayLanguage?:'en'|'bn';
 };
 /** All filters operate only on the already validated recipient-owned SQL list.
  * Never expand the data source or infer a payer's unrelated allocations. */
@@ -230,12 +231,13 @@ export function filterStoredReceivedPaymentNotices(
   return rows.filter(row=>{
     if(filter.readStatus==='read'&&!row.isRead||
       filter.readStatus==='unread'&&row.isRead)return false;
-    // Stable UTC date of the original SQL event, not browser's render clock.
-    const day=new Date(row.createdAt).toISOString().slice(0,10);
+    // The display register uses its Dhaka calendar day; existing callers retain UTC.
+    const day=filter.displayLanguage?receivedNoticeDhakaDay(row.createdAt):new Date(row.createdAt).toISOString().slice(0,10);
     if(from&&day<from||to&&day>to)return false;
     return !query || [
       row.paymentId,row.receiptReference??'',row.assessmentYear,row.headId??'',
-      row.serviceCode??'',row.eventId,day
+      row.serviceCode??'',row.eventId,day,row.payerName??'',
+      ...(filter.displayLanguage?[receivedPaymentNoticePresentation(row,filter.displayLanguage).category]:[])
     ].some(value=>value.toLocaleLowerCase().includes(query));
   });
 }

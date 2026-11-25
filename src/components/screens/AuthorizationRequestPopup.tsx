@@ -6,7 +6,8 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
 import type {CorrectionCaseKind} from '../../services/correctionInquiryValidation';
-import {formatCurrency} from '../../services/numberFormat';
+import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentNoticePresentation';
+import {ReceivedPaymentNoticeDetails} from './ReceivedPaymentNoticeDetails';
 import {unreadReceivedPaymentNotices,acknowledgeReceivedPaymentNotice,type ReceivedPaymentNotice}
   from '../../services/demoReceivedPaymentNotices';
 import {
@@ -129,7 +130,7 @@ export function AuthorizationRequestPopup(){
   // A first-login flag alone must not open a modal: check verified unread
   // payment notices or pending authorization requests for this account.
   if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'&&
-    (visibleReceived!==null||visibleIncoming!==null)){
+    (visibleIncoming!==null||(visibleReceived!==null&&visibleReceived.paymentStatus!=='SIMULATED_SUCCESS'))){
     const continueAfterWelcome=()=>{
       try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
       catch{/* Preview welcome is cosmetic, not a security control. */}
@@ -146,9 +147,8 @@ export function AuthorizationRequestPopup(){
     </TaxPayModal>;
   }
   if(!visibleIncoming&&visibleReceived){
-    const money=formatCurrency(visibleReceived.amountMinor/100,language);
     return <TaxPayModal
-      title={bn?'প্রাপ্ত কর পরিশোধের বিজ্ঞপ্তি':'Received tax payment notice'}
+      title={receivedPaymentNoticePresentation(visibleReceived,language).title}
       onClose={()=>void acknowledgeReceived()}
       closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
       className="taxpayer-authorization-modal"
@@ -164,14 +164,7 @@ export function AuthorizationRequestPopup(){
           {bn?'আপনার করদাতা প্রোফাইলের জন্য একটি পরিশোধ রেকর্ড হয়েছে।':'A payment has been recorded for your taxpayer profile.'}
         </p>
         <p className="text-sm text-taxpay-text">{bn?'পেমেন্টের বিবরণ যাচাই করুন। পেমেন্টটি অপরিচিত বা আপনার অনুমতি ছাড়া করা হয়েছে বলে মনে হলে রিপোর্ট করতে পারেন।':'Please review the payment details below. If you do not recognize this payment or believe it was initiated without your authorization, you can report it.'}</p>
-        <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-          <div><dt>{bn?'পরিমাণ':'Amount'}</dt><dd className="font-semibold">{money}</dd></div>
-          <div><dt>{bn?'করবর্ষ':'Assessment year'}</dt><dd>{visibleReceived.assessmentYear}</dd></div>
-          <div><dt>{bn?'খাত':'Payment head'}</dt><dd>{visibleReceived.headId??'—'}</dd></div>
-          <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{visibleReceived.receiptReference??visibleReceived.paymentId}</dd></div>
-          <div><dt>{bn?'তারিখ ও সময়':'Date and time'}</dt><dd><time dateTime={visibleReceived.createdAt}>{new Date(visibleReceived.createdAt).toLocaleString(bn?'bn-BD':'en-GB',{timeZone:'Asia/Dhaka'})}</time></dd></div>
-          <div><dt>{bn?'পেমেন্টের অবস্থা':'Payment status'}</dt><dd>{bn?'নথিভুক্ত — নিষ্পত্তি নিশ্চিত নয়':'Recorded — settlement not confirmed'}</dd></div>
-        </dl>
+        <ReceivedPaymentNoticeDetails notice={visibleReceived} language={language}/>
         <p className="text-xs text-taxpay-muted">{bn?'এটি নথিভুক্ত পেমেন্টের তথ্য; সরকারি নিষ্পত্তির প্রমাণ নয়।':'This is a recorded payment, not confirmation of government settlement.'}</p>
         <p className="text-xs text-taxpay-muted">{bn?'সংশোধন বা রিপোর্ট জমা দিতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন করতে হবে।':'Submitting a correction or report requires a verified account sign-in.'}</p>
         {receivedError&&<p role="alert" className="text-sm text-taxpay-error">{receivedError}</p>}

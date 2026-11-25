@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "scope": "incremental classified source sites, including mixed native/MUI slot sites; global eligible denominator UNVERIFIED",
-  "base": "69e547027bde3ff46cfd5a4d7269de280d2ef5a7",
+  "base": "1d96c6dffe6e11256beedbbf9ad8925d5e3f1982",
   "items": [
     {
       "id": "MUI-ACCOUNT-ACTIVITY-RETRY",
@@ -137,10 +137,11 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
+      "testStatus": "COMBINED_BROWSER_PASS",
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
-      "priorRun": 45679439371
+      "priorRun": 45679439371,
+      "evidence": "45680680337; full visual gate not passed"
     },
     {
       "id": "MUI-PROPOSAL-HEAD",
@@ -163,10 +164,11 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
+      "testStatus": "COMBINED_BROWSER_PASS",
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
-      "priorRun": 45679439371
+      "priorRun": 45679439371,
+      "evidence": "45680680337; full visual gate not passed"
     },
     {
       "id": "MUI-PROPOSAL-HASH",
@@ -190,10 +192,11 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
+      "testStatus": "COMBINED_BROWSER_PASS",
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
-      "priorRun": 45679439371
+      "priorRun": 45679439371,
+      "evidence": "45680680337; full visual gate not passed"
     },
     {
       "id": "MUI-PROPOSAL-LABEL",
@@ -216,10 +219,11 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
+      "testStatus": "COMBINED_BROWSER_PASS",
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
-      "priorRun": 45679439371
+      "priorRun": 45679439371,
+      "evidence": "45680680337; full visual gate not passed"
     },
     {
       "id": "MUI-PROPOSAL-REASON",
@@ -243,10 +247,11 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
+      "testStatus": "COMBINED_BROWSER_PASS",
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
-      "priorRun": 45679439371
+      "priorRun": 45679439371,
+      "evidence": "45680680337; full visual gate not passed"
     },
     {
       "id": "MUI-PROPOSAL-SUBMIT",
@@ -271,10 +276,11 @@
         "focus"
       ],
       "sourceStatus": "IMPLEMENTED",
-      "testStatus": "FAIL_LOCATOR_RETEST_PENDING",
+      "testStatus": "COMBINED_BROWSER_PASS",
       "liveStatus": "UNVERIFIED",
       "test": "tests/e2e/mui-v52-source-proposals.spec.ts",
-      "priorRun": 45679439371
+      "priorRun": 45679439371,
+      "evidence": "45680680337; full visual gate not passed"
     },
     {
       "id": "MUI-AUTH-OUTGOING",

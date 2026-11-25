@@ -8,8 +8,9 @@ import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
  * its existing data source, filters, sorting, actions, permissions and columns.
  * Never wrap receipt/certificate print tables in these components.
  */
-type RecordButtonProps=ComponentPropsWithoutRef<'button'>;
-type RecordSearchProps=ComponentPropsWithoutRef<'input'>;
+type CoverageMarker={'data-mui-coverage'?:string};
+type RecordButtonProps=ComponentPropsWithoutRef<'button'>&CoverageMarker;
+type RecordSearchProps=ComponentPropsWithoutRef<'input'>&CoverageMarker;
 export type TaxPayRecordControlSlots={
   Action:ComponentType<RecordButtonProps>;
   Search:ComponentType<RecordSearchProps>;
@@ -17,11 +18,13 @@ export type TaxPayRecordControlSlots={
 export const TaxPayRecordControlContext=createContext<TaxPayRecordControlSlots|null>(null);
 function RecordAction(props:RecordButtonProps){
   const slots=useContext(TaxPayRecordControlContext);
-  return slots?<slots.Action {...props}/>:<RecordAction data-mui-coverage="MUI-RECORD-FILTER-TOGGLE" {...props}/>;
+  const {'data-mui-coverage':coverage,...native}=props;
+  return slots?<slots.Action {...native} data-mui-coverage={coverage}/>:<button {...native}/>;
 }
 function RecordSearch(props:RecordSearchProps){
   const slots=useContext(TaxPayRecordControlContext);
-  return slots?<slots.Search {...props}/>:<input {...props}/>;
+  const {'data-mui-coverage':coverage,...native}=props;
+  return slots?<slots.Search {...native} data-mui-coverage={coverage}/>:<input {...native}/>;
 }
 
 type DivProps=ComponentPropsWithoutRef<'div'>;
@@ -51,7 +54,7 @@ export function TaxPayTableControls({className,...rest}:DivProps) {
 export function TaxPayTableFilterToggle({expanded,onToggle,label}:{
   expanded:boolean;onToggle:()=>void;label:string;
 }) {
-  return <button type="button" className="taxpay-office-filter-toggle" onClick={onToggle}
+  return <RecordAction data-mui-coverage="MUI-RECORD-FILTER-TOGGLE" type="button" className="taxpay-office-filter-toggle" onClick={onToggle}
     aria-expanded={expanded} aria-label={label}>
     <Filter size={16} aria-hidden="true"/>{label}
   </RecordAction>;

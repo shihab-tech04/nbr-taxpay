@@ -27,7 +27,8 @@ const fixtures = ['01', '02'].map((suffix, index) => {
 });
 
 for (const language of ['en', 'bn'] as const) {
-  test(`authenticated account acknowledges older received payments in order (${language})`, async ({ page }) => {
+ for (const confirmed of [false,true]) {
+  test(`authenticated account acknowledges older received payments in order (${language}, ${confirmed?'completed':'legacy'})`, async ({ page }) => {
     test.skip(process.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED !== 'true', 'Requires the existing authenticated notice feature flag.');
     const expiresAt = Math.floor(Date.now() / 1000) + 3600;
     const tokenClaims = Buffer.from(JSON.stringify({ sub: owner.id, aud: 'authenticated', exp: expiresAt })).toString('base64url');
@@ -41,6 +42,7 @@ for (const language of ['en', 'bn'] as const) {
       }
     }, { user: owner, token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + tokenClaims + '.fixture', expiresAt });
 
+    const receivedFixtures=fixtures.map(fixture=>confirmed?{...fixture,serviceCode:'GIFT_TAX',payerName:'Recorded payer',paymentStatus:'SIMULATED_SUCCESS'}:fixture);
     const acknowledged: string[] = [];
     let completedReads = 0;
     await page.route(backend + '/**', async route => {
@@ -58,12 +60,12 @@ for (const language of ['en', 'bn'] as const) {
       const { p_action, p_event_id, p_offset, p_limit } = request.postDataJSON();
       expect(Object.keys(request.postDataJSON()).sort()).toEqual(['p_action', 'p_event_id', 'p_limit', 'p_offset']);
       if (p_action === 'ack') {
-        expect(p_event_id).toBe(fixtures[acknowledged.length]?.eventId);
+        expect(p_event_id).toBe(receivedFixtures[acknowledged.length]?.eventId);
         acknowledged.push(p_event_id);
         return respond({ eventId: p_event_id, isRead: true, acknowledgedAt: receiptDate });
       }
       expect(p_action).toBe('unread');
-      const items = fixtures.filter(notice => !acknowledged.includes(notice.eventId));
+      const items = receivedFixtures.filter(notice => !acknowledged.includes(notice.eventId));
       completedReads += 1;
       return respond({ items, total: items.length, offset: p_offset, limit: p_limit, hasMore: false });
     });
@@ -71,17 +73,19 @@ for (const language of ['en', 'bn'] as const) {
     const bangla = language === 'bn';
     await page.goto('/?action=history&lang=' + language);
     const continueToNotices = page.getByRole('button', { name: bangla ? 'বিজ্ঞপ্তি দেখুন' : 'Continue to notifications' });
-    await expect(continueToNotices).toBeVisible();
-    await continueToNotices.click();
+    if(confirmed) await expect(continueToNotices).toHaveCount(0);
+    else {await expect(continueToNotices).toBeVisible();await continueToNotices.click();}
     const popup = page.getByTestId('authenticated-received-payment-notice');
-    for (const fixture of fixtures) {
+    for (const fixture of receivedFixtures) {
       await expect(popup).toContainText(fixture.receiptReference);
-      const dialog=page.getByRole('dialog', { name: bangla ? 'প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি' : 'Received payment notice' });
+      const dialog=page.getByRole('dialog', { name: confirmed?(bangla?'আপনার পক্ষ থেকে একটি পেমেন্ট করা হয়েছে':'A payment has been made on your behalf.'):(bangla ? 'প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি' : 'Received payment notice') });
       await expect(dialog.getByRole('button',{name:bangla?'পেমেন্ট রিপোর্ট করুন':'Report Payment',exact:true})).toBeVisible();
       await expect(dialog.getByRole('button',{name:bangla?'সংশোধনের অনুরোধ':'Request correction',exact:true})).toHaveCount(0);
       await expect(popup.locator('time')).toHaveAttribute('datetime',fixture.createdAt);
-      await expect(popup).toContainText(bangla?'নথিভুক্ত — নিষ্পত্তি নিশ্চিত নয়':'Recorded — settlement not confirmed');
-      if(fixture===fixtures[1]&&!bangla) await dialog.getByRole('button',{name:'Close modal',exact:true}).click();
+      await expect(popup.locator('dt')).toHaveCount(7);
+      await expect(popup).toContainText(confirmed?(bangla?'সম্পন্ন (সিমুলেটেড)':'Completed (simulated)'):(bangla?'নথিভুক্ত — নিষ্পত্তি নিশ্চিত নয়':'Recorded — settlement not confirmed'));
+      if(confirmed){await expect(popup).toContainText('Recorded payer');await expect(popup).toContainText(bangla?'দানকর':'Gift Tax');}
+      if(fixture===receivedFixtures[1]&&!bangla) await dialog.getByRole('button',{name:'Close modal',exact:true}).click();
       else await dialog.getByTestId('received-notice-close').click();
     }
     await expect(popup).toHaveCount(0);
@@ -89,6 +93,7 @@ for (const language of ['en', 'bn'] as const) {
     await page.reload();
     await expect.poll(() => completedReads).toBeGreaterThan(readsBeforeReload);
     await expect(popup).toHaveCount(0);
-    expect(acknowledged).toEqual(fixtures.map(fixture => fixture.eventId));
+    expect(acknowledged).toEqual(receivedFixtures.map(fixture => fixture.eventId));
   });
+}
 }
