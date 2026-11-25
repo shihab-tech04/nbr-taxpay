@@ -131,8 +131,8 @@ const publishedBackup: BannerSlide[] = fallbackSlides.map(slide => {
 
 
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
-function BannerPicture({ slide, visible, preload, onVisibleReady }: {
-  slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
+function BannerPicture({ slide, visible, preload, onVisibleReady, mobileMaxWidth = 640 }: {
+  slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void; mobileMaxWidth?: number;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   // Never give the browser a URL for unpublished/inactive artwork at startup.
@@ -158,7 +158,7 @@ function BannerPicture({ slide, visible, preload, onVisibleReady }: {
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
   const resolvedImage = imageFailed ? fallbackImage : slide.image;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
-    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)"
+    {!imageFailed && slide.mobileImage && <source media={"(max-width: " + mobileMaxWidth + "px)"}
       srcSet={shouldRequest ? slide.mobileImage : undefined} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
       src={shouldRequest ? resolvedImage : undefined} data-deferred-src={resolvedImage}
@@ -215,11 +215,32 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
   });
 }
 
+
+/** Slider 2 shares the published banner contract and controller. When a legacy
+ * row has no complete image palette, use the existing CMS preview service colors. */
+const slider2FallbackThemes: Record<string, readonly [string, string, string, string]> = {
+  intro: ['#EAF2FF', '#172033', '#5F6B7A', '#2C5EAD'],
+  TAX_WITH_RETURN: ['#EEF4FF', '#214887', '#4D6486', '#315DAA'],
+  ADVANCE_TAX: ['#FFF6EC', '#80420D', '#765334', '#A65B19'],
+  SOURCE_TAX_DEPOSIT: ['#F6F1FC', '#4E327B', '#5A4673', '#6D4BA8'],
+  TRAVEL_TAX: ['#ECF8FC', '#07516B', '#316078', '#0C6D8D'],
+};
+function slider2Theme(slide?: BannerSlide): React.CSSProperties {
+  const values = [slide?.backgroundColor, slide?.headingColor, slide?.bodyColor, slide?.outlineColor];
+  const [background, heading, body, outline] = values.every(value =>
+    typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value))
+    ? values as string[]
+    : slider2FallbackThemes[slide?.serviceCode || 'intro'] || slider2FallbackThemes.intro;
+  return { '--slider2-bg': background, '--slider2-heading': heading,
+    '--slider2-body': body, '--slider2-outline': outline } as React.CSSProperties;
+}
+
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
   onPayTax: (service?: BannerPaymentService) => void;
   onOtherTax: () => void;
   paused?: boolean;
+  variant?: 'original' | 'home2';
 };
 
 export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
@@ -227,6 +248,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   onPayTax,
   onOtherTax,
   paused = false,
+  variant = 'original',
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [slides, setSlides] = useState<BannerSlide[]>(publishedBackup);
@@ -365,6 +387,85 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     pointerStartRef.current = null;
     setIsSwiping(false);
   };
+
+
+  // Opt-in Home 2 presentation only. The original slider below and the
+  // shared CMS reads, image recovery, autoplay, and input behavior stay intact.
+  if (variant === 'home2') {
+    const index = Math.min(activeIndex, Math.max(0, slides.length - 1));
+    const current = slides[index];
+    const fixed = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
+    const heading = bn ? fixed.headingBn : fixed.headingEn;
+    const mobileHeading = bn ? fixed.mobileHeadingBn : fixed.mobileHeadingEn;
+    const action = bn ? fixed.actionBn : fixed.actionEn;
+    const controls = slides.length > 1 && (
+      <div className="home2-slider2__controls" role="group"
+        aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
+        <button type="button" className="home2-slider2__arrow home2-press" onClick={goPrevious}
+          aria-label={bn ? 'আগের স্লাইড' : 'Previous slide'}><ChevronLeft size={18} aria-hidden="true"/></button>
+        <div className="home2-slider2__dots">
+          {slides.map((slide, i) => <button type="button" key={slide.id}
+            className="home2-slider2__dot" aria-current={i === index}
+            aria-label={bn ? 'স্লাইড ' + (i + 1) : 'Go to slide ' + (i + 1)}
+            onClick={() => setActiveIndex(i)}><span aria-hidden="true"/></button>)}
+        </div>
+        <button type="button" className="home2-slider2__arrow home2-press" onClick={goNext}
+          aria-label={bn ? 'পরের স্লাইড' : 'Next slide'}><ChevronRight size={18} aria-hidden="true"/></button>
+      </div>
+    );
+    return <div className="home2-slider2" data-testid="slider2" ref={containerRef}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={event => { if (event.pointerType === 'mouse') setIsHovered(false); }}
+      onFocusCapture={() => setHasFocus(true)}
+      onBlurCapture={event => { if (!containerRef.current?.contains(event.relatedTarget as Node | null)) setHasFocus(false); }}>
+      <section ref={carouselRef} className="home2-slider2__frame" data-testid="home2-desktop-hero"
+        role="region" aria-roledescription="carousel" tabIndex={0}
+        aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to change banner images and colors.'}
+        data-active-slide={index} data-payment-service={current?.serviceCode}
+        data-banner-id={current?.id} data-banner-count={slides.length}
+        style={slider2Theme(current)}
+        onKeyDown={onKeyDown} onPointerDown={onSwipeStart} onPointerUp={onSwipeEnd}
+        onPointerCancel={cancelSwipe} onLostPointerCapture={cancelSwipe}>
+        <div className="home2-slider2__artwork" aria-hidden="true">
+          {slides.map((slide, i) => <div key={slide.id} className="home2-slider2__layer"
+            data-testid="slider2-artwork" data-active={i === index} data-banner-id={slide.id}
+            data-payment-service={slide.serviceCode} style={slider2Theme(slide)}>
+            <BannerPicture key={slide.id + ':' + slide.image + ':' + (slide.mobileImage || '')}
+              slide={slide} visible={i === index}
+              preload={visibleImageReady && i === (index + 1) % slides.length}
+              mobileMaxWidth={959} onVisibleReady={() => setVisibleImageReady(true)}/>
+          </div>)}
+        </div>
+        <div className="home2-slider2__copy" data-testid="home2-hero-copy">
+          <div data-testid="home2-primary-slide" className="home2-slider2__content">
+            <h1>{slides.length ? <>
+              <span className="home2-slider2__desktop-copy">{heading}</span>
+              <span className="home2-slider2__mobile-copy">{mobileHeading}</span>
+            </> : (bn ? 'কর পরিশোধ' : 'Tax payments')}</h1>
+            <p>{slides.length ? <>
+              <span className="home2-slider2__desktop-copy">{bn ? fixed.descriptionBn : fixed.descriptionEn}</span>
+              <span className="home2-slider2__mobile-copy">{bn ? fixed.mobileDescriptionBn : fixed.mobileDescriptionEn}</span>
+            </> : (bn ? 'ব্যানারের তথ্য পাওয়া যাচ্ছে না। কর পরিশোধ সেবা চালু আছে।' : 'Banner information is temporarily unavailable. Payment services are still accessible.')}</p>
+            <div className="home2-slider2__actions">
+              <button type="button" data-testid="home2-pay" className="home2-slider2__pay home2-press"
+                onClick={() => onPayTax()}><WalletCards size={18} aria-hidden="true"/>{slides.length ? action : (bn ? 'কর পরিশোধ' : 'Pay Tax')}</button>
+              <button type="button" data-testid="home2-other" className="home2-slider2__other home2-press"
+                onClick={onOtherTax}><ReceiptText size={18} aria-hidden="true"/>{bn ? 'অন্যান্য কর' : 'Other Tax'}</button>
+            </div>
+            {!slides.length && bannerStatus === 'unavailable' && <button type="button"
+              className="home2-slider2__retry" onClick={() => { setBannerStatus('loading'); setRetryNonce(n => n + 1); }}>
+              {bn ? 'আবার চেষ্টা করুন' : 'Retry banner loading'}</button>}
+          </div>
+        </div>
+      </section>
+      {controls}
+      {slides.length > 0 && <span className="sr-only" role="status" aria-live="polite">
+        {bn ? 'ব্যানার ' + (index + 1) + ' / ' + slides.length + ': ' + current.headingBn
+          : 'Banner ' + (index + 1) + ' of ' + slides.length + ': ' + current.headingEn}
+      </span>}
+    </div>;
+  }
 
   if (!slides.length) {
     // An unverified client fallback must never override SQL publish status.

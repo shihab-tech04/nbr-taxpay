@@ -350,7 +350,7 @@ test('Home 2 matches the new uploaded Bento palette and monoline artwork',async(
     await expect(root.getByRole('heading',{name:lang==='en'?'New to paying online?':'অনলাইনে কর দেওয়া নতুন?',exact:true})).toBeVisible();
     await expect(root.getByTestId('home2-guide-action')).toBeVisible();
     await expect(root.getByTestId('home2-chat-action')).toBeVisible();
-    await expect(root.getByTestId('home2-primary-slide').locator('img')).toHaveCount(1);
+    await expect(root.getByTestId('slider2').locator('[data-testid="slider2-artwork"][data-active="true"] img')).toHaveCount(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
 });
@@ -369,7 +369,7 @@ test('Home 2 primary banner omits the eyebrow and trust labels in both languages
     for(const label of ['Income tax, simplified','Secure payment','Instant challan','Receipts kept','আয়কর, সহজভাবে','নিরাপদ পেমেন্ট','তাৎক্ষণিক চালান','রসিদ সংরক্ষিত থাকে']){
       await expect(hero.getByText(label,{exact:true})).toHaveCount(0);
     }
-    await expect(hero.locator('img')).toHaveCount(1);
+    await expect(root.getByTestId('slider2').locator('[data-testid="slider2-artwork"][data-active="true"] img')).toHaveCount(1);
   }
 });
 

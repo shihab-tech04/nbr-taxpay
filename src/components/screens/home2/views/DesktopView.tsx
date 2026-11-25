@@ -1,11 +1,10 @@
-import { ArrowRight, ArrowUpRight, CalendarCheck, ChevronLeft, ChevronRight, CircleHelp, Download, FilePen, FileText, Globe, House, MessageCircle, Receipt, ShieldAlert, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
-import hero from '../assets/hero.webp'
+import { ArrowRight, ArrowUpRight, CalendarCheck, CircleHelp, Download, FilePen, Globe, House, MessageCircle, Receipt, ShieldAlert, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { Slider2 } from '../Slider2'
 import { LineArt, type LineArtName } from '../lineArt'
-import { Logo, SearchPanel, Tile, promoSlides, slideCount, useCarousel, type ViewProps, type Home2Action } from '../shared'
+import { Logo, SearchPanel, Tile, type ViewProps, type Home2Action } from '../shared'
 const surface = 'rounded-[20px] ring-1 ring-black/[0.05]'
 const hover = 'transition duration-200 hover:ring-black/10 hover:shadow-[0_12px_28px_-18px_rgba(15,29,52,0.35)]'
 export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: ViewProps) {
-  const car = useCarousel(slideCount)
   const f = c.features
   const open = (action: Home2Action) => () => onAction(action)
 const links=[{action:'status' as const,label:c.links.status,icon:CalendarCheck},{action:'receipts' as const,label:c.links.receipts,icon:FilePen},{action:'security' as const,label:c.links.security,icon:ShieldCheck},{action:'nbr' as const,label:c.links.nbr,icon:ArrowUpRight,external:true}]
@@ -15,74 +14,8 @@ return <div className="flex min-h-screen flex-col bg-[#f4f6fa]"><header role="ba
  <div className="flex items-center gap-2 justify-self-end">
  <button onClick={onToggleLang} aria-label={c.langSwitchLabel} className="flex h-10 items-center gap-2 rounded-lg px-3 text-[13.5px] font-semibold text-[#0f1d34] transition hover:bg-[#f4f6fa]"><Globe className="size-4 text-[#5d697e]" /> {c.langSwitch}</button>
  <button onClick={open('login')} className="home2-press flex h-10 items-center gap-1.5 rounded-lg bg-white pr-3.5 pl-4 text-[13.5px] font-semibold text-[#1c3d70] ring-1 ring-[#cad8ef] hover:bg-[#f4f7fc]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড' : 'Dashboard') : c.login}<ArrowRight className="size-4" /></button></div></div></header>
-<section aria-label={c.section.title} className="mx-auto w-full max-w-[1240px] flex-1 px-8 pt-5 pb-14"><section className="grid grid-cols-[minmax(0,1fr)_clamp(320px,30vw,372px)] gap-3">          {/* Hero carousel */}
-          <Tile>
-            <div data-testid="home2-desktop-hero" className="relative h-full min-h-[340px] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#e6ecfa] to-[#cad7f2] ring-1 ring-[#efe3c4]">
-              <div ref={car.ref} onScroll={car.onScroll} className="home2-no-scrollbar flex h-full snap-x snap-mandatory overflow-x-auto">
-                <div data-testid="home2-primary-slide" className="relative min-h-[340px] w-full shrink-0 snap-center">
-                  {/* Illustration sits beside the copy, never under it */}
-                  <div className="absolute inset-y-0 right-0 left-[min(460px,65%)]">
-                    <img src={hero} alt="" className="size-full object-cover object-[70%_60%]" />
-                    <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#e6ecfa] to-transparent" />
-                  </div>
-                  <div data-testid="home2-hero-copy" className="relative flex min-h-[340px] h-full max-w-[500px] flex-col justify-center py-7 pr-6 pl-9">
-                    <h1 className="text-[36px] leading-[1.1] font-bold tracking-[-0.025em] text-[#45390e]">{c.heroTitle}</h1>
-                    <p className="mt-3 text-[14.5px] leading-relaxed text-[#6b5f3a]">{c.heroBody}</p>
-                    <div className="mt-6 flex flex-wrap gap-2.5">
-                      <button
-                        onClick={open('pay')} data-testid="home2-pay"
-                        className="home2-press flex h-12 items-center gap-2 rounded-xl bg-[#2f55a4] px-6 text-[14.5px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(47,85,164,0.85)] hover:bg-[#1f3c7a]"
-                      >
-                        <Wallet className="size-[18px]" /> {c.payTax}
-                      </button>
-                      <button
-                        onClick={open('other')} data-testid="home2-other"
-                        className="home2-press flex h-12 items-center gap-2 rounded-xl bg-white/80 px-6 text-[14.5px] font-semibold text-[#45390e] ring-1 ring-[#6b5a1e]/20 hover:bg-white"
-                      >
-                        <FileText className="size-[18px]" /> {c.otherTax}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                {promoSlides.map((sl) => {
-                  const s = c.slides[sl.key]
-                  return (
-                    <div key={sl.key} className={`relative flex min-h-[340px] w-full shrink-0 snap-center items-center overflow-hidden px-9 py-7 ${sl.tone}`}>
-                      <sl.icon className="pointer-events-none absolute -right-8 -bottom-12 size-[300px] opacity-[0.08]" strokeWidth={1} aria-hidden />
-                      <div className="relative max-w-[460px]">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase ${sl.chip}`}>{s.eyebrow}</span>
-                        <h2 className="mt-3.5 text-[34px] leading-[1.1] font-bold tracking-[-0.02em]">{s.title}</h2>
-                        <p className="mt-3 max-w-[400px] text-[14.5px] leading-relaxed opacity-75">{s.body}</p>
-                        <button onClick={open(sl.key === 'cert' ? 'certificates' : 'again')} className={`home2-press mt-6 flex h-12 items-center gap-2 rounded-xl px-6 text-[14.5px] font-semibold ${sl.cta}`}>
-                          {s.cta} <ArrowRight className="size-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="absolute right-4 bottom-4 flex items-center gap-0.5 rounded-full bg-white/85 p-1 shadow-[0_8px_24px_-12px_rgba(20,27,45,0.45)] ring-1 ring-black/5 backdrop-blur-md">
-                <button onClick={car.prev} aria-label={c.carousel.prev} className="home2-press grid size-8 place-items-center rounded-full text-[#141b2d] hover:bg-[#f3f4f8]">
-                  <ChevronLeft className="size-4" />
-                </button>
-                <div className="flex items-center gap-1.5 px-1">
-                  {Array.from({ length: slideCount }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => car.goTo(i)}
-                      aria-label={c.carousel.goTo(i + 1)}
-                      aria-current={car.index === i}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${car.index === i ? 'w-5 bg-[#2f55a4]' : 'w-1.5 bg-[#c8ccd8] hover:bg-[#a9afc0]'}`}
-                    />
-                  ))}
-                </div>
-                <button onClick={car.next} aria-label={c.carousel.next} className="home2-press grid size-8 place-items-center rounded-full text-[#141b2d] hover:bg-[#f3f4f8]">
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
-            </div>
-          </Tile>
+<section aria-label={c.section.title} className="mx-auto w-full max-w-[1240px] flex-1 px-8 pt-5 pb-14"><section className="grid grid-cols-[minmax(0,1fr)_clamp(320px,30vw,372px)] gap-3">          {/* Slider 2: existing CMS, Home 2 presentation */}
+          <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction}/></Tile>
 
 <div className="home2-v2-type flex flex-col gap-4"><Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-[#f4f7fc] p-6 ring-1 ring-[#e6edf8]">
   <LineArt name="search" accent="#cad8ef" className="absolute top-4 right-4 size-16 text-[#162d53]" />
