@@ -17,9 +17,9 @@ return <div className="flex min-h-screen flex-col bg-[#f4f6fa]"><header role="ba
 <section aria-label={c.section.title} className="mx-auto w-full max-w-[1240px] flex-1 px-8 pt-5 pb-14"><section className="grid grid-cols-[minmax(0,1fr)_clamp(320px,30vw,372px)] gap-3">          {/* Slider 2: existing CMS, Home 2 presentation */}
           <Tile><Slider2 language={c.langSwitch === 'English' ? 'bn' : 'en'} onAction={onAction} paused={sliderPaused}/></Tile>
 
-<div className="home2-v2-type flex flex-col gap-4"><Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-[#f4f7fc] p-6 ring-1 ring-[#e6edf8]">
+<div className="home2-v2-type flex flex-col gap-4"><Tile delay={80} className="home2-v2-type relative overflow-hidden rounded-[20px] bg-white p-6 ring-1 ring-[#dfe5ee]">
   <LineArt name="search" accent="#cad8ef" className="absolute top-4 right-4 size-16 text-[#162d53]" />
-  <div className="relative pr-20">
+  <div className="relative pr-20" data-testid="home2-record-heading">
     <h2 className="text-[18px] leading-tight font-bold tracking-[-0.015em]">{c.find.title}</h2>
     <p className="mt-1.5 text-[13px] leading-snug text-[#3e4b62]">{c.find.body}</p>
   </div>
@@ -32,15 +32,16 @@ return <div className="flex min-h-screen flex-col bg-[#f4f6fa]"><header role="ba
    <button data-testid="home2-chat-action" onClick={open('help')} className="home2-press flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-white/50 px-3 text-[13px] font-semibold ring-1 ring-black/5 hover:bg-white/80"><MessageCircle className="size-4 shrink-0" /> {c.help.chat}</button>
  </div>
 </div></Tile></div></section>
-<section className="home2-v2-type mt-12" aria-labelledby="features-title"><Tile delay={200} className="mb-5 flex items-end justify-between gap-6"><div><p className="text-[12px] font-semibold tracking-[0.08em] text-[#244d8f] uppercase">{c.section.eyebrow}</p><h2 id="features-title" className="mt-1.5 text-[28px] leading-tight font-bold tracking-[-0.025em]">{c.section.title}</h2><p className="mt-1 text-[14px] text-[#3e4b62]">{c.section.body}</p></div><button onClick={open('login')} className="group flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-[#244d8f] transition hover:text-[#162d53]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড দেখুন' : 'Open dashboard') : c.section.cta}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></button></Tile>
+<section className="home2-v2-type mt-12" aria-labelledby="features-title"><Tile delay={200} className="mb-5 flex items-center justify-between gap-6"><h2 id="features-title" className="min-w-0 text-[28px] leading-tight font-bold tracking-[-0.025em]">{c.section.title}</h2><button type="button" data-testid="home2-dashboard-action" onClick={open('login')} className="home2-press group flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-[14px] font-semibold text-[#244d8f] ring-1 ring-[#dfe5ee] transition hover:bg-[#f7f9fd] hover:text-[#162d53]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড দেখুন' : 'Open dashboard') : c.section.cta}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></button></Tile>
 <div className="grid grid-cols-12 grid-rows-[repeat(2,minmax(150px,auto))_minmax(112px,auto)] gap-4"><Tile delay={240} className="col-span-6 row-span-2">
 <button onClick={open('pay')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-[#a5bce1] p-7 text-left " + surface + " " + hover}>
  <LineArt name="wallet" accent="#cad8ef" className="absolute top-6 right-6 size-28 text-[#162d53]" />
- <span className="relative w-fit rounded-md bg-white/70 px-2.5 py-1 text-[11.5px] font-semibold tracking-[0.04em] uppercase">{f.all.badge}</span>
- <div className="relative mt-auto pt-6">
+ <div className="relative flex min-w-0 flex-1 flex-col">
+ <div data-testid="home2-all-payments-copy" className="min-h-28 pr-28">
  <h3 className="flex items-center gap-2 text-[26px] leading-tight font-bold tracking-[-0.025em]">{f.all.title} <ArrowUpRight className="size-5 text-[#162d53]/50 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#0f1d34]" /></h3>
  <p className="mt-1.5 max-w-[320px] text-[14px] leading-snug text-[#0f1d34]/75">{f.all.body}</p>
- <div className="mt-4 flex flex-wrap gap-1.5">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2.5 py-1 text-[12px] font-medium">{x}</span>)}</div>
+ </div>
+ <div className="mt-auto flex flex-wrap gap-1.5 pt-4">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2.5 py-1 text-[12px] font-medium">{x}</span>)}</div>
  <ol className="mt-5 grid grid-cols-3 gap-2">{f.all.steps.map((step,i)=><li key={step} className="rounded-xl bg-white/75 p-3.5"><span className="grid size-6 place-items-center rounded-full bg-[#162d53] text-[11px] font-bold text-white">{i+1}</span><span className="mt-2.5 text-[13px] block leading-tight font-semibold">{step}</span></li>)}</ol>
  </div></button></Tile>
  <Tile delay={280} className="col-span-3 row-span-2"><button onClick={open('history')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-[#e3ddd4] p-6 text-left " + surface + " " + hover}>
