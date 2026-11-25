@@ -316,10 +316,7 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
           {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:row=><p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
           {key:'receipt',header:tr('Receipt','রসিদ'),renderCell:row=><div className="flex flex-wrap gap-2">
             <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-              onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View','দেখুন')}</button>
-            {canReuse(row)&&<button type="button" data-testid="account-pay-again-desktop"
-              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-              onClick={()=>payAgain(row)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+              onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View details','বিস্তারিত দেখুন')}</button>
           </div>}
         ]}
         renderMobileCard={row=><>
@@ -334,10 +331,7 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
           {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">{tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
           <div className="taxpay-mobile-table-card__actions"><button type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button>
-            {canReuse(row)&&<button type="button" data-testid="account-pay-again-mobile"
-              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-              onClick={()=>payAgain(row)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View details','বিস্তারিত দেখুন')}</button>
           </div>
         </>}/>
     </div>

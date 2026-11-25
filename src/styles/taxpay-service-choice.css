@@ -3037,3 +3037,115 @@
     border-left:0;border-top:1px solid #dbe3ef;
   }
 }
+
+/* Account-owned draft stages share one action row. Scope to the actual mounted
+ * owner-bound draft control, not a URL or the presence of an empty portal slot.
+ * Walk-in, review, checkout and payment-result primary-only footers stay frozen.
+ * Mobile calculation, if present, occupies its own row above these actions. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) {
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(0,3fr);
+  align-items:stretch;
+  justify-content:space-between;
+  column-gap:12px;
+  row-gap:8px;
+  width:100%;
+  min-width:0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > .payment-flow-embedded__mobile-summary {
+  grid-column:1/-1;
+  grid-row:1;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > :is(.payment-flow-embedded__draft-actions,.payment-journey-footer__leading) {
+  grid-column:1;
+  grid-row:auto;
+  order:1;
+  display:flex;
+  align-items:stretch;
+  justify-content:flex-start;
+  justify-self:start;
+  width:auto;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > .payment-flow-embedded__mobile-summary:not([hidden]) {
+  order:0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__draft-actions,.payment-journey-footer__leading) .payment-form-draft-controls__actions {
+  display:flex;
+  align-items:stretch;
+  align-self:stretch;
+  min-width:0;
+  max-width:100%;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) .payment-form-draft-controls__save {
+  box-sizing:border-box;
+  flex:0 1 auto;
+  width:auto;
+  max-width:100%;
+  min-width:0;
+  min-height:46px;
+  padding:10px 16px;
+  border:1px solid var(--citizen-primary);
+  border-radius:9px;
+  background:var(--citizen-surface,#fff);
+  color:var(--citizen-primary);
+  box-shadow:none;
+  font-size:var(--taxpay-font-body,16px);
+  font-weight:var(--taxpay-weight-action,600);
+  line-height:1.3;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) .payment-form-draft-controls__save:hover:not(:disabled) {
+  background:var(--citizen-primary-light);
+  border-color:var(--citizen-primary);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > :is(.tax-service-choice__continue,.payment-journey-footer__next) {
+  grid-column:2;
+  order:2;
+  justify-self:end;
+  align-self:stretch;
+  width:auto;
+  min-width:0;
+  max-width:100%;
+  margin:0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > .payment-journey-footer__next {
+  display:flex;
+  align-items:stretch;
+  justify-content:flex-end;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.tax-service-choice__continue,.travel-flow__primary) {
+  flex:0 1 auto;
+  width:auto;
+  min-width:0;
+  max-width:100%;
+  min-height:46px;
+  padding:10px 16px;
+  white-space:normal;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.tax-service-choice__continue,.travel-flow__primary) svg {flex:none;}
+/* The original Back handler stays in the header. Preserve a legacy visible
+ * footer Back if present, but never let it split the Save/Continue row. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > .tax-service-choice__cancel {
+  grid-column:1/-1;
+  order:0;
+  justify-self:start;
+  width:auto;
+}
+@media(max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) {column-gap:8px;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-form-draft-controls__save,.tax-service-choice__continue,.travel-flow__primary) {
+    padding:8px 10px;
+    font-size:var(--taxpay-font-body,16px);
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__action-long,.travel-flow__action-long) {display:none;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) :is(.payment-flow-embedded__action-short,.travel-flow__action-short) {display:inline;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) > :is(.payment-flow-embedded__draft-actions,.payment-journey-footer__leading) {align-self:stretch;}
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) .payment-form-draft-controls__save,
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer :is(.payment-flow-embedded__footer-actions,.travel-flow__footer-actions):has(.payment-form-draft-controls__actions[data-account-owned="true"]) .travel-flow__primary {align-self:stretch;}
+}

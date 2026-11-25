@@ -82,7 +82,7 @@ test('history recipient prefill is cleared if the signed-in payer changes before
   await page.goto('/?action=history');
   const history=page.getByTestId('beneficiary-payment-history');
   await expect(history).toBeVisible();
-  await history.getByRole('button',{name:'View receipt',exact:true}).first().click();
+  await history.getByRole('button',{name:'View details',exact:true}).first().click();
   const receipt=page.getByRole('dialog',{name:'Payment receipt'});
   await receipt.getByRole('button',{name:'Save Beneficiary',exact:true}).click();
   const entry=page.getByRole('dialog',{name:'Beneficiary entry'});
@@ -114,7 +114,7 @@ for(const language of ['en','bn'] as const){
     await expect(history).toBeVisible();
     await expect(history).toContainText('Beneficiary A');
     await expect(history).toContainText('Beneficiary B');
-    await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+    await history.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).first().click();
     const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
     await expect(receipt).toBeVisible();
     const saveLabel=language==='bn'?'উপকারভোগী সংরক্ষণ করুন':'Save Beneficiary';
@@ -150,7 +150,7 @@ for(const language of ['en','bn'] as const){
     const reloadedHistory=page.getByTestId('beneficiary-payment-history');
     await expect(reloadedHistory).toContainText('Beneficiary A');
     await expect(reloadedHistory).toContainText(payment.id);
-    await reloadedHistory.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+    await reloadedHistory.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).first().click();
     const savedReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
     await expect(savedReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
     await expect(savedReceipt).toContainText('012345678901');
@@ -220,7 +220,7 @@ for(const language of ['en','bn'] as const){
       const history=page.getByTestId('beneficiary-payment-history');
       await expect(history).toBeVisible();
       await expect(history).toContainText('Beneficiary A');
-      await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+      await history.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).first().click();
       const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(receipt).toBeVisible();
       await receipt.getByRole('button',{name:language==='bn'?'উপকারভোগী সংরক্ষণ করুন':'Save Beneficiary',exact:true}).click();
@@ -250,7 +250,7 @@ for(const language of ['en','bn'] as const){
       await page.goto(appUrl('history',owner.session));
       const reloaded=page.getByTestId('beneficiary-payment-history');
       await expect(reloaded).toContainText(payment.id);
-      await reloaded.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+      await reloaded.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).first().click();
       const savedReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(savedReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
       await expect(savedReceipt).toContainText('012345678901');
@@ -445,7 +445,7 @@ for(const language of ['en','bn'] as const){
       await expect(history).toContainText(paymentId,{timeout:15_000});
       await history.getByTestId('beneficiary-payment-mobile-cards').locator('li')
         .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
-        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
+        .getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).click();
       const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(receipt).toContainText(recipientTin);
       await expect(receipt).toContainText(selfTin);
@@ -526,7 +526,7 @@ for(const language of ['en','bn'] as const){
       await page.getByTestId('beneficiary-payment-history')
         .getByTestId('beneficiary-payment-mobile-cards').locator('li')
         .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
-        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
+        .getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).click();
       const paymentReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       const receiptButtons=paymentReceipt.locator('.taxpay-modal__footer .receipt-view__action-group button');
       await expect(receiptButtons).toHaveCount(3);
@@ -544,7 +544,9 @@ for(const language of ['en','bn'] as const){
         .locator('li').filter({hasText:repeatableId}).first();
       await expect(modern).toBeVisible({timeout:15_000});
       await expect(modern).toContainText('2026-27');
-      const repeatAction=modern.getByTestId('account-pay-again-mobile');
+      await expect(modern.locator('.taxpay-mobile-table-card__actions button')).toHaveCount(1);
+      await modern.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).click();
+      const repeatAction=page.getByRole('dialog').getByTestId('account-pay-again-receipt');
       await expect(repeatAction).toBeEnabled();
       await repeatAction.click();
       const repeatModal=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
