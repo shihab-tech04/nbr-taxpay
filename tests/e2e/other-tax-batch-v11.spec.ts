@@ -1,3 +1,4 @@
+import { expectTaxHeadSpacing } from './payment-head-spacing-assertion';
 import { expect, test, type Page } from '@playwright/test';
 import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
@@ -1088,6 +1089,7 @@ test('F-039 unified account dashboard: own TIN and saved recipients share the ap
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
   await expect(batch.getByTestId('unified-v5-return-group')).toBeVisible();
+  await expectTaxHeadSpacing(batch);
   await expect(dialog.getByTestId('frequent-category-section')).toHaveCount(0);
   expect(writes).toEqual([]);
 });
