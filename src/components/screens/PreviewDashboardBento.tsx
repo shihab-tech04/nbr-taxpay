@@ -1,3 +1,4 @@
+import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import React, {useEffect, useMemo, useState} from 'react';
 import {ArrowRight, CircleHelp, FileCheck2, FilePenLine, ReceiptText, Users, WalletCards} from 'lucide-react';
 import {ASSESSMENT_YEARS} from '../../data/mockData';
@@ -314,5 +315,6 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
     <section className="taxpay-unified-source-records" aria-label={tr('Account service records','অ্যাকাউন্ট সেবার রেকর্ড')}>
       <DemoServiceRecordsPanel userId={demoUserId} language={language}/>
     </section>
+    <ReceivedPaymentNoticeRegister profileId={profileId} language={language} context="dashboard" assessmentYear={year}/>
   </div>;
 };

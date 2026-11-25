@@ -1,3 +1,4 @@
+import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
 import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
 import {TaxPayCompactCellList,TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
@@ -1106,6 +1107,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
+    {previewAccount?.id==='user1'&&(overviewRoute||route==='history')&&<ReceivedPaymentNoticeRegister profileId={previewAccount.id} language={language} context={overviewRoute?'dashboard':'activity'} assessmentYear={overviewRoute?year:historyYear}/>}
     {route==='history'&&activePreviewSession()?.profileId==='user1'&&<LegacyPaymentRecovery language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}

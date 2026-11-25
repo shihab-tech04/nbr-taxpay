@@ -1,3 +1,4 @@
+import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import React, { useMemo, useState } from 'react';
 import '../../styles/taxpay-dashboard-bento.css';
@@ -276,5 +277,6 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" onClick={()=>navigate('history')}>{tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')}<ArrowRight size={16}/></button>
     </section>
     </>}
+    {user&&<ReceivedPaymentNoticeRegister authOwnerUid={user.id} language={language} context="dashboard" assessmentYear={year}/>}
   </div>;
 };

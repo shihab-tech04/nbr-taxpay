@@ -1,3 +1,4 @@
+import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {TaxPayDataGrid,TaxPayTableState,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
@@ -121,9 +122,10 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 
-  if (authenticatedUser) return <AuthenticatedHistorySwitch ownerUid={authenticatedUser.id}
-    language={language} activityTabs={activityTabs} />;
-  if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/>{previewAccount&&activePreviewSession()?.profileId===previewAccount.id&&<RecoveredStoryHistory profileId={previewAccount.id} language={language}/>}</>;
+  if (authenticatedUser) return <><AuthenticatedHistorySwitch ownerUid={authenticatedUser.id}
+    language={language} activityTabs={activityTabs} /><ReceivedPaymentNoticeRegister authOwnerUid={authenticatedUser.id} language={language} context="activity"/></>;
+  if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/>{previewAccount&&activePreviewSession()?.profileId===previewAccount.id&&<RecoveredStoryHistory profileId={previewAccount.id} language={language}/>}<ReceivedPaymentNoticeRegister profileId={previewAccount?.id} language={language} context="activity"/></>;
+
 
   return (
     <div data-taxpay-register-page="true" className={`mx-auto max-w-7xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>

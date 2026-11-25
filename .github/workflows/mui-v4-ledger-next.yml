@@ -13,7 +13,7 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 1d96c6dffe6e11256beedbbf9ad8925d5e3f1982
+      BASE_SHA: 6189ee583926ee42e2ab6e909c571603bb57a886
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +61,12 @@ jobs:
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/dashboard-unified-preview.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts --workers=2
+      - name: Preserve latest Main recipient notification and payment activity
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/authenticated-received-notice-mount.spec.ts --workers=2
       - name: Compare unchanged Main and combined candidate across full home matrix
         run: |
           set -euo pipefail
