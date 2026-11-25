@@ -377,10 +377,15 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
       });
       return {status:response.status,body:await response.json()};
     },{url:target.origin,key,capability,action,fields});
+  // Each viewport owns only these newly created disposable fixture groups.
+  // Remove them after the cross-browser checks so the next viewport does not
+  // consume six groups on the same User1 account. Never delete preexisting lists.
+  let fixtureOwner: {page:Page;capability:string}|undefined;
+  const lists:{name:string;id:string}[]=[];
   try{
     const first=await (await newContext()).newPage();
     const user1=await signIn(first,'user1');
-    const lists:{name:string;id:string}[]=[];
+    fixtureOwner={page:first,capability:user1.capability};
     for(const category of categories){
       const created=await apiRequest(first,user1.capability,'create-list',{name:category.name});
       expect(created.status,JSON.stringify(created.body)).toBe(200);
@@ -487,7 +492,33 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     // No settled financial record is created: WS1/WS3 own associated
     // payment/allocation fixtures and payer/recipient readback.
   }finally{
-    await Promise.all(contexts.map(context=>context.close()));
+    try{
+      if(fixtureOwner&&lists.length){
+        const {page,capability}=fixtureOwner;
+        const read=await apiRequest(page,capability,'snapshot');
+        expect(read.status).toBe(200);
+        expect(read.body.success).toBe(true);
+        const ownedIds=new Set(lists.map(list=>list.id));
+        const owned=read.body.data.people as Array<{id:string;list_id:string}>;
+        for(const person of owned.filter(row=>ownedIds.has(row.list_id))){
+          const removed=await apiRequest(page,capability,'remove',{id:person.id});
+          expect(removed.status,JSON.stringify(removed.body)).toBe(200);
+        }
+        for(const list of lists){
+          const removed=await apiRequest(page,capability,'delete-list',{id:list.id});
+          expect(removed.status,JSON.stringify(removed.body)).toBe(200);
+        }
+        const after=await apiRequest(page,capability,'snapshot');
+        expect(after.status).toBe(200);
+        expect(after.body.success).toBe(true);
+        expect(after.body.data.lists.some((row:{id:string})=>ownedIds.has(row.id))).toBe(false);
+        expect(after.body.data.people.some((row:{list_id:string})=>ownedIds.has(row.list_id))).toBe(false);
+        const retained=read.body.data.lists.filter((row:{id:string})=>!ownedIds.has(row.id));
+        expect(after.body.data.lists).toEqual(expect.arrayContaining(retained));
+      }
+    }finally{
+      await Promise.all(contexts.map(context=>context.close()));
+    }
   }
 });
 

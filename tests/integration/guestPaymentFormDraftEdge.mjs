@@ -2,9 +2,11 @@
 // Requires TAXPAY_LOCAL_SUPABASE_ANON_KEY and a local supabase functions serve.
 // No hosted Supabase project or production financial records are used.
 import assert from 'node:assert/strict';
+import {localSupabaseEndpoints} from './localSupabaseEndpoints.mjs';
 import {randomBytes} from 'node:crypto';
 
-const url = 'http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries';
+const {origin} = localSupabaseEndpoints();
+const url = origin + '/functions/v1/taxpay-guest-beneficiaries';
 const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
 if (!key) throw new Error('TAXPAY_LOCAL_SUPABASE_ANON_KEY is required');
 const first = randomBytes(32).toString('base64url');

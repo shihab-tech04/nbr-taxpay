@@ -360,9 +360,20 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   .locator(':scope > li').filter({hasText:repeated!.id}).first();
  await expect(repeatedCard.getByText(repeated!.id)).toBeVisible({timeout:15000});
 
- // Removing a private address-book list cascades only its contact row. The
- // payer's immutable payment and beneficiary allocation must remain readable.
+ // Removing a private address-book list must transfer the original contact
+ // to another owner-scoped list and preserve its identity/classification.
+ // The payer's immutable payment and beneficiary allocation remain readable.
  await one.page.goto('/?action=beneficiaries');
+ await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ const destinationResponse=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists',u.origin),{
+  method:'POST',headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token,
+   'Content-Type':'application/json',Prefer:'return=representation'},
+  body:JSON.stringify({owner_uid:payer.id,name:'Retained acceptance'}),
+ });
+ expect(destinationResponse.status).toBe(201);
+ const destination=(await destinationResponse.json())[0] as {id:string;owner_uid:string;name:string};
+ expect(destination).toMatchObject({owner_uid:payer.id,name:'Retained acceptance'});
+ await one.page.reload();
  await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
  // The approved shared register keeps its advanced list selector behind Filters.
  await one.page.getByRole('button',{name:'Filter',exact:true}).click();
@@ -372,7 +383,11 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
    .getByRole('button',{name:'Edit Profile acceptance'}).click();
  await one.page.getByRole('dialog',{name:'Edit beneficiary list'}).getByRole('button',{name:'Delete list'}).click();
  const confirmDelete=one.page.getByRole('dialog',{name:'Confirm list deletion'});
- await expect(confirmDelete).toContainText('Existing payment and tax records will not be affected.');
+ await expect(confirmDelete).toContainText('Move the saved beneficiaries');
+ await expect(confirmDelete.getByRole('button',{name:'Delete list',exact:true})).toBeDisabled();
+ await confirmDelete.getByRole('button',{name:'Transfer to list'}).click();
+ await confirmDelete.getByRole('option',{name:'Retained acceptance',exact:true}).click();
+ await expect(confirmDelete.getByRole('button',{name:'Delete list',exact:true})).toBeEnabled();
  await confirmDelete.getByRole('button',{name:'Delete list',exact:true}).click();
  await expect(one.page.getByText('Beneficiary list deleted.',{exact:true})).toBeVisible({timeout:15000});
 
@@ -381,11 +396,11 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  });
  expect(listsAfterResponse.status).toBe(200);
  expect(await listsAfterResponse.json()).toEqual([]);
- const contactsAfterResponse=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=id&id=eq.'+savedContacts[0].id,u.origin),{
+ const contactsAfterResponse=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=id,owner_uid,list_id,tin,display_name,tag,relationship,other_label&id=eq.'+savedContacts[0].id,u.origin),{
   headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}
  });
  expect(contactsAfterResponse.status).toBe(200);
- expect(await contactsAfterResponse.json()).toEqual([]);
+ expect(await contactsAfterResponse.json()).toEqual([{...savedContacts[0],list_id:destination.id}]);
  const historyAfterDelete=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(historyAfterDelete.status).toBe(200);
  const preservedPayment=(historyAfterDelete.data as Array<{transactionId:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
@@ -399,7 +414,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   .locator(':scope > li').filter({hasText:tx!.id}).first();
  await expect(preservedCard.getByText(tx!.id)).toBeVisible({timeout:15000});
  await preservedCard.getByText('View allocations',{exact:false}).click();
- await expect(preservedCard).toContainText('user7');
+ // The retained address-book display name remains authoritative for the payer UI;
+ // the immutable SQL allocation identity was independently asserted above.
+ await expect(preservedCard.getByRole('button',{name:'Open beneficiary profile for '+savedContacts[0].display_name})).toBeVisible();
+ await expect(preservedCard).toContainText(savedContacts[0].tin);
  await expect(preservedCard).toContainText('৳23.50');
  await one.context.close();await two.context.close();
 });

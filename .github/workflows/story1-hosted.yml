@@ -2,7 +2,7 @@
 name: Story 1 Hosted Payment Sync
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'src/services/simulatedPaymentStory.ts'

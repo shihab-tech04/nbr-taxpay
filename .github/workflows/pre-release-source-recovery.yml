@@ -1,7 +1,7 @@
 name: Verified pre-release source recovery
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
   workflow_dispatch:
 permissions:
@@ -12,7 +12,7 @@ permissions:
 # Manual recovery runs remain independent, and neither Main releases nor another
 # PR's backup can be cancelled by this group.
 concurrency:
-  group: taxpay-source-recovery-${{ github.event.pull_request.number || github.run_id }}
+  group: taxpay-source-recovery-${{ github.event.pull_request.number || github.run_id }}${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')) && '-draft' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   source-backup:

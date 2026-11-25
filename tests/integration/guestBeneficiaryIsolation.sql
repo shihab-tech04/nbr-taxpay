@@ -1,3 +1,22 @@
+\set ON_ERROR_STOP on
+-- Fail closed before any fixture write. Phase02 validates the disposable
+-- Supabase status endpoints and exports the exact per-run database port.
+\getenv taxpay_fixture_db_port TAXPAY_LOCAL_DB_PORT
+\if :{?taxpay_fixture_db_port}
+select :'HOST' in ('localhost','127.0.0.1','::1')
+   and :'DBNAME'='postgres'
+   and :'PORT'=:'taxpay_fixture_db_port'
+   and :'taxpay_fixture_db_port' ~ '^[0-9]{4,5}$'
+   as local_beneficiary_candidate \gset
+\else
+\set local_beneficiary_candidate false
+\endif
+\if :local_beneficiary_candidate
+\else
+\echo 'Refusing beneficiary fixture SQL outside allocated disposable local Supabase'
+select 1/0;
+\endif
+
 begin;
 
 do $$
@@ -249,3 +268,83 @@ reset role;
 rollback;
 
 \echo 'PASS: guest capabilities persist and isolate beneficiary CRUD and atomic list moves; account-owned RLS and service-role-only RPC boundary remain intact'
+
+
+-- Exercise the unreleased migration only after the exact allocated loopback guard above.
+\set user1_variant original
+\ir beneficiaryUser1Reconciliation.sql
+\set user1_variant v2
+\ir beneficiaryUser1Reconciliation.sql
+\ir ../../docs/beneficiary-group-cap-candidate.sql
+
+begin;
+do $$
+declare
+  v_a constant text:=repeat('d',64);
+  v_b constant text:=repeat('e',64);
+  v_source uuid; v_target uuid; v_other uuid; v_person uuid; v_moved jsonb;
+begin
+  perform public.taxpay_guest_beneficiary_open(v_a);
+  perform public.taxpay_guest_beneficiary_open(v_b);
+  v_source:=(public.taxpay_guest_beneficiary_create_list(v_a,'Capacity Source')->>'id')::uuid;
+  v_target:=(public.taxpay_guest_beneficiary_create_list(v_a,'Capacity Target')->>'id')::uuid;
+  v_other:=(public.taxpay_guest_beneficiary_create_list(v_b,'Other Owner')->>'id')::uuid;
+  for i in 3..5 loop
+    perform public.taxpay_guest_beneficiary_create_list(v_a,'Capacity '||i);
+  end loop;
+  if jsonb_array_length(public.taxpay_guest_beneficiary_lists(v_a))<>5 then raise exception 'Expected five groups'; end if;
+  if (public.taxpay_guest_beneficiary_create_list(v_a,'Capacity Source')->>'id')::uuid<>v_source then raise exception 'Existing group retry changed ID'; end if;
+  begin
+    perform public.taxpay_guest_beneficiary_create_list(v_a,'Sixth');
+    raise exception 'Sixth group unexpectedly accepted';
+  exception when others then
+    if sqlerrm not like '%BENEFICIARY_GROUP_LIMIT%' then raise; end if;
+  end;
+  perform public.taxpay_guest_beneficiary_add(v_a,v_source,'[{"tin":"012345678901","display_name":"Synthetic transfer","tag":"clients"}]'::jsonb);
+  v_person:=(public.taxpay_guest_beneficiary_rows(v_a,0,500)->0->>'id')::uuid;
+  begin
+    perform public.taxpay_guest_beneficiary_delete_list(v_a,v_source);
+    raise exception 'Nonempty delete unexpectedly accepted';
+  exception when others then
+    if sqlerrm not like '%BENEFICIARY_GROUP_NOT_EMPTY%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_guest_beneficiary_transfer_group(v_a,v_source,v_other);
+    raise exception 'Cross-owner group transfer unexpectedly accepted';
+  exception when others then
+    if sqlerrm not like '%NOT_FOUND%' then raise; end if;
+  end;
+  perform public.taxpay_guest_beneficiary_add(v_a,v_target,'[{"tin":"012345678901","display_name":"Conflicting fixture","tag":"clients"}]'::jsonb);
+  begin
+    perform public.taxpay_guest_beneficiary_transfer_group(v_a,v_source,v_target);
+    raise exception 'Duplicate group transfer unexpectedly accepted';
+  exception when others then
+    if sqlerrm not like '%BENEFICIARY_ALREADY_IN_LIST%' then raise; end if;
+  end;
+  if jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_a,0,500))<>2 or
+     jsonb_array_length(public.taxpay_guest_beneficiary_lists(v_a))<>5 then
+    raise exception 'Collision removed a group or beneficiary';
+  end if;
+  -- Retain the conflicting membership; transfer into a distinct empty group.
+  select (item.value->>'id')::uuid into v_target
+    from jsonb_array_elements(public.taxpay_guest_beneficiary_lists(v_a)) item(value)
+    where item.value->>'name'='Capacity 3';
+  v_moved:=public.taxpay_guest_beneficiary_transfer_group(v_a,v_source,v_target);
+  if (v_moved->>'moved')::integer<>1 or
+     jsonb_array_length(public.taxpay_guest_beneficiary_lists(v_a))<>4 or
+     jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_a,0,500))<>2 or
+     not exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_rows(v_a,0,500)) item(value)
+       where item.value->>'id'=v_person::text and item.value->>'list_id'=v_target::text) then
+    raise exception 'Atomic transfer failed preservation/readback';
+  end if;
+  perform public.taxpay_guest_beneficiary_create_list(v_a,'Available slot');
+  if jsonb_array_length(public.taxpay_guest_beneficiary_lists(v_a))<>5 then raise exception 'Capacity not restored'; end if;
+  if has_function_privilege('anon','public.taxpay_guest_beneficiary_transfer_group(text,uuid,uuid)','EXECUTE')
+     or has_function_privilege('authenticated','public.taxpay_guest_beneficiary_transfer_group(text,uuid,uuid)','EXECUTE')
+     or not has_function_privilege('service_role','public.taxpay_guest_beneficiary_transfer_group(text,uuid,uuid)','EXECUTE') then
+    raise exception 'Guest transfer grants are incorrect';
+  end if;
+end;
+$$;
+rollback;
+\echo 'PASS: disposable guest group cap, empty-only delete, transfer, conflict rollback, and owner scope'

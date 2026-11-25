@@ -22,6 +22,7 @@ import type {PaymentReuse} from '../../services/paymentReuse';
 import { PaymentDraftEntryGate } from './PaymentDraftEntryGate';
 import { paymentDraftOwnerScope, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { taxpayerBrandName } from '../../config/brand';
+import { useUnifiedDraftEditor } from '../../services/paymentDraftEditor';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
 export const PAYMENT_SERVICE_CHOICES = [
@@ -65,7 +66,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   // Modern Home and signed-in saved-beneficiary entries use the shared
-  // consolidated workspace. Dedicated and explicitly legacy routes remain intact.
+  // consolidated workspace. Compatible saved drafts resume in that same editor.
+  // Dedicated and explicitly legacy routes remain intact.
   const genericAccountEntry = Boolean(unifiedEntryRequested && (verifiedUser||previewAccount)&&!initialService&&!initialDraft&&!initialReuse&&!paymentBeneficiaryPrefill&&!onPublicOtherTaxContinue);
   const publicUnifiedEntry = unifiedEntryRequested && !initialService && !initialDraft && !initialReuse && !parallelEntry;
   const initialUnifiedAccount = initialDraft?.form_payload.unifiedFlowVersion===5 || initialReuse?.formPayload.unifiedFlowVersion===5;
@@ -81,7 +83,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
-  const unifiedEntry = draftToResume ? draftToResume.service==='OTHER_TAX_PAYMENT' && draftToResume.form_payload.unifiedFlowVersion===5 : initialReuse ? initialReuse.service==='OTHER_TAX_PAYMENT'&&initialUnifiedAccount : beneficiaryAccountEntry||publicUnifiedEntry||genericAccountEntry||initialUnifiedAccount;
+  const unifiedEntry = draftToResume
+    ? useUnifiedDraftEditor(draftToResume, Boolean(initialDraft || genericAccountEntry))
+    : initialReuse ? initialReuse.service==='OTHER_TAX_PAYMENT'&&initialUnifiedAccount : beneficiaryAccountEntry||publicUnifiedEntry||genericAccountEntry||initialUnifiedAccount;
   // All signed-out Walk-in payment journeys share the ONE two-action exit;
   // account-owned payments retain the separate Save Draft policy.
   const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;

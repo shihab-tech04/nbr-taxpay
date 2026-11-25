@@ -59,13 +59,26 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
-  // Production regression: page visibility alone is insufficient. Both approved
-  // beneficiary entry points must open their existing dialogs; cancel makes no write.
-  await page.getByRole('button',{name:/^(?:Create list|তালিকা তৈরি)$/}).click();
+  // Wait for the actual saved-list readback, then enforce the approved cap.
+  // Below-cap dialog coverage is also exercised by disposable owner tests.
+  const capacity=page.getByTestId('beneficiary-group-capacity');
+  await expect(capacity).toBeVisible();
+  const capacityText=(await capacity.innerText()).replace(/[০-৯]/g,d=>String('০১২৩৪৫৬৭৮৯'.indexOf(d)));
+  const count=capacityText.match(/^(\d+)\/5(?:\s|$)/);
+  expect(count,'Loaded group count must be present').not.toBeNull();
+  const createButton=page.getByRole('button',{name:/^(?:Create list|তালিকা তৈরি)$/});
   const createList=page.getByRole('dialog',{name:/^(?:Create list|তালিকা তৈরি)$/});
-  await expect(createList).toBeVisible();
-  await createList.getByRole('button',{name:/^(?:Cancel|বাতিল)$/}).click();
-  await expect(createList).toHaveCount(0);
+  if(Number(count![1])>=5){
+    await expect(createButton).toBeDisabled();
+    await expect(capacity).toContainText(/Maximum five saved groups|সর্বোচ্চ পাঁচটি সংরক্ষিত গ্রুপ/);
+    await expect(createList).toHaveCount(0);
+  }else{
+    await expect(createButton).toBeEnabled();
+    await createButton.click();
+    await expect(createList).toBeVisible();
+    await createList.getByRole('button',{name:/^(?:Cancel|বাতিল)$/}).click();
+    await expect(createList).toHaveCount(0);
+  }
   await page.getByRole('button',{name:/^(?:Add beneficiary|উপকারভোগী যোগ)$/}).click();
   const beneficiaryEntry=page.getByRole('dialog',{name:/^(?:Beneficiary entry|উপকারভোগী যোগ)$/});
   await expect(beneficiaryEntry).toBeVisible();
