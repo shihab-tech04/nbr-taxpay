@@ -124,7 +124,8 @@ test('empty service register keeps the shared controls and table structure',asyn
   await expect(register.getByRole('searchbox',{name:'Search service records'})).toBeVisible();
   await expect(register.getByRole('combobox',{name:'Filter record status'})).toBeVisible();
   await expect(register.getByRole('combobox',{name:'Sort service records'})).toBeVisible();
-  await expect(register.getByRole('status')).toContainText('No stored service activity is available for this account.');
+  await expect(register.getByRole('status').filter({hasText:'No stored service activity is available for this account.'})).toHaveText('No stored service activity is available for this account.');
+  await expect(register.getByRole('button',{name:/^View record:/})).toHaveCount(0);
   if(info.project.name==='desktop-1280'){
     await expect(register.getByRole('columnheader',{name:'Service',exact:true})).toBeVisible();
     await expect(register.getByRole('columnheader',{name:'Amount',exact:true})).toBeVisible();
@@ -139,7 +140,8 @@ test('filtered service register keeps its controls and recovers the original own
   const search=register.getByRole('searchbox',{name:'Search service records'});
   await expect(register.getByRole('button',{name:'View record: fixture-service-row'})).toBeVisible();
   await search.fill('no-matching-record');
-  await expect(register.getByRole('status')).toContainText('No service records match your search and filters.');
+  await expect(register.getByRole('status').filter({hasText:'No service records match your search and filters.'})).toHaveText('No service records match your search and filters.');
+  await expect(register.getByRole('button',{name:/^View record:/})).toHaveCount(0);
   await expect(search).toBeVisible();
   if(info.project.name==='desktop-1280')await expect(register.getByRole('columnheader',{name:'Service',exact:true})).toBeVisible();
   await register.getByRole('button',{name:'Clear filters'}).click();

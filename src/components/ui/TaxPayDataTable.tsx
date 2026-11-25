@@ -271,6 +271,8 @@ type UnifiedDataProps<Row> = {
   onViewRow?: (row:Row)=>void;
   toolbar?: TaxPayRecordToolbarProps;
   emptyLabel?: string;
+  /** Keep tabular headers and layout visible for a successfully loaded empty result. */
+  retainTabularStructureWhenEmpty?: boolean;
   loading?: boolean;
   error?: string;
   onRetry?: ()=>void;
@@ -278,7 +280,7 @@ type UnifiedDataProps<Row> = {
 };
 export function TaxPayDataGrid<Row>({
   rows,columns,getRowKey,variant,ariaLabel,className,testId,mobileTestId,
-  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,loading=false,error,onRetry,pagination
+  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,retainTabularStructureWhenEmpty=false,loading=false,error,onRetry,pagination
 }:UnifiedDataProps<Row>){
   if(variant==='ledger'||variant==='tabular') {
     const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
@@ -303,7 +305,7 @@ export function TaxPayDataGrid<Row>({
       {toolbar&&<TaxPayRecordToolbar {...toolbar}/>}
       {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:
        error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<button type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</button>}</TaxPayTableState>:
-       rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:<>
+       rows.length===0&&emptyLabel&&!retainTabularStructureWhenEmpty?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:<>
       {variant==='tabular'?<TaxPayTableViewport className="hidden md:block" role="region" aria-label={ariaLabel} tabIndex={0}>{desktopTable}</TaxPayTableViewport>:desktopTable}
     <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
       {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}
@@ -327,6 +329,7 @@ export function TaxPayDataGrid<Row>({
         </dl>}
       </li>)}
     </ul>
+    {rows.length===0&&emptyLabel&&<TaxPayTableState>{emptyLabel}</TaxPayTableState>}
     </>}
     {!loading&&!error&&pagination&&<TaxPayTablePagination {...pagination}/>}
   </>;

@@ -1,4 +1,4 @@
-import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import React from 'react';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { useTaxState } from '../../services/taxState';
@@ -259,6 +259,10 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                 <TaxPayDataGrid variant="tabular" rows={filteredRecords} getRowKey={record=>record.recordId}
                   ariaLabel={tr('Service records','সেবার রেকর্ড')}
                   onViewRow={record=>setSelectedRecordId(record.recordId)}
+                  retainTabularStructureWhenEmpty
+                  emptyLabel={records.length === 0
+                    ? tr('No stored service activity is available for this account.', 'এই অ্যাকাউন্টে কোনো সংরক্ষিত সেবার কার্যক্রম নেই।')
+                    : tr('No service records match your search and filters.', 'অনুসন্ধান ও ফিল্টারে কোনো সেবার রেকর্ড পাওয়া যায়নি।')}
                   toolbar={{
                     title:tr('Service record details','সেবার রেকর্ডের বিস্তারিত'),
                     count:filteredRecords.length,total:records.length,countLabel:tr('Records','রেকর্ড'),
@@ -318,11 +322,6 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                       <p><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time></p>
                     </div>
                   </>}/>
-            {filteredRecords.length === 0 && <TaxPayTableState role="status">
-              {records.length === 0
-                ? tr('No stored service activity is available for this account.', 'এই অ্যাকাউন্টে কোনো সংরক্ষিত সেবার কার্যক্রম নেই।')
-                : tr('No service records match your search and filters.', 'অনুসন্ধান ও ফিল্টারে কোনো সেবার রেকর্ড পাওয়া যায়নি।')}
-            </TaxPayTableState>}
           </div>
         </>
       )}
