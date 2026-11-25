@@ -200,7 +200,17 @@ $demo_recipient_notice$;
 -- Existing registered-source checks above are unchanged. Exercise the proposed
 -- replacement only in this disposable transaction; DDL and synthetic rows
 -- must roll back together. This is NOT hosted or settlement acceptance.
-\ir p0WalkInRecipientNoticeCandidate.sql
+-- The paired runner streams SQL via stdin from the repository root and
+-- replaces the final ROLLBACK with a capture/COMMIT. Protect candidate DDL
+-- and all walk-in rows with a separate savepoint even in that runner.
+CREATE TEMP TABLE p0_notice_restore_check ON COMMIT DROP AS
+SELECT pg_get_functiondef('public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)'::regprocedure) AS definition,
+  (SELECT count(*) FROM demo_payment.story_payments) AS payment_count,
+  (SELECT count(*) FROM demo_payment.story_notifications) AS notice_count,
+  (SELECT count(*) FROM demo_payment.mirror_outbox) AS outbox_count,
+  (SELECT count(*) FROM taxpay_guest_private.demo_received_payment_notice_ack) AS ack_count;
+SAVEPOINT p0_walkin_candidate;
+\i tests/integration/p0WalkInRecipientNoticeCandidate.sql
 DO $p0_walkin$
 DECLARE
   payer jsonb; recipient2 jsonb; recipient3 jsonb;
@@ -311,4 +321,18 @@ BEGIN
   RAISE NOTICE 'PASS: recorded walk-in v3/v5 allocation isolation, source replay, registered ACK preservation, cross-owner denial, declared identity cannot suppress notice and immutable originals';
 END;
 $p0_walkin$;
+ROLLBACK TO SAVEPOINT p0_walkin_candidate;
+RELEASE SAVEPOINT p0_walkin_candidate;
+DO $p0_restore$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_temp.p0_notice_restore_check c
+    WHERE c.definition = pg_get_functiondef('public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)'::regprocedure)
+      AND c.payment_count = (SELECT count(*) FROM demo_payment.story_payments)
+      AND c.notice_count = (SELECT count(*) FROM demo_payment.story_notifications)
+      AND c.outbox_count = (SELECT count(*) FROM demo_payment.mirror_outbox)
+      AND c.ack_count = (SELECT count(*) FROM taxpay_guest_private.demo_received_payment_notice_ack))
+  THEN RAISE EXCEPTION 'P0_WALKIN_CANDIDATE_ROLLBACK_FAILED'; END IF;
+  RAISE NOTICE 'PASS: candidate definition and synthetic row counts restored before paired capture/commit';
+END;
+$p0_restore$;
 ROLLBACK;
