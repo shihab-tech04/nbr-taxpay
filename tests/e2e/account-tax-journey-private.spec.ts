@@ -21,7 +21,7 @@ function session(){
     expires_in:3600,expires_at:exp,refresh_token:'journey-refresh',user:owner};
 }
 async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true,
-  seedAuthOnlyOnce=false,boundSimulationProfile?:string){
+  seedAuthOnlyOnce=false,boundSimulationProfile?:string,historyPayments=[user2Payment]){
   await page.addInitScript(({key,value,seedOnlyOnce})=>{
     const seeded='taxpay-test-account-auth-seeded';
     if(seedOnlyOnce&&sessionStorage.getItem(seeded))return;
@@ -102,7 +102,7 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
       return boundSimulationProfile?response(boundSimulationProfile):response({message:'No approved simulator binding'},403);
     if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'){
       expect(req.postDataJSON()).toEqual({p_view:'payer'});
-      return response(boundSimulationProfile==='user2'?[user2Payment]:[]);
+      return response(boundSimulationProfile==='user2'?historyPayments:[]);
     }
     if(url.pathname==='/rest/v1/taxpay_beneficiary_lists'||url.pathname==='/rest/v1/taxpay_beneficiaries')
       return response([]);
@@ -597,4 +597,32 @@ test('notification register keeps payment reviews available before correction co
   await expect(reviews).toContainText(request.id);
   await expect(reviews).not.toContainText('case-a1');
   await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+// Historical code rendering regression; no new simulator write or live-data claim.
+test('User2 recorded Gift Tax and Travel Tax render in History and details',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280'&&info.project.name!=='mobile-320','English desktop and Bengali mobile');
+  const language=info.project.name==='mobile-320'?'bn':'en';
+  const gift={...user2Payment,allocations:user2Payment.allocations.map(a=>({...a,category:'GIFT_TAX'}))};
+  const travel={...user2Payment,id:'SK-USER2-REF-002',transactionId:'00000000-0000-4000-8000-000000000905',
+    allocations:user2Payment.allocations.map(a=>({...a,id:'user2-travel-allocation',category:'TRAVEL_TAX'}))};
+  await mockAccount(page,false,[],true,false,'user2',[gift,travel]);
+  await page.goto('/?action=history&lang='+language);
+  const panel=page.getByTestId('signed-in-payment-activity');
+  const register=panel.getByTestId(language==='bn'?'signed-in-payment-activity-cards':'signed-in-payment-activity-table');
+  await expect(register).toBeVisible();
+  for(const [payment,label] of [[gift,language==='bn'?'দানকর':'Gift Tax'],[travel,language==='bn'?'ভ্রমণ কর':'Travel Tax']] as const){
+    const row=register.locator(language==='bn'?':scope > li':'tbody tr').filter({hasText:payment.id});
+    await expect(row).toBeVisible();
+    await row.getByText(language==='bn'?'বরাদ্দ দেখুন':'View allocations',{exact:true}).click();
+    await expect(row).toContainText(label);
+    await row.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:language==='bn'?'পেমেন্টের বিবরণ':'Payment details'});
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(label);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  }
+  await page.reload();
+  await expect(register).toBeVisible();
 });
