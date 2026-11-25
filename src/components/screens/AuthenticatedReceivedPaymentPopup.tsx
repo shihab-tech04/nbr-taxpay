@@ -2,7 +2,8 @@ import {useEffect,useRef,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {formatCurrency} from '../../services/numberFormat';
+import {receivedPaymentNoticePresentation} from '../../services/receivedPaymentNoticePresentation';
+import {ReceivedPaymentNoticeDetails} from './ReceivedPaymentNoticeDetails';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
 import {loadAccountUnreadReceivedPayments,acknowledgeAccountReceivedPayment}
   from '../../services/accountReceivedPaymentNotices';
@@ -98,7 +99,7 @@ export function AuthenticatedReceivedPaymentPopup() {
         setError(bn?'বিজ্ঞপ্তির পঠন নিশ্চিত করা যায়নি। আবার চেষ্টা করুন।':'Could not confirm the notice read state. Please retry.');
     }finally{if(ackLock.current===operation){ackLock.current=null;setBusy(false);}}
   };
-  return <TaxPayModal title={bn?'প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি':'Received payment notice'}
+  return <TaxPayModal title={receivedPaymentNoticePresentation(next,language,true).title}
     onClose={()=>void ack()} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
     className="taxpayer-authorization-modal"
     footer={<div className="tax-service-choice__actions flex flex-wrap gap-2">
@@ -112,14 +113,7 @@ export function AuthenticatedReceivedPaymentPopup() {
         {bn?'আপনার যাচাইকৃত করদাতা প্রোফাইলে একটি পেমেন্ট রেকর্ড হয়েছে।':'A payment has been recorded for your verified taxpayer profile.'}
       </p>
       <p className="text-sm text-taxpay-text">{bn?'পেমেন্টের বিবরণ যাচাই করুন। পেমেন্টটি অপরিচিত বা আপনার অনুমতি ছাড়া করা হয়েছে বলে মনে হলে রিপোর্ট করতে পারেন।':'Please review the payment details below. If you do not recognize this payment or believe it was initiated without your authorization, you can report it.'}</p>
-        <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-        <div><dt>{bn?'পরিমাণ':'Amount'}</dt><dd className="font-semibold">{formatCurrency(next.amountMinor/100,language)}</dd></div>
-        <div><dt>{bn?'করবর্ষ':'Assessment year'}</dt><dd>{next.assessmentYear}</dd></div>
-        <div><dt>{bn?'খাত':'Head'}</dt><dd>{next.headId??'—'}</dd></div>
-        <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{next.receiptReference??next.paymentId}</dd></div>
-        <div><dt>{bn?'তারিখ ও সময়':'Date and time'}</dt><dd><time dateTime={next.createdAt}>{new Date(next.createdAt).toLocaleString(bn?'bn-BD':'en-GB',{timeZone:'Asia/Dhaka'})}</time></dd></div>
-          <div><dt>{bn?'পেমেন্টের অবস্থা':'Payment status'}</dt><dd>{bn?'নথিভুক্ত — নিষ্পত্তি নিশ্চিত নয়':'Recorded — settlement not confirmed'}</dd></div>
-        </dl>
+        <ReceivedPaymentNoticeDetails notice={next} language={language}/>
       <p className="text-xs text-taxpay-muted">
         {bn?'শুধু নথিভুক্ত পেমেন্ট; সরকারি নিষ্পত্তি বা কর ক্রেডিট নিশ্চিত নয়।':'Recorded payment only; settlement and tax credit are not confirmed.'}
       </p>
