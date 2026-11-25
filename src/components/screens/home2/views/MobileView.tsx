@@ -10,7 +10,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
 const links=[{action:'status' as const,label:c.links.status,icon:CalendarCheck},{action:'receipts' as const,label:c.links.receipts,icon:FilePen},{action:'security' as const,label:c.links.security,icon:ShieldCheck},{action:'nbr' as const,label:c.links.nbr,icon:ArrowUpRight,external:true}]
 return <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6fa] pb-24 shadow-[0_0_60px_-20px_rgba(15,29,52,0.25)]"><header role="banner" className="home2-v2-type sticky top-0 z-30 flex items-center justify-between border-b border-[#dfe5ee] bg-white/90 px-4 py-2.5 backdrop-blur-xl">
  <Logo />
- 
+
  <div className="flex items-center gap-1.5">
  <button onClick={onToggleLang} aria-label={c.langSwitchLabel} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[#0f1d34]"><Globe className="size-[15px] text-[#5d697e]" /> {c.langSwitch}</button>
  <button onClick={open('login')} className="home2-press flex h-9 items-center gap-1 rounded-lg bg-white pr-2.5 pl-3 text-[12.5px] font-semibold text-[#1c3d70] ring-1 ring-[#cad8ef]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড' : 'Dashboard') : c.login}<ArrowRight className="size-[15px]" /></button></div></header><section aria-label={c.section.title} className="space-y-3 px-4 pt-3">        {/* Hero carousel */}
@@ -74,7 +74,7 @@ return <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6fa] pb
 <button onClick={open('pay')} className={"home2-press relative block w-full overflow-hidden bg-[#a5bce1] p-5 text-left " + surface}>
  <LineArt name="wallet" accent="#cad8ef" className="absolute top-4 right-4 size-20 text-[#162d53]" />
  <span className="relative inline-flex rounded-md bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-[0.04em] uppercase">{f.all.badge}</span>
- 
+
  <h3 className="relative mt-5 flex items-center gap-1.5 text-[20px] leading-tight font-bold tracking-[-0.02em]">{f.all.title} <ArrowUpRight className="size-4 text-[#162d53]/50" /></h3>
  <p className="relative mt-1 max-w-[230px] text-[12.5px] leading-snug text-[#0f1d34]/75">{f.all.body}</p>
  <div className="relative mt-3 flex flex-wrap gap-1.5">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2 py-0.5 text-[11.5px] font-medium">{x}</span>)}</div>
@@ -82,7 +82,7 @@ return <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#f4f6fa] pb
  </button></Tile>
  <Tile delay={220} className="row-span-2"><button onClick={open('history')} className={"home2-press relative flex h-full w-full flex-col overflow-hidden bg-[#e3ddd4] p-4 text-left " + surface}>
  <LineArt name="receipts" accent="#cfc6b9" className="-mt-1 -ml-1 size-14 text-[#162d53]" />
- 
+
  <h3 className="mt-2.5 text-[15px] leading-tight font-bold tracking-[-0.015em]">{f.history.title}</h3><p className="mt-1 text-[11.5px] leading-snug text-[#3e4b62]">{f.history.body}</p>
  <div className="mt-auto space-y-1.5 pt-3">{c.taxYears.slice(0,3).map(y=><div key={y} aria-hidden="true" className="flex items-center justify-between rounded-lg bg-white/75 px-2.5 py-1.5"><span className="text-[11.5px] font-semibold">{y}</span><Download className="size-3.5 shrink-0 text-[#5d697e]" aria-hidden /></div>)}</div></button></Tile>
  <MiniTile delay={260} art="certificate" title={f.certs.title} body={f.certs.short} onClick={open('certificates')} tone="bg-[#cecfeb]" accent="#b0b1dc" />
