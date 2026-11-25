@@ -1,4 +1,4 @@
-name: MUI v7.0 exact targeted dual paint attribution
+name: MUI v7.0 original and targeted paint evidence attribution
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
@@ -6,80 +6,95 @@ permissions:
   contents: read
   actions: read
 jobs:
-  compare:
+  attribute:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         case:
-          - name: foundation-light-guest
-            base: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
-            candidate: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
-            pattern: frozen homepage en light guest$
-          - name: combined-dark-account
-            base: 6189ee583926ee42e2ab6e909c571603bb57a886
-            candidate: 5aa67318b1beec81eaa7b169a60caa212da40704
-            pattern: frozen homepage en dark local-account$
-    env:
-      CI: 'true'
-      VITE_SUPABASE_DISABLED: 'true'
-      VITE_SUPABASE_URL: ''
-      VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: ${{ matrix.case.base }}
-      CANDIDATE_SHA: ${{ matrix.case.candidate }}
-      MUI_TEST_PATTERN: ${{ matrix.case.pattern }}
-      DIAGNOSTIC_SHA: ${{ github.sha }}
+          - label: foundation
+            original_run: 45698521102
+            original_artifact: mui-v60-foundation-exact-full-home-matrix
+            targeted_artifact: mui-v70-targeted-paint-foundation-light-guest
+            filename: default-en-light-guest.png
+          - label: combined
+            original_run: 45693443551
+            original_artifact: mui-v4-combined-acceptance
+            targeted_artifact: mui-v70-targeted-paint-combined-dark-account
+            filename: default-en-dark-local-account.png
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          ref: ${{ matrix.case.candidate }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v7
+          run-id: ${{ matrix.case.original_run }}
+          name: ${{ matrix.case.original_artifact }}
+          github-token: ${{ github.token }}
+          path: original
+      - uses: actions/download-artifact@v4
         with:
-          node-version-file: .node-version
-      - name: Build exact candidate and Main with original dependencies
+          run-id: 45702410656
+          name: ${{ matrix.case.targeted_artifact }}
+          github-token: ${{ github.token }}
+          path: targeted
+      - name: Compare original failures to independent exact-source captures
+        env:
+          CASE_FILE: ${{ matrix.case.filename }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          git merge-base --is-ancestor "$BASE_SHA" "$CANDIDATE_SHA"
-          npm ci --no-audit --no-fund
-          npm run build
-          git show "$DIAGNOSTIC_SHA:tests/visual/mui-v60-paint-probe.spec.ts" > tests/visual/mui-v4-protected-home.spec.ts
-          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
-          mkdir -p "$MUI_BASELINE_DIR"
-          git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
-          (cd "$MUI_BASELINE_DIR" && npm ci --no-audit --no-fund && npm run build)
-          npx playwright install chromium
-      - name: Validate exact targeted command and test selection
-        run: |
-          set -euo pipefail
-          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
-          export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
-          mkdir -p "$MUI_SNAPSHOT_DIR"
-          cat > "$RUNNER_TEMP/targeted-paint.sh" <<'SH'
-          set -euo pipefail
-          npx playwright test --config playwright.mui-protected.config.ts --project=width-320 --grep "$MUI_TEST_PATTERN" "$@"
-          SH
-          bash -n "$RUNNER_TEMP/targeted-paint.sh"
-          bash "$RUNNER_TEMP/targeted-paint.sh" --list | tee "$MUI_SNAPSHOT_DIR/test-selection.txt"
-          grep -F 'Total: 1 test' "$MUI_SNAPSHOT_DIR/test-selection.txt"
-      - name: Targeted 320px failure attribution (not full release acceptance)
-        run: |
-          set -euo pipefail
-          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
-          export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
-          mkdir -p "$MUI_SNAPSHOT_DIR"
-          printf '%s\n' "$BASE_SHA" > "$MUI_SNAPSHOT_DIR/BASE_SHA"
-          printf '%s\n' "$CANDIDATE_SHA" > "$MUI_SNAPSHOT_DIR/CANDIDATE_SHA"
-          bash "$RUNNER_TEMP/targeted-paint.sh"
+          python -m pip install --quiet Pillow==12.0.0
+          mkdir -p diagnosis
+          python - <<'PY'
+          import os, json, hashlib
+          from pathlib import Path
+          from PIL import Image, ImageChops
+          name=os.environ['CASE_FILE']
+          def locate(root, filename):
+              matches=[p for p in Path(root).rglob(filename) if 'width-320' in p.parts]
+              assert len(matches)==1,(root,filename,matches)
+              return matches[0]
+          files={key:locate(root,prefix+name) for key,root,prefix in [
+              ('old_main','original',''),('old_candidate','original','candidate-'),
+              ('old_control','original','main-control-'),('new_main','targeted',''),
+              ('new_candidate','targeted','candidate-'),('new_control','targeted','main-control-')]}
+          def compare(a,b):
+              A,B=files[a],files[b]
+              with Image.open(A) as ai, Image.open(B) as bi:
+                  x,y=ai.convert('RGB'),bi.convert('RGB')
+                  result={'a':a,'b':b,'bytes_equal':A.read_bytes()==B.read_bytes(),'size_a':x.size,'size_b':y.size}
+                  if x.size==y.size:
+                      d=ImageChops.difference(x,y)
+                      points=[(i%x.width,i//x.width) for i,p in enumerate(d.getdata()) if p!=(0,0,0)]
+                      result.update(pixel_count=len(points),bbox=d.getbbox(),first_coordinates=points[:40])
+                      if points:
+                          bbox=d.getbbox()
+                          region=(max(0,bbox[0]-16),max(0,bbox[1]-16),min(x.width,bbox[2]+16),min(x.height,bbox[3]+16))
+                          if (region[2]-region[0])*(region[3]-region[1])<=250000:
+                              x.crop(region).save('diagnosis/'+a+'-'+b+'-a.png')
+                              y.crop(region).save('diagnosis/'+a+'-'+b+'-b.png')
+                      return result
+                  return result
+          probes={}
+          for label in ['main','candidate']:
+              p=locate('targeted',label+'-paint-'+name+'.json')
+              probes[label]=json.loads(p.read_text())
+          report={'files':{k:{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for k,p in files.items()},
+              'comparisons':[compare(a,b) for a,b in [('old_main','old_control'),('old_main','old_candidate'),('new_main','new_control'),('new_main','new_candidate'),('old_main','new_main'),('old_candidate','new_main')]],
+              'targeted_paint_equal':probes['main']==probes['candidate'],'targeted_fixed_equal':probes['main'].get('fixed')==probes['candidate'].get('fixed'),
+              'targeted_points_equal':probes['main'].get('points')==probes['candidate'].get('points'),
+              'targeted_probes':probes}
+          Path('diagnosis/report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps({k:v for k,v in report.items() if k!='targeted_probes'},indent=2))
+          for label,probe in probes.items():
+              print(label,'viewport',probe.get('viewport'),'fixed',[(x.get('tag'),x.get('classes'),x.get('rect')) for x in probe.get('fixed',[])])
+              print(label,'hit stacks',[(x.get('x'),x.get('y'),[(e.get('tag'),e.get('classes'),e.get('rect')) for e in x.get('stack',[])[:4]]) for x in probe.get('points',[])])
+          assert files['old_main'].read_bytes()!=files['old_candidate'].read_bytes(),'Historical failure missing'
+          assert files['new_main'].read_bytes()==files['new_control'].read_bytes(),'Targeted A/A mismatch'
+          assert files['new_main'].read_bytes()==files['new_candidate'].read_bytes(),'Targeted A/B mismatch'
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v70-targeted-paint-${{ matrix.case.name }}
-          path: |
-            ${{ runner.temp }}/mui-snapshots
-            test-results/
+          name: mui-v70-paint-attribution-${{ matrix.case.label }}
+          path: diagnosis/
           if-no-files-found: error
           retention-days: 7
