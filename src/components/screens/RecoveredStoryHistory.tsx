@@ -1,4 +1,6 @@
 import React,{useEffect,useMemo,useState} from 'react';
+import {CitizenMuiScope,MuiButtonBase} from '../../design-system/mui';
+import {MuiRecordControlsScope,citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
 import {getDemoStoryPaymentHistory} from '../../services/simulatedPaymentsApi';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
@@ -96,7 +98,7 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
   if(current.status==='loading')return showEmpty
     ?<p role="status" className="p-3 text-sm text-taxpay-muted">{tr('Loading recorded payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>
     :null;
-  return <section className="mx-auto mt-4 max-w-7xl rounded-xl border border-taxpay-border bg-white p-4"
+  return <CitizenMuiScope><MuiRecordControlsScope><section className="mx-auto mt-4 max-w-7xl rounded-xl border border-taxpay-border bg-white p-4"
     aria-label={tr('Earlier saved payment records','আগের সংরক্ষিত পেমেন্টের রেকর্ড')}>
     {reuseError&&<p role="alert" className="mb-3 text-sm text-taxpay-error">{reuseError}</p>}
     <h2 className="mb-3 text-base font-semibold text-taxpay-text">
@@ -104,27 +106,27 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
     </h2>
     {current.status==='error'?<div role="alert" className="space-y-2">
       <p className="text-sm text-taxpay-error">{tr('Earlier payment records could not be verified.','আগের পেমেন্টের তথ্য যাচাই করা যায়নি।')}</p>
-      <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3"
-        onClick={()=>setRevision(v=>v+1)}>{tr('Retry','আবার চেষ্টা করুন')}</button>
-    </div>:rows.length>0?<TaxPayDataGrid variant="tabular" rows={rows} getRowKey={p=>p.id}
+      <MuiButtonBase data-mui-coverage="MUI-RECOVERED-HISTORY-RETRY" disableRipple sx={{minHeight:44,border:'1px solid var(--color-taxpay-border)',borderRadius:'8px',padding:'0 12px',font:'inherit',fontSize:14,fontWeight:600,color:'var(--color-taxpay-primary)','&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2},'&.Mui-disabled':{opacity:.5}}} type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3"
+        onClick={()=>setRevision(v=>v+1)}>{tr('Retry','আবার চেষ্টা করুন')}</MuiButtonBase>
+    </div>:rows.length>0?<TaxPayDataGrid data-mui-coverage="MUI-RECOVERED-HISTORY-TABLE" desktopSlots={citizenMuiDesktopTableSlots} variant="tabular" rows={rows} getRowKey={p=>p.id}
       ariaLabel={tr('Earlier payments','আগের পেমেন্ট')} testId="recovered-story-payments"
       mobileTestId="recovered-story-payment-cards" onViewRow={setSelected} columns={[
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:p=><span className="break-all text-sm">{p.id}</span>},
         {key:'service',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:p=><span>{p.service.replaceAll('_',' ')}</span>},
         {key:'date',header:tr('Date','তারিখ'),renderCell:p=><span>{new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{dateStyle:'medium',timeZone:'Asia/Dhaka'}).format(new Date(p.createdAt))}</span>},
         {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right',renderCell:p=><span>{money(p.amountMinor)}</span>},
-        {key:'action',header:tr('Action','কার্যক্রম'),renderCell:p=><button type="button"
+        {key:'action',header:tr('Action','কার্যক্রম'),renderCell:p=><MuiButtonBase data-mui-coverage="MUI-RECOVERED-HISTORY-DETAIL" disableRipple sx={{minHeight:44,border:'1px solid var(--color-taxpay-border)',borderRadius:'8px',padding:'0 12px',font:'inherit',fontSize:14,fontWeight:600,color:'var(--color-taxpay-primary)','&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2},'&.Mui-disabled':{opacity:.5}}} type="button"
           data-testid="recovered-payment-details"
           onClick={()=>setSelected(p)}
           className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
           {tr('View details','বিস্তারিত দেখুন')}
-        </button>}
+        </MuiButtonBase>}
       ]}/>:<TaxPayTableState>{tr('No earlier saved records.','আগের কোনো রেকর্ড নেই।')}</TaxPayTableState>}
     {selected&&(embedded
       ?<section aria-label={tr('Selected earlier payment receipt','নির্বাচিত আগের পেমেন্টের রসিদ')}
         className="mt-4 border-t border-taxpay-border pt-3">
-        <button type="button" className="mb-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary"
-          onClick={()=>setSelected(null)}>{tr('Back to records','রেকর্ডে ফিরে যান')}</button>
+        <MuiButtonBase data-mui-coverage="MUI-RECOVERED-HISTORY-BACK" disableRipple sx={{minHeight:44,border:'1px solid var(--color-taxpay-border)',borderRadius:'8px',padding:'0 12px',font:'inherit',fontSize:14,fontWeight:600,color:'var(--color-taxpay-primary)','&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2},'&.Mui-disabled':{opacity:.5}}} type="button" className="mb-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary"
+          onClick={()=>setSelected(null)}>{tr('Back to records','রেকর্ডে ফিরে যান')}</MuiButtonBase>
         <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded transactionActions
           payAgainTestId="recovered-pay-again-receipt"
           onPayAgain={reusable.has(selected.id)?()=>payAgain(selected):undefined}
@@ -137,5 +139,5 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
           onPayAgain={reusable.has(selected.id)?()=>payAgain(selected):undefined}
           onApplyForCorrection={()=>applyForCorrection(selected)}/>
       </TaxPayModal>)}
-  </section>;
+  </section></MuiRecordControlsScope></CitizenMuiScope>;
 }

@@ -1071,6 +1071,289 @@
       "implementation": "slot -> official @mui/material/InputBase; native outside explicit scope",
       "test": "tests/e2e/mui-v4-ledger-pilot.spec.ts; tests/muiV53RecordControls.test.tsx",
       "contextStatus": "UNVERIFIED_PER_CONSUMER"
+    },
+    {
+      "id": "MUI-SESSION-NOTICE-SEARCH",
+      "file": "src/components/screens/SessionPaymentNotifications.tsx",
+      "symbol": "SessionPaymentNotifications",
+      "component": "MuiInputBase",
+      "control": "search",
+      "route": "notifications / payment_notifications / account_notifications",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "empty",
+        "filled",
+        "focus",
+        "no match"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-SESSION-NOTICE-CLEAR",
+      "file": "src/components/screens/SessionPaymentNotifications.tsx",
+      "symbol": "SessionPaymentNotifications",
+      "component": "MuiButtonBase",
+      "control": "clear search",
+      "route": "notifications / payment_notifications / account_notifications",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "hidden",
+        "enabled",
+        "focus"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-SESSION-NOTICE-TABLE",
+      "file": "src/components/screens/SessionPaymentNotifications.tsx",
+      "symbol": "SessionPaymentNotifications",
+      "component": "TaxPayDataGrid",
+      "control": "desktop record table",
+      "route": "notifications / payment_notifications / account_notifications",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "loading",
+        "error",
+        "empty",
+        "filtered",
+        "desktop",
+        "mobile"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "citizenMuiDesktopTableSlots -> official MUI Table family; approved mobile cards unchanged"
+    },
+    {
+      "id": "MUI-CORRECTION-NOTICE-REFRESH",
+      "file": "src/components/screens/PreviewCorrectionNotifications.tsx",
+      "symbol": "PreviewCorrectionNotifications",
+      "component": "MuiButtonBase",
+      "control": "Refresh",
+      "route": "notifications / User1 notifications",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "focus",
+        "loading",
+        "error",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-CORRECTION-NOTICE-VIEW",
+      "file": "src/components/screens/PreviewCorrectionNotifications.tsx",
+      "symbol": "PreviewCorrectionNotifications",
+      "component": "MuiButtonBase",
+      "control": "View correction",
+      "route": "notifications / User1 notifications",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "focus",
+        "loading",
+        "error",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-CORRECTION-NOTICE-READ",
+      "file": "src/components/screens/PreviewCorrectionNotifications.tsx",
+      "symbol": "PreviewCorrectionNotifications",
+      "component": "MuiButtonBase",
+      "control": "Mark as read",
+      "route": "notifications / User1 notifications",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "focus",
+        "loading",
+        "error",
+        "disabled where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-RECOVERED-HISTORY-RETRY",
+      "file": "src/components/screens/RecoveredStoryHistory.tsx",
+      "symbol": "RecoveredStoryHistory",
+      "component": "MuiButtonBase",
+      "control": "Retry",
+      "route": "history / embedded recovered record view",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "error or detail state"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-RECOVERED-HISTORY-DETAIL",
+      "file": "src/components/screens/RecoveredStoryHistory.tsx",
+      "symbol": "RecoveredStoryHistory",
+      "component": "MuiButtonBase",
+      "control": "View details",
+      "route": "history / embedded recovered record view",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "error or detail state"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-RECOVERED-HISTORY-BACK",
+      "file": "src/components/screens/RecoveredStoryHistory.tsx",
+      "symbol": "RecoveredStoryHistory",
+      "component": "MuiButtonBase",
+      "control": "Back to records",
+      "route": "history / embedded recovered record view",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "enabled",
+        "focus",
+        "conditional",
+        "error or detail state"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
+    },
+    {
+      "id": "MUI-RECOVERED-HISTORY-TABLE",
+      "file": "src/components/screens/RecoveredStoryHistory.tsx",
+      "symbol": "RecoveredStoryHistory",
+      "component": "TaxPayDataGrid",
+      "control": "recovered records table",
+      "route": "history / embedded recovered record view",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "loading",
+        "error",
+        "empty",
+        "desktop",
+        "mobile",
+        "selected details"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "citizenMuiDesktopTableSlots -> official MUI Table family; approved mobile cards unchanged"
+    },
+    {
+      "id": "MUI-HISTORY-IDENTITY-RETRY",
+      "file": "src/components/screens/AuthenticatedHistorySwitch.tsx",
+      "symbol": "AuthenticatedHistorySwitch",
+      "component": "MuiButtonBase",
+      "control": "retry identity read",
+      "route": "history (authenticated)",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing session or authenticated record owner",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "loading",
+        "focus",
+        "retry",
+        "resolved"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v54-record-consumers.spec.ts",
+      "owner": "MUI migration"
     }
   ],
   "unresolved": [
@@ -1117,6 +1400,26 @@
     {
       "file": "src/components/screens/SecureWorkspace.tsx",
       "reason": "Active PR #586",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/TaxLedger.tsx",
+      "reason": "Active draft PR #463; direct actions and external record controls not changed",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/DemoServiceRecordsPanel.tsx",
+      "reason": "Active PR #1064; also dashboard and ledger shared contexts",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/BeneficiaryProfile.tsx",
+      "reason": "Active PR #779; retain current form and payment entry",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/DashboardPaymentDrafts.tsx",
+      "reason": "Shared signed-in dashboard / User1 preview context requires explicit frozen-layout and draft-resume contract verification before changing",
       "status": "UNVERIFIED"
     }
   ]

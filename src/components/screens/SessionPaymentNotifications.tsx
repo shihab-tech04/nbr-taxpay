@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import {CitizenMuiScope,MuiButtonBase,MuiInputBase} from '../../design-system/mui';
+import {MuiRecordControlsScope,citizenMuiDesktopTableSlots} from '../../design-system/mui-record-adapters';
 import { getStoryNotices, getStorySessionPayments } from '../../services/simulatedPaymentStory';
 import { reconcileStoryPaymentNotices, type VerifiedStoryPaymentNotice } from '../../services/storyNotificationReconciliation';
 import { formatSimulatedAmount } from '../../services/simulatedPaymentsApi';
@@ -45,7 +47,7 @@ export const SessionPaymentNotifications: React.FC<{ language: 'en' | 'bn' }> = 
   const query=search.trim().toLocaleLowerCase();
   const filtered=notices.filter(notice=>!query || [notice.paymentId,String(notice.amountMinor),notice.createdAt].some(value=>value.toLocaleLowerCase().includes(query)));
   if (!knownSession && notices.length === 0) return null;
-  return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('This browser’s payment notifications', 'এই ব্রাউজারের পেমেন্ট বিজ্ঞপ্তি')}>
+  return <CitizenMuiScope><MuiRecordControlsScope><section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('This browser’s payment notifications', 'এই ব্রাউজারের পেমেন্ট বিজ্ঞপ্তি')}>
     <h2 className="font-semibold text-taxpay-text">{label('This browser’s payment notifications', 'এই ব্রাউজারের পেমেন্ট বিজ্ঞপ্তি')}</h2>
     <p className="mt-1 text-sm text-taxpay-muted">{label('Records from this browser session. Settlement and tax credit are not confirmed.', 'এই ব্রাউজার সেশনের রেকর্ড। নিষ্পত্তি ও কর ক্রেডিট নিশ্চিত হয়নি।')}</p>
     {error ? <p role="alert" className="mt-2 text-sm text-red-700">{error}</p> :
@@ -54,17 +56,19 @@ export const SessionPaymentNotifications: React.FC<{ language: 'en' | 'bn' }> = 
         <TaxPayTableControls className="taxpay-record-page-filters">
           <label className="taxpayer-transaction-filter">
             <span>{label('Find a payment update','পেমেন্টের হালনাগাদ খুঁজুন')}</span>
-            <input className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-base"
-              type="search" aria-label={label('Find a payment update','পেমেন্টের হালনাগাদ খুঁজুন')}
+            <MuiInputBase data-mui-coverage="MUI-SESSION-NOTICE-SEARCH" type="search" fullWidth
+              className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-base"
+              inputProps={{'aria-label':label('Find a payment update','পেমেন্টের হালনাগাদ খুঁজুন')}}
               placeholder={label('Search payment reference or date','পেমেন্ট রেফারেন্স বা তারিখ')}
-              value={search} onChange={event=>setSearch(event.target.value)}/>
+              value={search} onChange={event=>setSearch(event.target.value)}
+              sx={{minHeight:44,border:'1px solid var(--color-taxpay-border)',borderRadius:'8px',backgroundColor:'#fff',padding:'0 12px',font:'inherit','& .MuiInputBase-input':{minWidth:0,padding:0,font:'inherit'},'&.Mui-focused':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2}}}/>
           </label>
-          {search&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>setSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>}
+          {search&&<MuiButtonBase data-mui-coverage="MUI-SESSION-NOTICE-CLEAR" type="button" disableRipple sx={{minHeight:44,border:'1px solid var(--color-taxpay-border)',borderRadius:'8px',padding:'0 12px',font:'inherit',fontSize:14,fontWeight:600,color:'var(--color-taxpay-primary)','&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary)',outlineOffset:2},'&.Mui-disabled':{opacity:.5}}} className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+            onClick={()=>setSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</MuiButtonBase>}
         </TaxPayTableControls>
         <TaxPayTableCounter label={label('Records','রেকর্ড')} shown={filtered.length} total={notices.length}/>
         {filtered.length===0?<TaxPayTableState>{label('No payment updates match your search.','অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।')}</TaxPayTableState>:
-          <TaxPayDataGrid variant="tabular" rows={filtered} getRowKey={notice=>String(notice.id)}
+          <TaxPayDataGrid data-mui-coverage="MUI-SESSION-NOTICE-TABLE" desktopSlots={citizenMuiDesktopTableSlots} variant="tabular" rows={filtered} getRowKey={notice=>String(notice.id)}
             ariaLabel={label('Browser session payment register','ব্রাউজার সেশনের পেমেন্ট রেকর্ড')}
             testId="session-payment-table" mobileTestId="session-payment-cards"
             columns={[
@@ -83,5 +87,5 @@ export const SessionPaymentNotifications: React.FC<{ language: 'en' | 'bn' }> = 
             </div>}/>}
       </div>}
 
-  </section>;
+  </section></MuiRecordControlsScope></CitizenMuiScope>;
 };
