@@ -292,8 +292,9 @@ BEGIN
     OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
     WHERE n->>'paymentId'=guest_v5_id::text AND n->>'allocationId'='ws3-recipient-3' AND n->>'amountMinor'='3500')
   THEN RAISE EXCEPTION 'P0_WALKIN_V5_GUEST_ALLOCATION_FAILED'; END IF;
-  -- A confirmed walk-in payer who pays their own allocation must not receive
-  -- a third-party notice, while the other recipient still receives theirs.
+  -- Even an exact lookup-matched guest name/TIN is not an authenticated
+  -- payer. A guest could otherwise suppress the recipient's warning by
+  -- declaring that recipient's identity. Both notices must remain visible.
   self_payload:=jsonb_set(guest,'{idempotencyKey}',to_jsonb(self_key::text));
   self_payload:=jsonb_set(self_payload,'{details,payerTin}',to_jsonb('222222222222'::text));
   self_payload:=jsonb_set(self_payload,'{details,payerName}',to_jsonb('User 2'::text));
@@ -302,12 +303,12 @@ BEGIN
   self_payload:=jsonb_set(self_payload,'{details,receiptReference}',to_jsonb('SIM-'||self_key::text));
   self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||self_key::text));
   self_id:=(public.demo_story1_submit(self_payload)->>'id')::uuid;
-  IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n
-    WHERE n->>'paymentId'=self_id::text)
+  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n
+    WHERE n->>'paymentId'=self_id::text AND n->>'allocationId'='ws3-recipient-2')
     OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
     WHERE n->>'paymentId'=self_id::text AND n->>'allocationId'='ws3-recipient-3')
-  THEN RAISE EXCEPTION 'P0_WALKIN_SELF_NOTICE_NOT_EXCLUDED'; END IF;
-  RAISE NOTICE 'PASS: recorded walk-in v3/v5 allocation isolation, source replay, registered ACK preservation, cross-owner denial, self exclusion and immutable originals';
+  THEN RAISE EXCEPTION 'P0_WALKIN_DECLARED_IDENTITY_SUPPRESSED_NOTICE'; END IF;
+  RAISE NOTICE 'PASS: recorded walk-in v3/v5 allocation isolation, source replay, registered ACK preservation, cross-owner denial, declared identity cannot suppress notice and immutable originals';
 END;
 $p0_walkin$;
 ROLLBACK;

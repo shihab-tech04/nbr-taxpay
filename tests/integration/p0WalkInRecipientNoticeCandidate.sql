@@ -74,13 +74,8 @@ BEGIN
       AND jsonb_typeof(p.data->'details'->'allocations')='array'
       AND char_length(btrim(coalesce(p.data->'details'->>'payerName',''))) BETWEEN 1 AND 200
       AND p.data->'details'->>'payerName'=p.data->'details'->'receiptSnapshot'->>'payerName'
-      AND NOT EXISTS (
-        SELECT 1 FROM taxpay_guest_private.walkin_confirmed_payer(
-          btrim(coalesce(p.data->'details'->>'payerTin',''))) known_payer
-        WHERE known_payer.profile_id=v_demo
-          AND p.data->'details'->>'payerName' IN (known_payer.name_en,known_payer.name_bn)
-          AND p.data->'details'->'receiptSnapshot'->>'payerTin'=btrim(p.data->'details'->>'payerTin')
-      )
+      -- A matching declared guest TIN/name is not an authenticated payer.
+      -- Do not suppress a recipient notice based on untrusted guest identity.
       AND NOT EXISTS (
         SELECT 1 FROM taxpay_guest_private.demo_profiles reserved
         WHERE reserved.payment_session_id=p.session_id
