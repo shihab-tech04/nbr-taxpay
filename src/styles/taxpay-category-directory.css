@@ -9,6 +9,10 @@
   font-weight: 600;
   line-height: 1.4;
 }
+/* Shared signed-in and walk-in directory section spacing. */
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__body.space-y-4 > h3.other-tax-category-heading {
+  margin: 16px 0 12px;
+}
 /* Keep the restored grouped Tax Head editor compact. Global responsive
    utility rules promote .text-xs and status copy to 16px in payment modals;
    secondary catalogue guidance is metadata, not a second heading. Scope these
@@ -16,10 +20,10 @@
    their established typography and 16px required control labels. */
 .taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-tax-head-heading {
   line-height: 1.45;
-  padding: 12px 0 4px;
+  padding: 12px 0 0;
 }
-.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-selection-status {
-  margin: 0;
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__body.space-y-4 > .other-tax-selection-status {
+  margin: 8px 0 0;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.45;

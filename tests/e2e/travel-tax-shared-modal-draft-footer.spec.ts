@@ -1,5 +1,6 @@
 import {expect, test, type Page, type Locator} from '@playwright/test';
 import {openTravelTaxFromBanner} from './public-travel-tax-entry';
+import {assertAccountDraftFooter} from './account-draft-footer-assertion';
 
 async function previewLogin(page:Page) {
   await page.goto('/?action=taxpayer_login');
@@ -30,10 +31,12 @@ async function assertUnifiedTravel(modal:Locator, width:number) {
   const [left,right,bar]=await Promise.all([save.boundingBox(),next.boundingBox(),footer.boundingBox()]);
   expect(left && right && bar).toBeTruthy();
   if (left && right && bar) {
-    expect(left.y + left.height,'Save Draft precedes the full-width primary action at '+width+'px').toBeLessThanOrEqual(right.y+2);
-    expect(right.width,'Continue fills the footer at '+width+'px').toBeGreaterThanOrEqual(bar.width-60);
+    expect(Math.abs(left.y-right.y),'Save Draft and Continue share a row at '+width+'px').toBeLessThanOrEqual(2);
+    expect(left.x+left.width,'Save Draft is left of Continue').toBeLessThan(right.x);
+    expect(right.width,'Continue is not full-width at '+width+'px').toBeLessThan(bar.width*.75);
     expect(right.x+right.width,'Continue stays inside modal').toBeLessThanOrEqual(bar.x+bar.width+2);
   }
+  await assertAccountDraftFooter(modal);
   const formWidth=await modal.locator('.travel-flow__main').evaluate(node=>node.getBoundingClientRect().width);
   const bodyWidth=await modal.locator('.taxpay-modal__body').evaluate(node=>node.getBoundingClientRect().width);
   expect(bodyWidth-formWidth,'Travel Tax passenger form uses the available modal width').toBeLessThanOrEqual(4);

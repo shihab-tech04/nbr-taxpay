@@ -267,17 +267,18 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(reread.body?.data?.items?.some((row:{id:string})=>row.id===payment)).toBe(true);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBeNull();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toHaveCount(0);
-  // Pay Again is attached only to each SQL-recorded transaction, not to the
-  // search/filter/export toolbar and never to synthetic DEMO-* example rows.
+  // Pay Again belongs exclusively to the owned SQL receipt details, never
+  // the row actions, toolbar or synthetic example records.
   await expect(page.getByTestId('user1-pay-again-entry')).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Pay Again'})).toHaveCount(0);
   const register=page.getByTestId('taxpayer-transaction-table');
   const paid=register.getByRole('row').filter({hasText:payment});
   await expect(paid).toBeVisible({timeout:15000});
-  await expect(paid.getByTestId('recorded-pay-again')).toBeEnabled();
+  await expect(paid.getByTestId('recorded-pay-again')).toHaveCount(0);
+  await expect(paid.locator('td[data-column-key="actions"] button')).toHaveCount(1);
   const illustrative=register.getByRole('row').filter({hasText:'DEMO-PAY-PEND-01'});
   await expect(illustrative).toHaveCount(0);
-  // Each payment also exposes the repeat action within its own Details modal.
+  // Each eligible payment exposes repeat exclusively in its Details modal.
   await paid.getByRole('button',{name:'Details for Other Tax Payment'}).click();
   const detail=page.getByRole('dialog',{name:'Other Tax Payment'});
   await expect(detail).toBeVisible();
@@ -360,13 +361,20 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const reg=page.getByTestId('taxpayer-transaction-table');
   const original=reg.getByRole('row').filter({hasText:older});
   const forbidden=reg.getByRole('row').filter({hasText:mixed});
-  await expect(original.getByTestId('recorded-pay-again')).toBeEnabled({timeout:15000});
-  await expect(forbidden.getByTestId('recorded-pay-again')).toBeDisabled();
+  await expect(original).toBeVisible({timeout:15000});
   // The fallback display receipt for older multi-line rows is not an input
   // snapshot: head IDs in the old catalogue cannot silently become new heads.
   const unverified=reg.getByRole('row').filter({hasText:unsnapshottedMulti});
-  await expect(unverified.getByTestId('recorded-pay-again')).toBeDisabled();
-  await original.getByTestId('recorded-pay-again').click();
+  for(const denied of [forbidden,unverified]){
+    await expect(denied.locator('td[data-column-key="actions"] button')).toHaveCount(1);
+    await denied.getByRole('button',{name:/^Details for /}).click();
+    const receipt=page.getByRole('dialog');
+    await expect(receipt.getByTestId('recorded-pay-again-detail')).toBeDisabled();
+    await receipt.locator('.taxpay-modal__close').click();
+  }
+  await expect(original.locator('td[data-column-key="actions"] button')).toHaveCount(1);
+  await original.getByRole('button',{name:/^Details for /}).click();
+  await page.getByRole('dialog').getByTestId('recorded-pay-again-detail').click();
   const legacyCopy=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(legacyCopy.getByTestId('pay-again-reuse-notice')).toContainText(older);
   await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('25000.00');
@@ -386,8 +394,10 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const travelRegister=page.getByTestId('taxpayer-transaction-table');
   const travelRow=travelRegister.getByRole('row').filter({hasText:travelPayment});
   await expect(travelRow).toBeVisible({timeout:15000});
-  await expect(travelRow.getByTestId('recorded-pay-again')).toBeEnabled();
-  await travelRow.getByTestId('recorded-pay-again').click();
+  await expect(travelRow.locator('td[data-column-key="actions"] button')).toHaveCount(1);
+  await travelRow.getByRole('button',{name:/^Details for /}).click();
+  await expect(page.getByRole('dialog').getByTestId('recorded-pay-again-detail')).toBeEnabled();
+  await page.getByRole('dialog').getByTestId('recorded-pay-again-detail').click();
   const interruptedTravelDialog=page.getByRole('dialog',{name:'Travel tax'});
   await expect(page.getByTestId('travel-pay-again-notice')).toContainText(travelPayment);
   const interruptedPassport=interruptedTravelDialog.locator('input[id^="travel-passport-"]').first();
@@ -404,7 +414,8 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const reopenedTravelRow=page.getByTestId('taxpayer-transaction-table')
     .getByRole('row').filter({hasText:travelPayment});
   await expect(reopenedTravelRow).toBeVisible({timeout:15000});
-  await reopenedTravelRow.getByTestId('recorded-pay-again').click();
+  await reopenedTravelRow.getByRole('button',{name:/^Details for /}).click();
+  await page.getByRole('dialog').getByTestId('recorded-pay-again-detail').click();
   const travelDialog=page.getByRole('dialog',{name:'Travel tax'});
   await expect(page.getByTestId('travel-pay-again-notice')).toContainText(travelPayment);
   await expect(travelDialog.locator('input[id^="travel-passport-"]').first()).toHaveValue('');
