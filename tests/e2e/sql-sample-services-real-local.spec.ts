@@ -47,7 +47,16 @@ test('user8 begins with no saved activity or personal tax profile; user6 data st
   const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user8');
   await expect(panel.getByText('No stored service activity is available for this account.')).toBeVisible();
-  await expect(panel.getByRole('table')).toHaveCount(0);
+  const register=panel.getByTestId('taxpay-service-record-register');
+  await expect(register).toBeVisible();
+  await expect(register.getByRole('searchbox',{name:'Search service records'})).toBeVisible();
+  await expect(register.getByRole('combobox',{name:'Filter record status'})).toBeVisible();
+  await expect(register.getByRole('combobox',{name:'Sort service records'})).toBeVisible();
+  await expect(register.getByRole('table')).toHaveCount(1);
+  await expect(register.getByRole('columnheader',{name:'Service',exact:true})).toBeVisible();
+  await expect(register.getByRole('columnheader',{name:'Amount',exact:true})).toBeVisible();
+  await expect(register.getByRole('table').locator('tbody tr')).toHaveCount(0);
+  await expect(register.getByRole('button',{name:/^View record:/})).toHaveCount(0);
   for (const ref of ['SAMPLE-SRV-017','SAMPLE-SRV-023','SAMPLE-SRV-024','SAMPLE-SRV-025']) {
     await expect(panel.getByText(ref)).toHaveCount(0);
   }
