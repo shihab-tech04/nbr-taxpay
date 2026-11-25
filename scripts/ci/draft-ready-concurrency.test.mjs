@@ -39,3 +39,26 @@ test('late draft events cannot cancel or replace pending ready acceptance', () =
   assert.equal(lane({...ordinary,event:'push',draft:false}),'');
   assert.equal(lane({...ordinary,event:'workflow_dispatch',draft:false}),'');
 });
+
+const allMainPRPaths = [...paths,
+  ".github/workflows/live-tax-head-acceptance.yml",
+  ".github/workflows/office-cms-bridge.yml",
+  ".github/workflows/phase4-reconciliation.yml",
+  ".github/workflows/story1-hosted.yml",
+  ".github/workflows/taxpayer-v953-f178-remarks.yml",
+  ".github/workflows/ws3-d1-handoff-retirement.yml",
+  ".github/workflows/ws3-edge-http-transport.yml"
+];
+
+test('draft conversion does not trigger duplicate release workflows; code changes and readiness do', () => {
+  for (const path of allMainPRPaths) {
+    const source = readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+    const events = source.match(/^    types: \[([^\]]+)\]/m)?.[1].split(',').map(s => s.trim());
+    assert.deepEqual(events, ['opened', 'synchronize', 'reopened', 'ready_for_review'], path);
+    assert.ok(source.includes('github.event.pull_request.draft != true'), path + ': draft eligibility guard preserved');
+  }
+  const pages = readFileSync(new URL('../../.github/workflows/pages.yml', import.meta.url), 'utf8');
+  assert.match(pages, /Release acceptance intentionally withheld for draft/);
+  assert.match(pages, /push:\s*\n\s*branches: \[main\]/);
+  assert.match(pages, /workflow_dispatch:/);
+});

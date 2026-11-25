@@ -2,7 +2,7 @@ name: TaxPay receipt session recovery acceptance
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'src/components/screens/ReceiptLookup.tsx'

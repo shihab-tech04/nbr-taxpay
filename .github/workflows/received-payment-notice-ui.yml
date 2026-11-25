@@ -1,7 +1,7 @@
 name: Authenticated received-payment notice browser acceptance
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'src/App.tsx'
