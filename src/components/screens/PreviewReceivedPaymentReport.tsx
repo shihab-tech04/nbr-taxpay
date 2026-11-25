@@ -20,15 +20,24 @@ export function PreviewReceivedPaymentReport({profileId,intent,language,onExit}:
   }
  }).catch(()=>{if(active)setPhase('error');});return()=>{active=false;};},[profileId,intent.eventId,intent.targetAllocationId,attempt]);
  useEffect(()=>{
-  if(!record||record.officeSyncState==='ACKNOWLEDGED')return;
-  let active=true;
-  const poll=()=>void listPreviewCorrections().then(rows=>{
-   const current=rows.find(r=>r.id===record.id&&r.recipientEventId===intent.eventId);
-   if(active&&current)setRecord(current);
-  }).catch(()=>{/* retain last confirmed state */});
-  const timer=window.setInterval(poll,5000);
-  return()=>{active=false;window.clearInterval(timer);};
- },[record?.id,record?.officeSyncState,intent.eventId]);
+  if(!record||phase!=='ready')return;
+  let active=true;let reading=false;
+  const poll=async()=>{
+   if(reading||submitLock.current)return;
+   reading=true;
+   try{
+    const [payments,rows]=await Promise.all([listReceivedPaymentNotices(profileId),listPreviewCorrections()]);
+    const payment=payments.find(r=>r.eventId===intent.eventId&&r.allocationId===intent.targetAllocationId);
+    const current=rows.find(r=>r.id===record.id&&r.recipientEventId===intent.eventId&&r.paymentId===payment?.paymentId&&r.allocationId===payment?.allocationId);
+    if(active&&!submitLock.current&&payment&&current){setNotice(payment);setRecord(current);}
+   }catch{/* retain last confirmed payment and report states independently */}
+   finally{reading=false;}
+  };
+  const refresh=()=>void poll();
+  const timer=window.setInterval(refresh,5000);
+  window.addEventListener('focus',refresh);
+  return()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',refresh);};
+ },[record?.id,phase,profileId,intent.eventId,intent.targetAllocationId]);
  const close=()=>{if(!busy){clearReceivedPaymentCaseIntent();onExit();}};
  const submit=async()=>{if(!notice||submitLock.current||reason.trim().length<10||reason.trim().length>1000)return;submitLock.current=true;setBusy(true);setError(false);
  try{const saved=await submitPreviewReceivedPaymentReport({caseKind:'UNSOLICITED_PAYMENT_REPORT',eventId:notice.eventId,requestKey:key.current,reason});
