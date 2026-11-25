@@ -183,3 +183,86 @@ test('Travel Tax resends the identical payment after a lost response ' +
     .filter(key => key.startsWith('taxpay-travel-payment:')))).toEqual([]);
 });
 }
+
+
+// A source SQL receipt can be confirmed without Office delivery. Do not treat
+// either PENDING or DISABLED as synced, and retry only the immutable original.
+for (const officeStatus of ['PENDING', 'DISABLED'] as const) {
+  test('Travel Tax preserves verified source receipt when Office sync is ' + officeStatus, async ({ page }) => {
+    test.skip(process.env.VITE_SUPABASE_URL !== 'https://travel-retry-test.invalid',
+      'Run with the isolated Travel Tax fixture endpoint.');
+    const requests: string[] = [];
+    const paymentId = 'fd718297-1e32-421c-a951-987f4e92a992';
+    await page.route('https://travel-retry-test.invalid/**', async route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const headers = {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, POST, OPTIONS',
+        'access-control-allow-headers': '*',
+      };
+      if (request.method() === 'OPTIONS') {
+        await route.fulfill({status:204,headers}); return;
+      }
+      if (request.method() === 'POST' && url.pathname.endsWith('/demo-story1-taxpay/payments')) {
+        requests.push(request.postData() ?? '');
+        if (requests.length === 1 && officeStatus === 'PENDING') {
+          await route.fulfill({status:503,headers,json:{
+            error:'OFFICE_SYNC_PENDING',retryable:true,requestId:paymentId,
+          }}); return;
+        }
+        const disabled = requests.length === 1 && officeStatus === 'DISABLED';
+        await route.fulfill({headers,json:{
+          success:true,id:paymentId,status:'SIMULATED_SUCCESS',
+          mirrored:!disabled,officeSyncStatus:disabled?'DISABLED':'SYNCED',simulationOnly:true,
+        }}); return;
+      }
+      if (request.method() === 'GET') {
+        if (requests.length && url.pathname.endsWith('/demo-story1-taxpay/payments/' + paymentId)) {
+          const saved=JSON.parse(requests[requests.length-1]);
+          expect(url.searchParams.get('sessionId')).toBe(saved.sessionId);
+          await route.fulfill({headers,json:{success:true,simulationOnly:true,data:{
+            id:paymentId,status:'SIMULATED_SUCCESS',createdAt:'2026-11-14T08:00:00.000Z',
+            data:{...saved,origin:'TAXPAY_UI'},
+          }}}); return;
+        }
+        await route.fulfill({headers,json:{success:true,simulationOnly:true,data:{items:[],total:0}}}); return;
+      }
+      await route.fulfill({status:405,headers,json:{error:'METHOD_NOT_ALLOWED'}});
+    });
+    await page.goto('/');
+    await openTravelTaxFromBanner(page);
+    const modal=page.getByRole('dialog',{name:'Travel tax'});
+    await modal.locator('#travel-passport-first').fill('TEST123456');
+    await modal.locator('#travel-lookup-first').click();
+    await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+    await fillTravelDetails(modal);
+    await modal.getByRole('button',{name:'Continue to review'}).click();
+    await modal.locator('#travel-mobile').fill('01712345678');
+    await modal.getByRole('button',{name:'Make Payment'}).click();
+    await modal.getByRole('button',{name:'Pay online'}).click();
+    await modal.getByRole('button',{name:'Mobile banking'}).click();
+    await modal.getByRole('radio',{name:'Nagad'}).check();
+    await modal.getByLabel(/I confirm the travel information/).check();
+    await modal.getByRole('button',{name:'Confirm sample payment'}).click();
+    await expect(modal.getByTestId('travel-payment-result')).toBeVisible();
+    const notice=modal.getByTestId('travel-office-sync-status');
+    await expect(notice).toContainText(officeStatus==='PENDING'?'Office sync pending':'Office synchronization is disabled');
+    expect(requests).toHaveLength(1);
+    const storedKeys=()=>page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith('taxpay-travel-payment:')));
+    if (officeStatus==='PENDING') {
+      expect(await storedKeys()).toHaveLength(1);
+      await notice.getByRole('button',{name:'Retry Office sync'}).click();
+      await expect(notice).toHaveCount(0);
+      expect(requests).toHaveLength(2);
+      expect(requests[1]).toBe(requests[0]);
+    } else {
+      await expect(notice.getByRole('button',{name:'Retry Office sync'})).toHaveCount(0);
+    }
+    expect(await storedKeys()).toEqual([]);
+    await modal.getByTestId('walkin-challan-action').getByRole('button').first().click();
+    await expect(modal.getByTestId('travel-family-challan')).toBeVisible();
+    await expect(modal.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(1);
+    await expect(modal.getByTestId('travel-family-challan')).toContainText('1,000');
+  });
+}
