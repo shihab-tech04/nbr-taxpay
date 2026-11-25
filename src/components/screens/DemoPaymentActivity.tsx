@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useState} from 'react';
+import {recordedActivityCategoryLabel} from '../../services/activityRecordedCategory';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {createPaymentHistoryRefresh} from '../../services/paymentHistoryRefresh';
@@ -326,7 +327,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     events:tx.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
       occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
     allocations:tx.allocations.map(a=>({id:a.id,
-      title:a.beneficiary+' · '+simulationCategoryLabels[a.category][bn?'bn':'en'],
+      title:a.beneficiary+' · '+recordedActivityCategoryLabel(a.category,language),
       assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
   });
   if(!id)return null;
@@ -495,7 +496,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <details onClick={event=>event.stopPropagation()} className="rounded-lg border border-taxpay-border p-2">
                <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
                <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
-                 <p>{allocationLabel(a.beneficiary)} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+                 <p>{allocationLabel(a.beneficiary)} · {recordedActivityCategoryLabel(a.category,language)}</p>
                  <p className="text-taxpay-muted">{a.assessmentYear}</p>
                  <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
                </li>)}</ul>
@@ -526,7 +527,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            <details className="rounded-lg border border-taxpay-border p-2">
              <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
              <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
-               <p>{allocationLabel(a.beneficiary)} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+               <p>{allocationLabel(a.beneficiary)} · {recordedActivityCategoryLabel(a.category,language)}</p>
                <p className="text-taxpay-muted">{a.assessmentYear}</p>
                <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
              </li>)}</ul>
@@ -548,7 +549,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         payerName:selectedPayment.payer,
         taxpayerName:selectedPayment.allocations.length===1?selectedPayment.allocations[0].beneficiary:undefined,
         assessmentYear:[...new Set(selectedPayment.allocations.map(a=>a.assessmentYear))].join(', '),
-        paymentType:[...new Set(selectedPayment.allocations.map(a=>simulationCategoryLabels[a.category][bn?'bn':'en']))].join(', '),
+        paymentType:[...new Set(selectedPayment.allocations.map(a=>recordedActivityCategoryLabel(a.category,language)))].join(', '),
         amountMinor:selectedPayment.totalMinor,createdAt:selectedPayment.createdAt,
         status:selectedPayment.state,financialReceiptStatus:txt('Not verified','যাচাই হয়নি'),
         taxCreditStatus:txt('Not verified','যাচাই হয়নি'),source:'TaxPay SQL',
