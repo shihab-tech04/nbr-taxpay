@@ -205,7 +205,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
           <p className="text-[11.5px] text-[#5f6880]">
             {c.footer.tagline} · {c.footer.copyright}
           </p>
-          <a href="?action=landing" className="text-[11.5px] text-[#5f6880] underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a>
+          <div className="flex items-center justify-center gap-2 text-[11.5px] text-[#5f6880]"><a href="?action=landing" className="text-[11.5px] text-[#5f6880] underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a><span aria-hidden="true">·</span><a href={c.langSwitch === 'English'?'?action=home-3&lang=bn':'?action=home-3'} className="underline">Home 3</a></div>
         </footer>
       </section>
 
