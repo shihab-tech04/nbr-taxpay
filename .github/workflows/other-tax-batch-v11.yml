@@ -2,6 +2,7 @@ name: TaxPay Other Tax v11 multi-taxpayer acceptance
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
     paths:
       - 'src/components/screens/GuestPayment.tsx'
@@ -61,6 +62,7 @@ permissions:
 
 jobs:
   verify:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Grouped heads, taxpayer composition and safe checkout
     runs-on: ubuntu-latest
     timeout-minutes: 25

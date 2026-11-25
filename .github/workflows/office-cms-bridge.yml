@@ -1,6 +1,7 @@
 name: Office-authorized CMS bridge security and runtime
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'supabase/functions/office-cms-publish/**'
       - 'supabase/migrations/20261107071500_office_authenticated_taxpay_banner_bridge.sql'
@@ -13,6 +14,7 @@ permissions:
   contents: read
 jobs:
   sql-isolation:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -38,6 +40,7 @@ jobs:
       - name: Verify approved logo crop against the migrated SQL constraint
         run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/cmsLogoDimensions.integration.sql
   edge-types:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

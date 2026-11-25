@@ -23,21 +23,49 @@
 /* Desktop-only Gift Tax geometry: leave the approved mobile/small-tablet
  * workspace stack intact to prevent the summary rail intercepting controls. */
 @media (min-width: 901px) {
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .taxpay-modal__body {
+  /* Match the approved identity-stage modal even when the global payment-stage
+   * sizing/padding rules have higher specificity. Preview, checkout and result
+   * deliberately retain their own approved shell. */
+  .taxpay-citizen-shell .taxpay-modal.gift-tax-dialog.taxpay-v5-locked[data-public-service="gift"][data-payment-stage="true"]:not(.gift-tax-approved-stage) {
+    height: auto;
+    min-height: 0;
+    max-height: min(90dvh, 800px);
+  }
+  .taxpay-citizen-shell .taxpay-modal.gift-tax-dialog.taxpay-v5-locked[data-public-service="gift"][data-payment-stage="true"]:not(.gift-tax-approved-stage) > .taxpay-modal__body {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    min-height: 0;
+    overflow: auto;
+  }
+  .taxpay-citizen-shell .taxpay-modal.gift-tax-dialog > .taxpay-modal__body > .gift-tax-workspace {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
     padding: 0;
   }
   .taxpay-citizen-shell .payment-flow-embedded--unified.gift-tax-workspace > .payment-flow-embedded__content {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
     width: 100%;
     min-width: 0;
+    margin: 0;
+    padding: 0;
   }
   .taxpay-citizen-shell .gift-tax-workspace .payment-flow-embedded__content > .payment-form-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
     align-items: stretch;
+    flex: 1 0 auto;
     gap: 0;
     width: 100%;
     min-width: 0;
+    margin: 0;
+    padding: 0;
   }
   .taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt)
     .payment-flow-embedded__content > .payment-form-layout {

@@ -17,6 +17,8 @@ async function openGiftTax(page: Page, language: 'en' | 'bn') {
 
 for (const sample of [
   {language: 'en' as const, width: 1280, height: 850},
+  // Exact reported 25-Nov desktop viewport, not just the standard 1280 fixture.
+  {language: 'en' as const, width: 1191, height: 884},
   {language: 'bn' as const, width: 375, height: 812},
   {language: 'en' as const, width: 320, height: 720},
 ]) {
@@ -58,6 +60,10 @@ for (const sample of [
         expect(Math.abs(editorRect.x + editorRect.width - railRect.x)).toBeLessThanOrEqual(2);
         expect(Math.abs(bodyRect.x + bodyRect.width - (railRect.x + railRect.width))).toBeLessThanOrEqual(2);
         expect(Math.abs(editorRect.y - railRect.y)).toBeLessThanOrEqual(2);
+        expect(Math.abs(bodyRect.x - editorRect.x)).toBeLessThanOrEqual(2);
+        expect(Math.abs(bodyRect.y - railRect.y)).toBeLessThanOrEqual(2);
+        expect(Math.abs(editorRect.y + editorRect.height - (railRect.y + railRect.height))).toBeLessThanOrEqual(2);
+        expect(await gift.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
       }
     }
 
@@ -86,6 +92,12 @@ for (const sample of [
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
 
     await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('2');
+    const donorRect = await donor.boundingBox();
+    const doneeRect = await donee.boundingBox();
+    expect(donorRect && doneeRect).toBeTruthy();
+    if (donorRect && doneeRect) {
+      expect(doneeRect.y - donorRect.y - donorRect.height).toBeLessThanOrEqual(28);
+    }
     await expect(gift.getByTestId('gift-added-donee')).toContainText(bn ? 'বাবা' : 'Father');
     const header = gift.locator('.taxpay-modal__title');
     await expect(header).toHaveCSS('text-align', 'left');

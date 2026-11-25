@@ -2,6 +2,7 @@ name: TaxPay - build and GitHub Pages
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
   push:
     branches: [main]
@@ -19,7 +20,7 @@ jobs:
 
   v2-read-preflight:
     name: Taxpayer-v2 public read-only API acceptance
-    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/')
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     permissions:
@@ -39,6 +40,7 @@ jobs:
         run: node scripts/ci/v2-public-read-preflight.mjs
 
   preflight:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Verified PR and immutable build provenance
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -73,7 +75,7 @@ jobs:
   compile:
     name: Compile, typecheck, domain and production bundle
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
@@ -175,7 +177,7 @@ jobs:
   core-e2e:
     name: Payment, ledger and beneficiaries acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -197,14 +199,8 @@ jobs:
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
         run: npx playwright install chromium --only-shell
-      - name: Verify preserved ledger and receipt contracts
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: |
-          npx playwright test tests/e2e/user1-scenario.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/navigation-integrity.spec.ts --project=desktop-1280 --grep "user1 dashboard, payment history|user1 year selection|history uses one content panel|ten user1 routes|taxpayer ledger table|All taxpayer inner pages|Taxpayer receipt inspection"
-          npx playwright test tests/e2e/taxpayer-account-integrity.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --grep "generic taxpayer preview|other URL-selected fictional accounts"
+      # The full ledger, receipt and account-integrity specs run in route-e2e on all three projects.
+      # Do not repeat a filtered subset here: the aggregate gate still requires route-e2e.
       - name: Verify identical 24-field User1 reference layout across all 30 accounts
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -253,7 +249,7 @@ jobs:
   core-beneficiary-e2e:
     name: Beneficiary records and table visual acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -306,7 +302,7 @@ jobs:
   core-cms-e2e:
     name: CMS banner and direct-service acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -344,7 +340,7 @@ jobs:
   payment-ux-e2e:
     name: Payment wizard and calculation acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -389,7 +385,7 @@ jobs:
   payment-progress-e2e:
     name: Payment progress and v11 input acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -425,7 +421,7 @@ jobs:
   public-e2e:
     name: Public and signed-in journey acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -494,7 +490,7 @@ jobs:
   public-travel-e2e:
     name: Travel Tax progressive journey acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -541,7 +537,7 @@ jobs:
   public-login-e2e:
     name: Taxpayer signed-in desktop and mobile acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -622,7 +618,7 @@ jobs:
   beneficiary-picker-e2e:
     name: Signed-in beneficiary picker acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -668,7 +664,7 @@ jobs:
   public-support-e2e:
     name: Public receipts and workspace acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -730,7 +726,7 @@ jobs:
   route-e2e:
     name: Public routes (shard ${{ matrix.shard }}/8)
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -756,17 +752,18 @@ jobs:
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
         run: npx playwright install chromium --only-shell
+      # Step 2/3 specs run in payment-ux-e2e with the same disconnected environment and all projects.
       - name: Check public routes and disconnected backend state
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/taxpay-real-typography-contract.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/eight-point-public-payment.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/8
+        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/taxpay-real-typography-contract.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/eight-point-public-payment.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/8
 
   reuse-reviewed-build:
     name: Reuse exact-source verified PR bundle
     needs: preflight
-    if: needs.preflight.outputs.mode == 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode == 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     permissions:
@@ -823,9 +820,28 @@ jobs:
     permissions:
       contents: read
     steps:
+      # The draft path uses this same aggregate job and never issues release acceptance.
+      - name: Check out draft for lightweight development validation
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node for draft validation
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Lightweight draft typecheck (not release acceptance)
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+          echo 'Draft development check passed; full acceptance has not run. Mark ready for review when finished.' >> "$GITHUB_STEP_SUMMARY"
       - name: Confirm mandatory check paths, including reused verified PR evidence
         shell: bash
         env:
+          DEVELOPMENT_ONLY: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/') }}
           PREFLIGHT: ${{ needs.preflight.result }}
           MODE: ${{ needs.preflight.outputs.mode }}
           COMPILE: ${{ needs.compile.result }}
@@ -843,6 +859,11 @@ jobs:
           REUSED: ${{ needs.reuse-reviewed-build.result }}
         run: |
           set -euo pipefail
+          if [ "$DEVELOPMENT_ONLY" = true ]; then
+            echo "::notice::Draft development validation only; no merge or production acceptance. Mark ready for review to run every original release gate."
+            echo "Release acceptance intentionally withheld for draft." >&2
+            exit 1
+          fi
           test "$PREFLIGHT" = success
           case "$MODE" in
             full)

@@ -19,14 +19,12 @@ import {
   ShieldAlert,
   ShieldCheck,
   Wallet,
-  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import hero from '../assets/hero.webp'
 import { Logo, SearchPanel, Tile, promoSlides, slideCount, useCarousel, type ViewProps, type Home2Action } from '../shared'
 
 const lift = 'transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-22px_rgba(20,27,45,0.45)]'
-const trustIcons = [ShieldCheck, Zap, Receipt]
 
 export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: ViewProps) {
   const car = useCarousel(slideCount)
@@ -40,7 +38,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
   ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f3f4f8]">
+    <div className="flex min-h-screen flex-col bg-[#f4f6f9]">
       {/* Header */}
       <header role="banner" className="sticky top-0 z-30 border-b border-[#e7e9ef]/80 bg-white/85 backdrop-blur-xl">
         <div className="mx-auto grid h-16 w-full max-w-[1240px] grid-cols-[1fr_auto_1fr] items-center px-8">
@@ -72,19 +70,16 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
         <section className="grid grid-cols-[minmax(0,1fr)_clamp(320px,30vw,372px)] gap-3">
           {/* Hero carousel */}
           <Tile>
-            <div data-testid="home2-desktop-hero" className="relative h-full min-h-[340px] overflow-hidden rounded-[24px] bg-[#f8f0dc] ring-1 ring-[#efe3c4]">
+            <div data-testid="home2-desktop-hero" className="relative h-full min-h-[340px] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#e6ecfa] to-[#cad7f2] ring-1 ring-[#efe3c4]">
               <div ref={car.ref} onScroll={car.onScroll} className="home2-no-scrollbar flex h-full snap-x snap-mandatory overflow-x-auto">
-                <div className="relative min-h-[340px] w-full shrink-0 snap-center">
+                <div data-testid="home2-primary-slide" className="relative min-h-[340px] w-full shrink-0 snap-center">
                   {/* Illustration sits beside the copy, never under it */}
                   <div className="absolute inset-y-0 right-0 left-[min(460px,65%)]">
                     <img src={hero} alt="" className="size-full object-cover object-[70%_60%]" />
-                    <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#f8f0dc] to-transparent" />
+                    <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#e6ecfa] to-transparent" />
                   </div>
                   <div data-testid="home2-hero-copy" className="relative flex min-h-[340px] h-full max-w-[500px] flex-col justify-center py-7 pr-6 pl-9">
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#6b5a1e] uppercase ring-1 ring-[#6b5a1e]/10">
-                      <ShieldCheck className="size-3.5" /> {c.eyebrow}
-                    </span>
-                    <h1 className="mt-3.5 text-[36px] leading-[1.1] font-bold tracking-[-0.025em] text-[#45390e]">{c.heroTitle}</h1>
+                    <h1 className="text-[36px] leading-[1.1] font-bold tracking-[-0.025em] text-[#45390e]">{c.heroTitle}</h1>
                     <p className="mt-3 text-[14.5px] leading-relaxed text-[#6b5f3a]">{c.heroBody}</p>
                     <div className="mt-6 flex flex-wrap gap-2.5">
                       <button
@@ -100,16 +95,6 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
                         <FileText className="size-[18px]" /> {c.otherTax}
                       </button>
                     </div>
-                    <ul data-testid="home2-hero-trust" className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5">
-                      {c.trust.map((label, i) => {
-                        const Icon = trustIcons[i]
-                        return (
-                          <li key={label} className="flex items-center gap-1.5 text-[12px] font-medium text-[#7a6c45]">
-                            <Icon className="size-3.5 text-[#a08a4c]" /> {label}
-                          </li>
-                        )
-                      })}
-                    </ul>
                   </div>
                 </div>
                 {promoSlides.map((sl) => {
@@ -154,7 +139,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
 
           <div className="flex flex-col gap-3">
             {/* Search */}
-            <Tile delay={80} className="rounded-[24px] bg-white p-5 ring-1 ring-[#e7e9ef]">
+            <Tile delay={80} className="rounded-[24px] bg-[#e8edf4] p-5 ring-1 ring-[#e7e9ef]">
               <div className="mb-4 flex items-start gap-3">
                 <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#eef2fb] text-[#2f55a4]">
                   <Receipt className="size-5" />
@@ -169,7 +154,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
 
             {/* Guide */}
             <Tile delay={140} className="flex flex-1 flex-col">
-              <div className="relative flex flex-1 flex-col justify-between gap-4 overflow-hidden rounded-[24px] bg-[#eef2fb] p-5 ring-1 ring-[#dde5f6]">
+              <div className="relative flex flex-1 flex-col justify-between gap-4 overflow-hidden rounded-[24px] bg-[#dfeae3] p-5 ring-1 ring-[#dde5f6]">
                 <BookOpen className="pointer-events-none absolute -right-6 -bottom-8 size-32 text-[#2f55a4] opacity-[0.07]" strokeWidth={1.2} aria-hidden />
                 <div className="relative flex items-start gap-3">
                   <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-[#2f55a4] shadow-sm">
@@ -211,7 +196,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
             <Tile delay={240} className="col-span-6 row-span-2">
               <button
                 onClick={open('pay')}
-                className={`home2-press group relative flex h-full w-full flex-col overflow-hidden rounded-[24px] bg-gradient-to-br from-[#2f55a4] to-[#1f3c7a] p-6 text-left text-white ${lift}`}
+                className={`home2-press group relative flex h-full w-full flex-col overflow-hidden rounded-[24px] bg-[#dcebe9] p-6 text-left text-[#152033] ${lift}`}
               >
                 <div className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-white/10" />
                 <div className="pointer-events-none absolute -top-6 -right-2 size-36 rounded-full bg-white/5" />
@@ -226,7 +211,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
                 </div>
                 <div className="relative mt-auto pt-4">
                   <h3 className="text-[26px] leading-tight font-semibold tracking-[-0.02em]">{f.all.title}</h3>
-                  <p className="mt-1 text-[14px] text-white/75">{f.all.body}</p>
+                  <p className="mt-1 text-[14px] text-[#4b5567]">{f.all.body}</p>
                   <div className="mt-3.5 flex flex-wrap gap-1.5">
                     {f.all.chips.map((x) => (
                       <span key={x} className="rounded-full bg-white/10 px-3 py-1 text-[12px] font-medium ring-1 ring-white/15">
@@ -247,7 +232,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
             </Tile>
 
             <Tile delay={280} className="col-span-3 row-span-2">
-              <button onClick={open('history')} className={`home2-press group flex h-full w-full flex-col rounded-[24px] bg-[#fdf3e3] p-5 text-left ring-1 ring-[#f3e1c0] ${lift}`}>
+              <button onClick={open('history')} className={`home2-press group flex h-full w-full flex-col rounded-[24px] bg-[#f0e8d6] p-5 text-left ring-1 ring-[#f3e1c0] ${lift}`}>
                 <div className="flex items-start justify-between">
                   <div className="grid size-10 place-items-center rounded-xl bg-white text-[#c27a10] shadow-sm">
                     <History className="size-5" />
@@ -270,8 +255,8 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               </button>
             </Tile>
 
-            <FeatureTile delay={320} className="col-span-3" icon={FileCheck2} title={f.certs.title} body={f.certs.body} onClick={open('certificates')} tone="bg-white ring-1 ring-[#e7e9ef]" iconTone="bg-[#e6f4f1] text-[#0f7a68]" />
-            <FeatureTile delay={360} className="col-span-3" icon={FilePen} title={f.corrections.title} body={f.corrections.body} onClick={open('corrections')} tone="bg-white ring-1 ring-[#e7e9ef]" iconTone="bg-[#f1ecfb] text-[#6a45c2]" />
+            <FeatureTile delay={320} className="col-span-3" icon={FileCheck2} title={f.certs.title} body={f.certs.body} onClick={open('certificates')} tone="bg-[#e5e2f0] ring-1 ring-[#e7e9ef]" iconTone="bg-[#e6f4f1] text-[#0f7a68]" />
+            <FeatureTile delay={360} className="col-span-3" icon={FilePen} title={f.corrections.title} body={f.corrections.body} onClick={open('corrections')} tone="bg-[#f1e0d8] ring-1 ring-[#e7e9ef]" iconTone="bg-[#f1ecfb] text-[#6a45c2]" />
             <FeatureTile
               row
               delay={400}
@@ -306,7 +291,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               title={f.secure.title}
               body={f.secure.body}
               onClick={open('security')}
-              tone="bg-[#e9f2ea] text-[#17402a] ring-1 ring-[#d3e6d6]"
+              tone="bg-[#e8edf4] text-[#17402a] ring-1 ring-[#d3e6d6]"
               iconTone="bg-white text-[#1d7a46] shadow-sm"
               bodyTone="text-[#4b6b56]"
               arrowTone="text-[#9cc0a6]"
@@ -330,7 +315,7 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               </button>
             ))}
           </nav>
-          <div className="text-[12px] text-[#5f6880]"><p>{c.footer.copyright}</p><a href="?action=landing" className="underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a></div>
+          <div className="text-[12px] text-[#5f6880]"><p>{c.footer.copyright}</p><a href="?action=landing" className="underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a>{' · '}<a href={c.langSwitch === 'English'?'?action=home-3&lang=bn':'?action=home-3'} className="underline">Home 3</a></div>
         </div>
       </footer>
 

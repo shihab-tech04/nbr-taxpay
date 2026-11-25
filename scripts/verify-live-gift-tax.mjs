@@ -18,6 +18,7 @@ const browser=await chromium.launch({headless:true});
 try{
   for(const sample of [
     {name:'desktop-en',width:1280,height:850,lang:'en'},
+    {name:'desktop-reported-en',width:1191,height:884,lang:'en'},
     {name:'mobile-375-bn',width:375,height:812,lang:'bn'},
     {name:'mobile-320-en',width:320,height:720,lang:'en'},
   ]){
@@ -64,6 +65,23 @@ try{
       if(mobile&&Math.abs(modalBox.width-sample.width)>2) {
         throw new Error('Mobile Gift Tax modal does not fill viewport: '+JSON.stringify(modalBox));
       }
+      if(sample.width>900){
+        const [editorRect,railRect,bodyRect]=await Promise.all([
+          gift.locator('.unified-taxpayer-workspace__editor').boundingBox(),
+          gift.getByTestId('gift-tax-identity-rail').boundingBox(),
+          gift.locator('.taxpay-modal__body').boundingBox()
+        ]);
+        if(!editorRect||!railRect||!bodyRect||
+          Math.abs(bodyRect.x-editorRect.x)>2||
+          Math.abs(bodyRect.y-railRect.y)>2||
+          Math.abs(editorRect.x+editorRect.width-railRect.x)>2||
+          Math.abs(bodyRect.x+bodyRect.width-railRect.x-railRect.width)>2||
+          Math.abs(editorRect.y+editorRect.height-railRect.y-railRect.height)>2||
+          modalBox.height>Math.min(sample.height*.9,800)+2){
+          throw new Error('Gift Tax empty desktop modal geometry mismatch: '+JSON.stringify({modalBox,editorRect,railRect,bodyRect}));
+        }
+      }
+      await gift.screenshot({path:'test-results/live-gift-tax-empty-'+sample.name+'.png',animations:'disabled'});
       const donor=gift.getByTestId('gift-donor-section');
       const donee=gift.getByTestId('gift-donee-section');
       const donorInput=donor.locator('#gift-donor-tin');
@@ -148,8 +166,7 @@ try{
       await review.locator('#gift-review-phone').fill('01712345678');
       await review.locator('#gift-review-email').fill('sample@example.com');
       await review.locator('#gift-review-reference').fill('GIFT-UX-ACCEPTANCE');
-      // The approved mobile preview now uses three cells, not the retired th/td table.
-      // Protect actual text geometry, including the full-width label and the date/amount row.
+      // Preserve #1017's existing approved three-cell mobile review acceptance.
       if(mobile){
         const table=review.locator('.gift-tax-approved-table');
         const rows=table.locator('tbody tr:not(.unified-v3-review__owner)');
