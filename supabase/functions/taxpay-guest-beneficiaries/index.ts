@@ -23,6 +23,7 @@ type RpcName =
   | 'taxpay_guest_beneficiary_remove'
   | 'taxpay_guest_beneficiary_rename_list'
   | 'taxpay_guest_beneficiary_delete_list'
+  | 'taxpay_guest_beneficiary_transfer_group'
   | 'taxpay_demo_profile_login'
   | 'taxpay_demo_profile_settings'
   | 'taxpay_demo_recover_story1_session'
@@ -56,6 +57,8 @@ function publicError(error: unknown): { status: number; code: string } {
     return { status: 400, code: message.split(':')[0] };
   if (/LEGACY_SESSION_ALREADY_LINKED/.test(message)) return { status: 409, code: 'LEGACY_SESSION_ALREADY_LINKED' };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
+  if (/BENEFICIARY_GROUP_LIMIT/.test(message)) return { status: 409, code: 'BENEFICIARY_GROUP_LIMIT' };
+  if (/BENEFICIARY_GROUP_NOT_EMPTY/.test(message)) return { status: 409, code: 'BENEFICIARY_GROUP_NOT_EMPTY' };
   if (/BENEFICIARY_ALREADY_IN_LIST/.test(message)) return { status: 409, code: 'BENEFICIARY_ALREADY_IN_LIST' };
   if (/INVALID_DRAFT_PAYLOAD|INVALID_DRAFT_ACTION/.test(message))
     return { status: 400, code: message.split(':')[0] };
@@ -245,6 +248,11 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_rename_list', {
         p_capability_hash, p_list_id: body.id,
         p_name: validateName(body.name, 80, 'INVALID_LIST_NAME'),
+      });
+    } else if (action === 'transfer-group') {
+      if (!uuidPattern.test(String(body.id ?? '')) || !uuidPattern.test(String(body.targetListId ?? ''))) throw new Error('NOT_FOUND');
+      data = await rpc(client, 'taxpay_guest_beneficiary_transfer_group', {
+        p_capability_hash, p_source_id: body.id, p_target_id: body.targetListId,
       });
     } else if (action === 'delete-list') {
       if (!uuidPattern.test(String(body.id ?? ''))) throw new Error('NOT_FOUND');
