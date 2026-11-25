@@ -91,6 +91,17 @@ jobs:
         with:
           version: latest
 
+      - name: Generate ordered v7 migration filenames with installed Supabase CLI
+        run: |
+          set -euo pipefail
+          supabase migration new --help
+          mkdir -p "$RUNNER_TEMP/v7-migration-names"
+          cd "$RUNNER_TEMP/v7-migration-names"
+          supabase init
+          supabase migration new recipient_immediate_dual_source
+          supabase migration new office_recipient_immediate_dual_source
+          ls -1 supabase/migrations/*.sql
+
       - name: Isolate disposable Supabase project identity and host ports
         run: |
           python3 scripts/ci/isolate-local-supabase.test.py
@@ -220,8 +231,26 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT="$TAXPAY_LOCAL_DB_PORT" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestPaymentFormDraftIsolation.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoRecipientNotices.sql
+          # Capture the exact source definitions and ACLs before candidate installation.
+          for name in 'taxpay_guest_private.story_correction_event(taxpay_guest_private.story_correction_requests)' 'public.taxpay_demo_correction_claim(integer,uuid)' 'public.taxpay_demo_correction_office_decision(jsonb)'; do
+            psql -X -At -v ON_ERROR_STOP=1 -c "select pg_get_functiondef('$name'::regprocedure)" >> "$RUNNER_TEMP/v7-source-restore.sql"
+            echo ';' >> "$RUNNER_TEMP/v7-source-restore.sql"
+            psql -X -At -v ON_ERROR_STOP=1 -c "select proowner,proacl::text from pg_proc where oid='$name'::regprocedure" >> "$RUNNER_TEMP/v7-source-before-acl.txt"
+          done
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientImmediateDualSourceCandidateMigration.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
+          psql -X -v ON_ERROR_STOP=1 -f "$RUNNER_TEMP/v7-source-restore.sql"
+          psql -X -v ON_ERROR_STOP=1 -c "drop function public.taxpay_demo_original_report_claim(integer,uuid)"
+          for name in 'taxpay_guest_private.story_correction_event(taxpay_guest_private.story_correction_requests)' 'public.taxpay_demo_correction_claim(integer,uuid)' 'public.taxpay_demo_correction_office_decision(jsonb)'; do
+            psql -X -At -v ON_ERROR_STOP=1 -c "select pg_get_functiondef('$name'::regprocedure)" >> "$RUNNER_TEMP/v7-source-after.sql"
+            echo ';' >> "$RUNNER_TEMP/v7-source-after.sql"
+            psql -X -At -v ON_ERROR_STOP=1 -c "select proowner,proacl::text from pg_proc where oid='$name'::regprocedure" >> "$RUNNER_TEMP/v7-source-after-acl.txt"
+          done
+          cmp "$RUNNER_TEMP/v7-source-restore.sql" "$RUNNER_TEMP/v7-source-after.sql"
+          cmp "$RUNNER_TEMP/v7-source-before-acl.txt" "$RUNNER_TEMP/v7-source-after-acl.txt"
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientImmediateDualSourceCandidateMigration.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/recipientLifecycleReportCandidate.sql
+          echo "PASS exact v7 source definition/ACL rollback and reapply"
           node tests/integration/guestPaymentFormDraftEdge.mjs
 
 

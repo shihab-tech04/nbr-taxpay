@@ -96,17 +96,23 @@ BEGIN
   -- Disposable fixture only: advance retry eligibility without sleeping.
   UPDATE taxpay_guest_private.story_correction_requests SET sync_next_at=now() WHERE id=(early_report->>'id')::uuid;
   retry_claim:=public.taxpay_demo_correction_claim(1,(early_report->>'id')::uuid);
-  IF retry_claim#>'{0,event}' IS DISTINCT FROM early_claim#>'{0,event}' OR NOT public.taxpay_demo_correction_ack((early_report->>'id')::uuid,(retry_claim#>>'{0,claimToken}')::uuid,true)
-    OR public.taxpay_demo_correction_get((early_report->>'id')::uuid)->>'officeSyncState'<>'ACKNOWLEDGED'
-    OR public.taxpay_demo_correction_get((early_report->>'id')::uuid)->>'paymentCompleted'<>'false'
-  THEN RAISE EXCEPTION 'INITIATED_REPORT_RETRY_ACK_MISMATCH'; END IF;
+  IF jsonb_array_length(retry_claim)<>1 OR retry_claim#>'{0,event}' IS DISTINCT FROM early_claim#>'{0,event}'
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_RETRY_EVENT_MISMATCH'; END IF;
+  IF NOT public.taxpay_demo_correction_ack((early_report->>'id')::uuid,(retry_claim#>>'{0,claimToken}')::uuid,true)
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_ACK_WRITE_FAILED'; END IF;
+  -- Read in a separate SQL statement after the volatile ACK; a STABLE getter
+  -- in the same expression may still observe its earlier statement snapshot.
+  IF public.taxpay_demo_correction_get((early_report->>'id')::uuid)->>'officeSyncState' IS DISTINCT FROM 'ACKNOWLEDGED'
+    OR public.taxpay_demo_correction_get((early_report->>'id')::uuid)->>'paymentCompleted' IS DISTINCT FROM 'false'
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_ACK_READBACK_MISMATCH'; END IF;
   original_report:=public.taxpay_demo_received_payment_report_save(recipient3_hash,payment_id::text||':allocation:2',gen_random_uuid(),'Original source simulated recipient report');
   original_claim:=public.taxpay_demo_original_report_claim(1,(original_report->>'id')::uuid);
   IF jsonb_array_length(original_claim)<>1 OR original_claim#>>'{0,event,sourceProject}' IS DISTINCT FROM 'original'
     OR original_claim#>>'{0,event,payload,recipientInitiation,state}' IS DISTINCT FROM 'SIMULATED_INITIATED'
     OR original_claim#>>'{0,event,payload,targetAllocationId}' IS DISTINCT FROM 'ws3-recipient-3'
-    OR NOT public.taxpay_demo_correction_ack((original_report->>'id')::uuid,(original_claim#>>'{0,claimToken}')::uuid,true)
   THEN RAISE EXCEPTION 'ORIGINAL_INITIATED_REPORT_CLAIM_FAILED'; END IF;
+  IF NOT public.taxpay_demo_correction_ack((original_report->>'id')::uuid,(original_claim#>>'{0,claimToken}')::uuid,true)
+  THEN RAISE EXCEPTION 'ORIGINAL_INITIATED_REPORT_ACK_FAILED'; END IF;
   IF (public.taxpay_demo_correction_office_decision(jsonb_build_object('schemaVersion','1.0.0','origin','OFFICE_SQL','sourceProject','original','simulationOnly',true,'commandType','CORRECTION_REVIEW','requestId',(original_report->>'id')::uuid,'messageId',gen_random_uuid(),'officerUid','80000000-0000-4000-8000-000000000011','officerRole','MAKER','action','MAKER_ACKNOWLEDGE','expectedReviewState','PENDING_OFFICER','reason','Received the simulated report'))->>'reviewState') IS DISTINCT FROM 'MAKER_ACKNOWLEDGED'
   THEN RAISE EXCEPTION 'ORIGINAL_REPORT_DECISION_FAILED'; END IF;
   IF (SELECT count(*) FROM demo_payment.story_payments)<>before_payment_count THEN RAISE EXCEPTION 'REPORT_CREATED_PAYMENT'; END IF;
