@@ -27,7 +27,7 @@ jobs:
           { echo 'begin;'; sed -E '/^(begin|commit);$/Id' scripts/ci/recipient-lifecycle-candidate.sql scripts/ci/recipient-report-intake-candidate.sql; echo 'rollback;'; } > /tmp/rehearsal.sql
           psql -X -v ON_ERROR_STOP=1 -f /tmp/rehearsal.sql
           pg_dump --schema-only --no-password > /tmp/after.sql
-          diff -u <(sed -E '/^\\\\(un)?restrict /d' /tmp/before.sql) <(sed -E '/^\\\\(un)?restrict /d' /tmp/after.sql)
+          diff -u <(sed -E '/^\\(un)?restrict /d' /tmp/before.sql) <(sed -E '/^\\(un)?restrict /d' /tmp/after.sql)
       - name: Generate ordered migration filenames using official CLI
         run: |
           supabase --version
