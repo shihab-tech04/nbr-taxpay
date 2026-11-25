@@ -1292,7 +1292,7 @@ test('Walk-in Travel Tax: short desktop dropdown is hit-testable and has no draf
     const list=modal.locator('#travel-passport-suggestions-first');
     const geometry = () => modal.evaluate(el => {
       const nodes = [el, ...['.taxpay-modal__header','.taxpay-modal__body','.taxpay-modal__footer',
-        '.travel-flow__passport-row','.travel-passenger-workspace__rail'].map(selector=>el.querySelector(selector))];
+        '.travel-flow__passport-row','#travel-passport-first','.travel-passenger-workspace__rail'].map(selector=>el.querySelector(selector))];
       return nodes.flatMap(node=>{
         if(!node) throw new Error('Missing stable modal section');
         const b=node.getBoundingClientRect();
@@ -1306,14 +1306,24 @@ test('Walk-in Travel Tax: short desktop dropdown is hit-testable and has no draf
     await expect.poll(()=>list.evaluate(el=>{
       const b=el.getBoundingClientRect();
       const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
-      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+2)return false;
+      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+1)return false;
       const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
       return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
     })).toBe(true);
     // Inspect the entire modal after animations finish, not only its input.
     await list.evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
     const opened=await geometry();
-    expect(Math.max(...opened.map((v,i)=>Math.abs(v-baseline[i])))).toBeLessThanOrEqual(2);
+    expect(Math.max(...opened.map((v,i)=>Math.abs(v-baseline[i])))).toBeLessThanOrEqual(1);
+    const assertStable=async()=>{const current=await geometry();expect(Math.max(...current.map((v,i)=>Math.abs(v-baseline[i])))).toBeLessThanOrEqual(1);};
+    await page.waitForTimeout(350);
+    await assertStable();
+    await input.press('Escape');
+    await expect(list).toHaveCount(0);
+    await assertStable();
+    await input.click();
+    await expect(list.getByRole('option')).toHaveCount(10);
+    await list.evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
+    await assertStable();
     await list.getByRole('option',{name:/TEST230005/}).click();
     await modal.getByRole('button',{name:'Check Passport'}).click();
     await modal.getByRole('button',{name:'Add passenger',exact:true}).click();

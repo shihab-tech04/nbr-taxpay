@@ -1,0 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Hind+Siliguri:wght@500;600;700&display=swap');
+.taxpay-citizen-shell.home3-import-shell{background:#eff4fb;color:#0b1f44;}
+.taxpay-citizen-shell.home3-import-shell > main{width:100%;max-width:none!important;padding:0!important;margin:0;}
+.home3-import-root [data-home3-view]{font-family:'Fira Sans','Hind Siliguri',ui-sans-serif,system-ui,sans-serif;color:#0b1f44;line-height:1.5;font-size:16px;min-width:0;-webkit-font-smoothing:antialiased;}
+.home3-import-root .home3-font-bn,.home3-import-root[lang=bn] [data-home3-view]{font-family:'Hind Siliguri','Fira Sans',sans-serif;}
+.home3-import-root [data-home3-view] :is(button,input){font-family:inherit;}
+.home3-import-root .public-help-widget[data-home2-hidden=true]:not(:has(.public-help-panel)){display:none;}
+.home3-import-root [data-home3-view] footer{padding-bottom:env(safe-area-inset-bottom);}
