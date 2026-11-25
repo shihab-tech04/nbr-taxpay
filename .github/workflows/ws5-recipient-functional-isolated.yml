@@ -1,0 +1,43 @@
+name: WS5 recipient functional projection acceptance
+on:
+  push:
+    branches: [ws5/recipient-functional-closure-next-20261126]
+permissions:
+  contents: read
+jobs:
+  projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: node --import tsx --test tests/recipientPaymentActivity.test.ts tests/receivedPaymentNoticePresentation.test.ts tests/demoReceivedPaymentNotices.test.ts tests/receivedNoticeRegisterScope.test.ts
+      - run: npx playwright install chromium
+      - name: Existing Auth popup and received Activity details, both languages and responsive projects
+        run: npx playwright test tests/e2e/authenticated-received-notice-mount.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --workers=1
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+          VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'
+  hosted-preview-read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Existing fictional V2 recipient read capability only
+        run: node scripts/ci/verify-hosted-recipient-notice-feed.mjs
+        env:
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
