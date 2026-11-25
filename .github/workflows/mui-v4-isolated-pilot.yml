@@ -54,7 +54,7 @@ jobs:
       - name: Typecheck, existing domain tests and build
         run: |
           npm run lint
-          npm run test:domain
+          env -u VITE_SUPABASE_DISABLED -u VITE_SUPABASE_URL -u VITE_SUPABASE_PUBLISHABLE_KEY npm run test:domain
           npm run build
           du -sb dist
       - run: npx playwright install chromium
