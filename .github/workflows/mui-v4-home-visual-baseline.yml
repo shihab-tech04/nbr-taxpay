@@ -1,4 +1,4 @@
-name: MUI v6.0 targeted foundation paint attribution
+name: MUI v7.0 exact targeted dual paint attribution
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
@@ -9,18 +9,31 @@ jobs:
   compare:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        case:
+          - name: foundation-light-guest
+            base: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
+            candidate: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
+            pattern: frozen homepage en light guest$
+          - name: combined-dark-account
+            base: 6189ee583926ee42e2ab6e909c571603bb57a886
+            candidate: 5aa67318b1beec81eaa7b169a60caa212da40704
+            pattern: frozen homepage en dark local-account$
     env:
       CI: 'true'
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
-      CANDIDATE_SHA: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
+      BASE_SHA: ${{ matrix.case.base }}
+      CANDIDATE_SHA: ${{ matrix.case.candidate }}
+      MUI_TEST_PATTERN: ${{ matrix.case.pattern }}
       DIAGNOSTIC_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
+          ref: ${{ matrix.case.candidate }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -39,6 +52,19 @@ jobs:
           git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
           (cd "$MUI_BASELINE_DIR" && npm ci --no-audit --no-fund && npm run build)
           npx playwright install chromium
+      - name: Validate exact targeted command and test selection
+        run: |
+          set -euo pipefail
+          export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
+          export MUI_SNAPSHOT_DIR="$RUNNER_TEMP/mui-snapshots"
+          mkdir -p "$MUI_SNAPSHOT_DIR"
+          cat > "$RUNNER_TEMP/targeted-paint.sh" <<'SH'
+          set -euo pipefail
+          npx playwright test --config playwright.mui-protected.config.ts --project=width-320 --grep "$MUI_TEST_PATTERN" "$@"
+          SH
+          bash -n "$RUNNER_TEMP/targeted-paint.sh"
+          bash "$RUNNER_TEMP/targeted-paint.sh" --list | tee "$MUI_SNAPSHOT_DIR/test-selection.txt"
+          grep -F 'Total: 1 test' "$MUI_SNAPSHOT_DIR/test-selection.txt"
       - name: Targeted 320px failure attribution (not full release acceptance)
         run: |
           set -euo pipefail
@@ -47,25 +73,13 @@ jobs:
           mkdir -p "$MUI_SNAPSHOT_DIR"
           printf '%s\n' "$BASE_SHA" > "$MUI_SNAPSHOT_DIR/BASE_SHA"
           printf '%s\n' "$CANDIDATE_SHA" > "$MUI_SNAPSHOT_DIR/CANDIDATE_SHA"
-          npx playwright test --config playwright.mui-protected.config.ts --project=width-320 --grep 'frozen homepage en (light guest|dark local-account)
+          bash "$RUNNER_TEMP/targeted-paint.sh"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v60-foundation-targeted-paint-attribution
+          name: mui-v70-targeted-paint-${{ matrix.case.name }}
           path: |
             ${{ runner.temp }}/mui-snapshots
             test-results/
           if-no-files-found: error
           retention-days: 7
-
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mui-v60-foundation-exact-full-home-matrix
-          path: |
-            ${{ runner.temp }}/mui-snapshots
-            test-results/
-          if-no-files-found: error
-          retention-days: 7
-
