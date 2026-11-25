@@ -259,3 +259,16 @@ test('saved payment certificate action is offered only for a completed, reconcil
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, paymentTransactionId: 'SIM-TOKEN-123' }), false);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, totalAmount: 49 }), false);
 });
+
+
+test('certificate rejects fractional-paisa parent or line amounts without rounding saved facts', () => {
+  const withAmount = (amount: number): ChallanReceipt => ({ ...baseReceipt,
+    totalAmount: amount, items: [{ ...baseReceipt.items[0], totalAmount: amount, penaltyAmount: amount }],
+  });
+  assert.equal(buildPaymentCertificateModel(withAmount(50.01))?.totalMinor, 5001);
+  assert.equal(buildPaymentCertificateModel(withAmount(50.001)), null);
+  assert.equal(canViewPaymentCertificate(withAmount(50.001)), false);
+  assert.equal(buildPaymentCertificateModel({ ...baseReceipt, totalAmount: 50.001 }), null);
+  assert.equal(buildPaymentCertificateModel({ ...baseReceipt,
+    items: [{ ...baseReceipt.items[0], totalAmount: 50.001 }] }), null);
+});

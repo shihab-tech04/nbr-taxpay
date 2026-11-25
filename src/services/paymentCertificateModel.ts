@@ -40,7 +40,8 @@ const validTin = (value: string | undefined): value is string =>
 const toMinor = (amount: number): number | null => {
   if (!Number.isFinite(amount) || amount < 0) return null;
   const minor = Math.round(amount * 100);
-  return Number.isSafeInteger(minor) ? minor : null;
+  // Reject fractional paisa instead of silently changing the saved payment.
+  return Number.isSafeInteger(minor) && Math.abs(minor / 100 - amount) <= 1e-7 ? minor : null;
 };
 
 const validYear = (value: string) => {
