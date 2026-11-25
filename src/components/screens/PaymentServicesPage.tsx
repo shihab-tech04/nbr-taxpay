@@ -1,4 +1,5 @@
 import React from 'react';
+import {CitizenMuiScope,MuiButton} from '../../design-system/mui';
 import { ArrowRight } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { TAXPAY_ENTRY_CHOICES } from './PaymentServiceChoiceDialog';
@@ -10,12 +11,12 @@ export const PaymentServicesPage: React.FC = () => {
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
 
-  return <div className="taxpayer-payment-services mx-auto max-w-6xl space-y-4 pb-12">
+  return <CitizenMuiScope><div data-mui-citizen-region="payment-services" className="taxpayer-payment-services mx-auto max-w-6xl space-y-4 pb-12">
     <TaxpayerPageHeading title={tr('Choose a tax payment service', 'কর পরিশোধের সেবা নির্বাচন করুন')}
       description={tr('Choose who you are paying for, select Tax with Return or Other Tax, then follow the taxpayer details, purpose and amount steps.', 'প্রথমে কার কর পরিশোধ করছেন এবং রিটার্নসহ কর বা অন্যান্য কর বেছে নিন। এরপর করদাতার তথ্য, খাত ও পরিমাণের ধাপ অনুসরণ করুন।')}
-      actions={<button type="button" className="taxpayer-service-directory__primary" onClick={() => setPaymentServiceChoiceOpen(true)}>
+      actions={<MuiButton variant="contained" type="button" className="taxpayer-service-directory__primary" onClick={() => setPaymentServiceChoiceOpen(true)}>
         {tr('Select a service', 'সেবা নির্বাচন করুন')} <ArrowRight size={18} aria-hidden="true" />
-      </button>} />
+      </MuiButton>} />
     <section className="taxpayer-service-directory__grid" aria-label={tr('Two tax payment services', 'দুটি কর পরিশোধ সেবা')}>
       {TAXPAY_ENTRY_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }, index) => (
         <article className="taxpayer-service-directory__card" data-payment-service={id} key={id}>
@@ -29,5 +30,5 @@ export const PaymentServicesPage: React.FC = () => {
         </article>
       ))}
     </section>
-  </div>;
+  </div></CitizenMuiScope>;
 };

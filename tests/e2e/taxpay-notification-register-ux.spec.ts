@@ -32,6 +32,8 @@ for(const language of ['en','bn'] as const){
     await page.goto('/?action=notifications&lang='+language);
     const records=page.locator('table.taxpay-unified-table');
     await expect(records).toHaveCount(2);
+    await expect(records.first()).toHaveClass(/MuiTable-root/);
+    await expect(records.last()).toHaveClass(/MuiTable-root/);
     await expect(records.first().locator('tbody tr')).toHaveCount(1);
     await expect(records.last().locator('tbody tr')).toHaveCount(1);
     await expect(records.first().locator('thead th')).toHaveText(
@@ -44,6 +46,7 @@ for(const language of ['en','bn'] as const){
     await expect(records.first().getByRole('button',{name:language==='bn'?'অনুমোদন দেখুন':'Review authorization'})).toBeVisible();
 
     const authSearch=page.getByRole('searchbox',{name:language==='bn'?'অনুমোদন খুঁজুন':'Search authorizations'});
+    await expect(authSearch).toHaveClass(/MuiInputBase-input/);
     await authSearch.fill('no-match-999');
     await expect(records).toHaveCount(1);
     await page.getByRole('button',{name:language==='bn'?'ফিল্টার মুছুন':'Clear filters'}).click();
@@ -55,7 +58,8 @@ for(const language of ['en','bn'] as const){
     await expect(records.last().locator('time[datetime="2026-10-24T10:00:00Z"]')).toHaveCount(1);
     await paymentSearch.fill('2026-10-24');
     await expect(records.last().locator('tbody tr')).toHaveCount(1);
-        await paymentSearch.fill('no-match-999');
+    await expect(paymentSearch).toHaveClass(/MuiInputBase-input/);
+    await paymentSearch.fill('no-match-999');
     await expect(records).toHaveCount(1);
     await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
     await expect(records).toHaveCount(2);

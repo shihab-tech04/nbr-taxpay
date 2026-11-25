@@ -119,6 +119,7 @@ test('verified account sees only real owner review events and correct chronologi
   await expect(timeline).not.toContainText('Tax credit recognized');
   await items.nth(1).getByText('View event details').click();
   await expect(items.nth(1)).toContainText('OFFICER INFO REQUESTED');
+  await expect(page.getByRole('combobox',{name:'Journey assessment year'})).toHaveClass(/MuiNativeSelect-select/);
   await page.getByRole('combobox',{name:'Journey assessment year'}).selectOption('all');
   await page.reload();
   await expect(page.getByTestId('account-tax-journey').getByRole('listitem')).toHaveCount(2);
@@ -195,6 +196,7 @@ test('owner SQL payment events show beneficiary allocations with the same refere
   await expect(saved).toContainText('৳ 15.00');
   await expect(saved).toContainText('৳ 35.00');
   await expect(saved).toContainText(sharedPayment.id);
+  await expect(saved.getByRole('combobox',{name:'Payment journey assessment year'})).toHaveClass(/MuiNativeSelect-select/);
   await saved.getByRole('combobox',{name:'Payment journey assessment year'}).selectOption('2025-26');
   await expect(saved.getByRole('listitem')).toHaveCount(1);
   await expect(saved).toContainText('Beneficiary B');
