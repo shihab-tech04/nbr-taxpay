@@ -39,6 +39,15 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   await expect(draftEntry.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
   const entryCards = draftEntry.locator('[data-draft-entry-option]');
   await expect(entryCards).toHaveCount(2);
+  // Check actual computed sizes and weights, not just equality between cards.
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveCSS('font-size', '20px');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveCSS('font-weight', '600');
+  for (const card of await entryCards.all()) {
+    await expect(card.locator('.tax-service-choice__copy > strong')).toHaveCSS('font-size', '16px');
+    await expect(card.locator('.tax-service-choice__copy > strong')).toHaveCSS('font-weight', '600');
+    await expect(card.locator('.tax-service-choice__description')).toHaveCSS('font-size', '16px');
+    await expect(card.locator('.tax-service-choice__description')).toHaveCSS('font-weight', '400');
+  }
   // Same approved card geometry, token-based colored icons and navigation arrows
   // as the existing My Tax Liability / Other Tax entry cards at 320/375/desktop.
   const visual = await entryCards.evaluateAll(cards => cards.map(card => {
@@ -129,4 +138,36 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
     .getByRole('button', { name: 'Start new Tax payment' }).click();
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
+});
+
+test('dashboard Pay Tax draft action typography uses body role in EN and BN at native widths', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One session covers explicit mobile and desktop widths');
+  test.setTimeout(120000);
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', {name: 'Sign In To Your Sohojkor Account'});
+  await login.getByRole('textbox', {name: 'User ID'}).fill('user1');
+  await login.getByLabel('Password', {exact: true}).fill('user1');
+  await login.getByRole('button', {name: 'Sign In'}).click();
+  await expect(login).toHaveCount(0);
+  for (const width of [320, 375, 786, 1280]) {
+    for (const lang of ['en', 'bn']) {
+      await page.setViewportSize({width, height: 850});
+      await page.goto('/?action=taxpayer_home&lang=' + lang);
+      await page.locator('.taxpay-bento-hero__secondary').click();
+      const dialog = page.getByRole('dialog', {name: lang === 'bn' ? 'কর পরিশোধ' : 'Pay Tax'});
+      const cards = dialog.getByTestId('account-draft-entry').locator('[data-draft-entry-option]');
+      await expect(cards).toHaveCount(2);
+      for (const card of await cards.all()) {
+        await expect(card.locator('.tax-service-choice__copy > strong')).toHaveCSS('font-size', '16px');
+        await expect(card.locator('.tax-service-choice__copy > strong')).toHaveCSS('font-weight', '600');
+        await expect(card.locator('.tax-service-choice__description')).toHaveCSS('font-size', '16px');
+        await expect(card.locator('.tax-service-choice__description')).toHaveCSS('font-weight', '400');
+        expect(await card.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
+      }
+      await expect(dialog.locator('.taxpay-modal__title')).toHaveCSS('font-size', '20px');
+      await expect(dialog.locator('.taxpay-modal__title')).toHaveCSS('font-weight', '600');
+      await dialog.locator('.taxpay-modal__close').click();
+      await expect(dialog).toHaveCount(0);
+    }
+  }
 });

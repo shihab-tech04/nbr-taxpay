@@ -127,8 +127,8 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })).toBeDisabled();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
 
-    // Approved v5 calculation is a compact subtotal by taxpayer. Keep the
-    // complete editable allocations in the Payment Head composer instead.
+    // Retain compact subtotals, and restore independent native disclosures
+    // for the existing per-taxpayer head/year/amount summaries.
     const mobileCalculation = dialog.getByTestId('mobile-payment-calculation');
     if (await mobileCalculation.count() && await mobileCalculation.getAttribute('open') === null) {
       await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
@@ -141,7 +141,28 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(taxpayerSummaries.nth(0)).toContainText('3,500');
     await expect(taxpayerSummaries.nth(1)).toContainText('3,500');
     if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage2-desktop.png'});
-    await expect(calculation).not.toContainText('Show all');
+    const first=taxpayerSummaries.first(),second=taxpayerSummaries.nth(1);
+    await expect(first).not.toHaveAttribute('open','');
+    await expect(second).not.toHaveAttribute('open','');
+    await first.locator('summary').click();
+    await expect(first).toHaveAttribute('open','');
+    await expect(first.getByTestId('selected-taxpayer-head-list')).toBeVisible();
+    await expect(first.getByTestId('selected-taxpayer-head-list')).toContainText('2026-27');
+    await expect(first.getByTestId('selected-taxpayer-head-list')).toContainText('3,500');
+    await second.locator('summary').focus();
+    await second.locator('summary').press('Enter');
+    await expect(second).toHaveAttribute('open','');
+    await expect(first).toHaveAttribute('open','');
+    await first.locator('summary').click();
+    await expect(first).not.toHaveAttribute('open','');
+    await expect(first.getByTestId('selected-taxpayer-head-list')).toBeHidden();
+    await expect(second.getByTestId('selected-taxpayer-head-list')).toBeVisible();
+    await second.getByTestId('selected-taxpayer-head-list').locator('button').first().click();
+    await expect(taxpayerTabs.nth(1)).toHaveAttribute('aria-pressed','true');
+    await expect(dialog.locator('.payment-form-summary__total')).toContainText('7,000');
+    await second.locator('summary').click();
+    await expect(second).not.toHaveAttribute('open','');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
     await expect(dialog.getByRole('button', { name: 'Copy TIN' })).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
     // The selected head data remains in the composer despite not duplicating it in the sidebar.
