@@ -67,7 +67,7 @@ try {
 
     const geometry = () => modal.evaluate(el => {
       const nodes=[el,...['.taxpay-modal__header','.taxpay-modal__body','.taxpay-modal__footer',
-        '.travel-flow__passport-row','.travel-passenger-workspace__rail'].map(s=>el.querySelector(s))];
+        '.travel-flow__passport-row','#travel-passport-first','.travel-passenger-workspace__rail'].map(s=>el.querySelector(s))];
       return nodes.flatMap(node=>{if(!node)throw new Error('Missing stable modal section');
         const b=node.getBoundingClientRect();return [b.x,b.y,b.width,b.height,node.scrollTop,node.scrollHeight];});
     });
@@ -80,17 +80,27 @@ try {
     await expect(options.first()).toBeVisible();
     await expect.poll(()=>modal.locator('#travel-passport-suggestions-first').evaluate(el=>{
       const b=el.getBoundingClientRect(); const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
-      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+2)return false;
+      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+1)return false;
       const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
       return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
     })).toBe(true);
     await modal.locator('#travel-passport-suggestions-first').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
     const opened=await geometry();
-    if(Math.max(...opened.map((n,i)=>Math.abs(n-baseline[i])))>2)throw new Error('Passport dropdown changed modal layout or scroll position');
+    const assertStable=async()=>{const current=await geometry();if(Math.max(...current.map((n,i)=>Math.abs(n-baseline[i])))>1)throw new Error('Passport dropdown changed modal layout or scroll position by more than one pixel');};
+    if(Math.max(...opened.map((n,i)=>Math.abs(n-baseline[i])))>1)throw new Error('Passport dropdown changed modal layout or scroll position by more than one pixel');
+    await page.waitForTimeout(350);
+    await assertStable();
     await page.screenshot({path:`test-results/live-travel-passport-${name}-dropdown.png`});
     const optionScroll = await modal.locator('#travel-passport-suggestions-first')
       .evaluate(element => ({ scroll: element.scrollHeight, visible: element.clientHeight }));
     if (optionScroll.scroll <= optionScroll.visible) throw new Error('Ten sample passport suggestions should scroll independently');
+    await modal.locator('#travel-passport-first').press('Escape');
+    await expect(options).toHaveCount(0);
+    await assertStable();
+    await modal.locator('#travel-passport-first').click();
+    await expect(options).toHaveCount(10);
+    await modal.locator('#travel-passport-suggestions-first').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
+    await assertStable();
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
     await expect(addPassenger).toHaveCount(0);
