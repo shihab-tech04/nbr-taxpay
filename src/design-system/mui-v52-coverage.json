@@ -1568,6 +1568,576 @@
       "test": "tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts",
       "owner": "MUI migration",
       "implementation": "official @mui/material/ButtonBase; unchanged actor scope, SQL calls, handlers, labels, classes and draft revision checks"
+    },
+    {
+      "id": "MUI-ANALYTICS-EMPTY-HISTORY",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "empty payment history",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-SOURCE-RECORDED",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "recorded source",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-SOURCE-EXAMPLE",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "local QA example source",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-VIEW-RELATIONSHIPS",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "relationship view",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-VIEW-TAGS",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "tag view",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-VIEW-TOP",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "top five view",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-RESET-FILTERS",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "reset chart filters",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-CATEGORY",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "relationship category selection",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-MANAGE-TAGS",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "manage missing beneficiary tags",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-TAG-BAR",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "tag chart selection",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-TOP-FILTERED",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "filtered top beneficiary details",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-MANAGE-SAVED",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "saved beneficiaries",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-FILTERED-HISTORY",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "filtered payment records",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-TOP-RANKED",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "ranked beneficiary details",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-MANAGE-ALL",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "all beneficiaries",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-SERVICE-BAR",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "service filter",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-CLEAR-SERVICE",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "clear service filter",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-ROLE-HISTORY",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiButtonBase",
+      "control": "payer role payment history",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
+    },
+    {
+      "id": "MUI-ANALYTICS-RELATION-FILTER",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiNativeSelect",
+      "control": "top beneficiaries relationship filter",
+      "route": "taxpayer_home / User1 scoped analytics",
+      "classification": "GENERIC-MIGRATE",
+      "role": "existing account owner / explicit local QA scenario",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "ready",
+        "empty",
+        "focus",
+        "hover",
+        "pressed",
+        "responsive",
+        "light/dark",
+        "error where applicable"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "official scoped MUI action/NativeSelect; existing chart composition, callback, CSS classes and data projection unchanged"
     }
   ],
   "unresolved": [

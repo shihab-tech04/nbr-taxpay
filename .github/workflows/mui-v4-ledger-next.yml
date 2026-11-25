@@ -61,6 +61,8 @@ jobs:
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/dashboard-unified-preview.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts --workers=2
+      - name: Verify dashboard analytics MUI action family and retained chart geometry
+        run: npx playwright test tests/e2e/mui-v60-dashboard-analytics.spec.ts tests/e2e/dashboard-bento-layout-regression.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts --workers=2
       - name: Preserve latest Main recipient notification and payment activity
         env:
           VITE_SUPABASE_DISABLED: 'false'

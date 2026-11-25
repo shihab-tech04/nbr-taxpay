@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {CitizenMuiScope,MuiButtonBase,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
 import '../../styles/taxpay-dashboard-interactive.css';
 import {ArrowRight} from 'lucide-react';
 import {
@@ -24,6 +25,17 @@ const TAG_LABELS:Record<DashboardChartTag,{en:string;bn:string}>={
   unassigned:{en:'Unclassified',bn:'শ্রেণিবিহীন'}
 };
 
+// Preserve the approved chart, responsive grid, labels and native button DOM.
+ // MUI only owns these scoped generic actions; original chart CSS remains authoritative.
+const chartFocus={'&.Mui-focusVisible':{outline:'2px solid var(--color-taxpay-primary,#085587)',outlineOffset:2}} as const;
+const chartActions={
+  link:{...chartFocus,display:'inline-flex',alignItems:'center',justifyContent:'flex-start',gap:'7px',minHeight:'40px',border:0,background:'none',padding:'5px 0',color:'var(--color-taxpay-primary,#085587)',fontSize:'14px',fontWeight:600,justifySelf:'start','&:hover':{textDecoration:'underline'}},
+  source:{...chartFocus,justifyContent:'center',fontFamily:'inherit'},
+  view:{...chartFocus,justifyContent:'center',fontFamily:'inherit'},
+  category:{...chartFocus,justifyItems:'stretch',alignItems:'normal',justifyContent:'normal',fontFamily:'inherit'},
+  bar:{...chartFocus,display:'grid',gap:'6px',width:'100%',textAlign:'left',justifyContent:'normal',alignItems:'normal',justifyItems:'stretch',border:'1px solid transparent',borderRadius:'9px',padding:'8px 9px',background:'transparent',minHeight:'54px',color:'var(--color-taxpay-text,#17243c)','&:hover':{background:'#f3f7fc'},'&[aria-pressed="true"]':{background:'#eef5fd',borderColor:'#9dbde3'}},
+  top:{...chartFocus,display:'grid',gap:'6px',minWidth:0,width:'100%',padding:'9px 5px',minHeight:'72px',textAlign:'left',justifyContent:'normal',alignItems:'normal',justifyItems:'stretch',border:0,borderBottom:'1px solid var(--color-taxpay-border,#dbe4f0)',background:'transparent',color:'var(--color-taxpay-text,#17243c)',fontSize:'14px','&:hover':{background:'#f3f7fc'},'@media(max-width:479px)':{padding:'10px 0',minHeight:'70px'}},
+} as const;
 export const BentoPaymentAnalytics:React.FC<{
   records:readonly DashboardChartRecord[];
   people:readonly DashboardRecipientProfile[];
@@ -85,7 +97,7 @@ export const BentoPaymentAnalytics:React.FC<{
   const maskedTin=(tin:string)=>'••••'+tin.slice(-4);
   // A missing account projection must not turn into a fictional dashboard.
   // Keep its next step visible rather than rendering four empty giant cards.
-  if(!hasData&&!allowExamples&&!previewOnlyExamples)return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
+  if(!hasData&&!allowExamples&&!previewOnlyExamples)return <CitizenMuiScope><section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
     data-testid="dashboard-payment-analytics" data-chart-source="recorded" data-empty="true">
     <div className="taxpay-bento-analytics__header">
       <div>
@@ -101,11 +113,11 @@ export const BentoPaymentAnalytics:React.FC<{
         :tr('No itemized account payments to chart for this year. Your payment history may contain older records.',
           'এই করবর্ষে চার্টে দেখানোর মতো অ্যাকাউন্টের পেমেন্ট বরাদ্দ নেই। পুরনো রেকর্ড পেমেন্টের ইতিহাসে থাকতে পারে।')}
     </p>
-    <button type="button" className="taxpay-bento-analytics__link" onClick={()=>onOpenHistory(undefined,'all')}>
+    <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-EMPTY-HISTORY" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link" onClick={()=>onOpenHistory(undefined,'all')}>
       {tr('View payment history','পেমেন্টের ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
-    </button>
-  </section>;
-  return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
+    </MuiButtonBase>
+  </section></CitizenMuiScope>;
+  return <CitizenMuiScope><section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
     data-testid="dashboard-payment-analytics" data-chart-source={source}>
     <div className="taxpay-bento-analytics__header">
       <div>
@@ -121,12 +133,12 @@ export const BentoPaymentAnalytics:React.FC<{
       </div>
       {allowExamples&&!previewOnlyExamples&&<div className="taxpay-bento-analytics__sources" role="group"
         aria-label={tr('Payment data source','পেমেন্ট তথ্যের উৎস')} data-testid="dashboard-chart-source">
-        <button type="button" aria-pressed={source==='recorded'} onClick={()=>selectSource('recorded')}>
+        <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-SOURCE-RECORDED" disableRipple sx={chartActions.source} type="button" aria-pressed={source==='recorded'} onClick={()=>selectSource('recorded')}>
           {tr('Recorded','সংরক্ষিত')}
-        </button>
-        <button type="button" aria-pressed={source==='example'} onClick={()=>selectSource('example')}>
+        </MuiButtonBase>
+        <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-SOURCE-EXAMPLE" disableRipple sx={chartActions.source} type="button" aria-pressed={source==='example'} onClick={()=>selectSource('example')}>
           {tr('Examples','নমুনা')}
-        </button>
+        </MuiButtonBase>
       </div>}
     </div>
     {sourceLoadError&&<p role="alert" className="taxpay-bento-analytics__warning">
@@ -163,28 +175,30 @@ export const BentoPaymentAnalytics:React.FC<{
           <summary>{tr('Relationship filters and details','সম্পর্কের ফিল্টার ও বিস্তারিত')}</summary>
         <div className="taxpay-bento-analytics__view-switch" role="group"
           aria-label={tr('Beneficiary chart view','উপকারভোগীর চার্টের ধরন')} data-testid="dashboard-beneficiary-view">
-          <button type="button" aria-pressed={beneficiaryView==='relationships'} onClick={()=>{setBeneficiaryView('relationships');setTag(null);}}>
+          <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-VIEW-RELATIONSHIPS" disableRipple sx={chartActions.view} type="button" aria-pressed={beneficiaryView==='relationships'} onClick={()=>{setBeneficiaryView('relationships');setTag(null);}}>
             {tr('Relationships','সম্পর্ক')}
-          </button>
-          <button type="button" aria-pressed={beneficiaryView==='tags'} onClick={()=>{setBeneficiaryView('tags');setTag(null);}}>
+          </MuiButtonBase>
+          <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-VIEW-TAGS" disableRipple sx={chartActions.view} type="button" aria-pressed={beneficiaryView==='tags'} onClick={()=>{setBeneficiaryView('tags');setTag(null);}}>
             {tr('Tags','ট্যাগ')}
-          </button>
-          <button type="button" aria-pressed={beneficiaryView==='top'} onClick={()=>setBeneficiaryView('top')}>
+          </MuiButtonBase>
+          <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-VIEW-TOP" disableRipple sx={chartActions.view} type="button" aria-pressed={beneficiaryView==='top'} onClick={()=>setBeneficiaryView('top')}>
             {tr('Top 5','শীর্ষ ৫')}
-          </button>
+          </MuiButtonBase>
         </div>
-        {(service!=='all'||tag!==null)&&<button type="button" className="taxpay-bento-analytics__clear"
+        {(service!=='all'||tag!==null)&&<MuiButtonBase data-mui-coverage="MUI-ANALYTICS-RESET-FILTERS" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__clear"
           onClick={()=>{setService('all');setTag(null);}}
           data-testid="dashboard-reset-filters">
           {tr('Reset chart filters','চার্ট ফিল্টার মুছুন')}
-        </button>}
+        </MuiButtonBase>}
         {filtered.totalMinor>0n&&beneficiaryView==='top'&&<label className="taxpay-bento-analytics__relation-filter">
           <span>{tr('Relationship','সম্পর্ক')}</span>
-          <select aria-label={tr('Filter top beneficiaries by relationship','সম্পর্ক অনুযায়ী শীর্ষ উপকারভোগী ফিল্টার')}
+          <MuiNativeSelect data-mui-coverage="MUI-ANALYTICS-RELATION-FILTER" input={<MuiInputBase/>} IconComponent={()=>null}
+            inputProps={{'aria-label':tr('Filter top beneficiaries by relationship','সম্পর্ক অনুযায়ী শীর্ষ উপকারভোগী ফিল্টার')}}
+            sx={{maxWidth:'100%',display:'contents','& .MuiNativeSelect-select':{appearance:'auto',height:'auto',font:'inherit',boxSizing:'border-box',padding:'8px 10px','&:focus':{backgroundColor:'#fff'},'&:focus-visible':{outline:'3px solid var(--color-taxpay-primary,#085587)',outlineOffset:2}}}}
             value={tag??'all'} onChange={event=>setTag(event.target.value==='all'?null:event.target.value as DashboardChartTag)}>
             <option value="all">{tr('All relationships','সব সম্পর্ক')}</option>
             {DASHBOARD_TAG_KEYS.map(key=><option key={key} value={key}>{TAG_LABELS[key][language]}</option>)}
-          </select>
+          </MuiNativeSelect>
         </label>}
         {filtered.totalMinor>0n&&beneficiaryView==='relationships'?<>
           {onlyUnclassified&&<p className="taxpay-bento-analytics__unclassified-intro" role="status">
@@ -200,12 +214,12 @@ export const BentoPaymentAnalytics:React.FC<{
           <div className="taxpay-bento-analytics__tags" role="group"
             aria-label={tr('Select beneficiary category','উপকারভোগীর শ্রেণি নির্বাচন')}>
             {filtered.byTag.filter(item=>item.amountMinor>0n).map(item=>
-              <button type="button" key={item.key} data-tag={item.key}
+              <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-CATEGORY" disableRipple sx={chartActions.category} type="button" key={item.key} data-tag={item.key}
                 aria-pressed={tag===item.key} onClick={()=>setTag(current=>current===item.key?null:item.key)}>
                 <span className={'taxpay-bento-analytics__dot taxpay-bento-analytics__dot--'+item.key} aria-hidden="true"/>
                 <span className="taxpay-bento-analytics__tag-label">{TAG_LABELS[item.key][language]}</span>
                 <strong className="tabular-nums">{money(item.amountMinor)}</strong>
-              </button>)}
+              </MuiButtonBase>)}
           </div>
           {selectedTag&&selectedTag.amountMinor>0n&&<div className="taxpay-bento-analytics__selection"
             role="status" data-testid="dashboard-selected-tag">
@@ -226,16 +240,16 @@ export const BentoPaymentAnalytics:React.FC<{
                 </div>}
               </dl>
               {filtered.unclassified.recipientKnownMinor>0n&&onManageBeneficiaries&&
-                <button type="button" className="taxpay-bento-analytics__link" onClick={onManageBeneficiaries}>
+                <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-MANAGE-TAGS" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link" onClick={onManageBeneficiaries}>
                   {tr('Manage beneficiary tags','উপকারভোগীর ট্যাগ পরিচালনা')}
-                </button>}
+                </MuiButtonBase>}
             </div>}
         </>:null}
         {filtered.totalMinor>0n&&beneficiaryView==='tags'&&
           <div className="taxpay-bento-analytics__bars" role="group" aria-label={tr('Saved beneficiary tag allocations','সংরক্ষিত উপকারভোগী ট্যাগের বরাদ্দ')}
             data-testid="dashboard-beneficiary-tags-chart">
             {[...filtered.byTag].filter(item=>item.amountMinor>0n).sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:0).map(item=>
-              <button type="button" key={item.key} className="taxpay-bento-analytics__bar-item"
+              <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-TAG-BAR" disableRipple sx={chartActions.bar} type="button" key={item.key} className="taxpay-bento-analytics__bar-item"
                 aria-pressed={tag===item.key} onClick={()=>setTag(current=>current===item.key?null:item.key)}>
                 <span className="taxpay-bento-analytics__bar-top">
                   <span>{TAG_LABELS[item.key][language]}</span><strong className="tabular-nums">{money(item.amountMinor)}</strong>
@@ -243,7 +257,7 @@ export const BentoPaymentAnalytics:React.FC<{
                 <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
                   <span style={{width:dashboardChartPercentage(item.amountMinor,filtered.totalMinor)+'%'}}/>
                 </span>
-              </button>)}
+              </MuiButtonBase>)}
           </div>}
         {filtered.totalMinor>0n&&beneficiaryView==='top'&&<>
           {topBeneficiaries.length?<div className="taxpay-bento-analytics__top-list" role="group"
@@ -255,7 +269,7 @@ export const BentoPaymentAnalytics:React.FC<{
               const target=person.saved&&person.tin!==ownerTin&&onOpenBeneficiary
                 ?()=>onOpenBeneficiary(person.tin)
                 :()=>onOpenHistory(tag??undefined,service,person.tin);
-              return <button key={person.tin} type="button" className="taxpay-bento-analytics__top-item"
+              return <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-TOP-FILTERED" disableRipple sx={chartActions.top} key={person.tin} type="button" className="taxpay-bento-analytics__top-item"
                 data-rank={index+1} data-recipient-saved={person.saved?'true':'false'}
                 onClick={target}
                 aria-label={personName+': '+money(person.amountMinor)+', '+person.paymentCount+' '+tr('payments','টি পেমেন্ট')}
@@ -271,7 +285,7 @@ export const BentoPaymentAnalytics:React.FC<{
                 <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
                   <span style={{width:dashboardChartPercentage(person.amountMinor,topMax)+'%'}}/>
                 </span>
-              </button>;
+              </MuiButtonBase>;
             })}
           </div>:<p role="status" className="taxpay-bento-analytics__empty">
             {tr('No identified beneficiaries match this selection. Payments with no recipient cannot appear in the ranking.',
@@ -281,16 +295,16 @@ export const BentoPaymentAnalytics:React.FC<{
             {tr('Excluded from ranking: payments without a recorded recipient','তালিকার বাইরে: প্রাপকবিহীন পেমেন্ট')}
             {' · '}{money(filtered.unclassified.recipientMissingMinor)}
           </p>}
-          {onManageBeneficiaries&&<button type="button" className="taxpay-bento-analytics__link"
+          {onManageBeneficiaries&&<MuiButtonBase data-mui-coverage="MUI-ANALYTICS-MANAGE-SAVED" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link"
             onClick={onManageBeneficiaries}>{tr('View all saved beneficiaries','সংরক্ষিত সব উপকারভোগী দেখুন')}
             <ArrowRight size={16} aria-hidden="true"/>
-          </button>}
+          </MuiButtonBase>}
         </>}
-        {filtered.totalMinor>0n&&<button type="button" className="taxpay-bento-analytics__link"
+        {filtered.totalMinor>0n&&<MuiButtonBase data-mui-coverage="MUI-ANALYTICS-FILTERED-HISTORY" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link"
           onClick={()=>onOpenHistory(tag??undefined,service)}>
           {tr('View payment records','পেমেন্টের রেকর্ড দেখুন')}
           <ArrowRight size={16} aria-hidden="true"/>
-        </button>}
+        </MuiButtonBase>}
         {!filtered.totalMinor&&<p role="status" className="taxpay-bento-analytics__empty">{tr(
           'No beneficiary allocations for this selection.','এই বাছাইয়ের জন্য কোনো উপকারভোগী বরাদ্দ নেই।')}</p>}
         </details>
@@ -309,7 +323,7 @@ export const BentoPaymentAnalytics:React.FC<{
             const target=person.saved&&onOpenBeneficiary
               ?()=>onOpenBeneficiary(person.tin)
               :()=>onOpenHistory(undefined,service,person.tin);
-            return <button key={person.tin} type="button" className="taxpay-bento-analytics__top-item"
+            return <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-TOP-RANKED" disableRipple sx={chartActions.top} key={person.tin} type="button" className="taxpay-bento-analytics__top-item"
               onClick={target} title={tr('Open beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস দেখুন')}
               aria-label={personName+': '+money(person.amountMinor)}>
               <span className="taxpay-bento-analytics__top-heading">
@@ -322,7 +336,7 @@ export const BentoPaymentAnalytics:React.FC<{
               <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
                 <span style={{width:dashboardChartPercentage(person.amountMinor,rankedMax)+'%'}}/>
               </span>
-            </button>;
+            </MuiButtonBase>;
           })}
         </div>:<p className="taxpay-bento-analytics__empty" role="status">
           {tr('No identifiable third-party beneficiaries in the selected records.',
@@ -332,9 +346,9 @@ export const BentoPaymentAnalytics:React.FC<{
           {tr('Unranked payments without a recorded recipient','নথিভুক্ত প্রাপক না থাকায় তালিকার বাইরে')}
           {' · '}{money(filtered.unclassified.recipientMissingMinor)}
         </p>}
-        {onManageBeneficiaries&&<button type="button" className="taxpay-bento-analytics__link"
+        {onManageBeneficiaries&&<MuiButtonBase data-mui-coverage="MUI-ANALYTICS-MANAGE-ALL" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link"
           onClick={onManageBeneficiaries}>{tr('View all beneficiaries','সব উপকারভোগী দেখুন')}
-          <ArrowRight size={16} aria-hidden="true"/></button>}
+          <ArrowRight size={16} aria-hidden="true"/></MuiButtonBase>}
       </section>
       <details className="taxpay-payment-extra" data-testid="dashboard-payment-extra">
         <summary>{tr('Payment breakdown by service and payer','পেমেন্টের ধরন ও পরিশোধকারীর বিস্তারিত')}</summary>
@@ -353,7 +367,7 @@ export const BentoPaymentAnalytics:React.FC<{
           {[...all.byService].filter(item=>item.amountMinor>0n).sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:a.key.localeCompare(b.key)).map(item=>{
             const value=dashboardChartPercentage(item.amountMinor,all.totalMinor);
             const label=SERVICE_LABELS[item.key][language];
-            return <button key={item.key} type="button" data-service={item.key}
+            return <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-SERVICE-BAR" disableRipple sx={chartActions.bar} key={item.key} type="button" data-service={item.key}
               className="taxpay-bento-analytics__bar-item"
               aria-pressed={service===item.key}
               title={label+': '+money(item.amountMinor)}
@@ -365,12 +379,12 @@ export const BentoPaymentAnalytics:React.FC<{
               <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
                 <span style={{width:value+'%'}}/>
               </span>
-            </button>;
+            </MuiButtonBase>;
           })}
-          {service!=='all'&&<button type="button" className="taxpay-bento-analytics__clear"
+          {service!=='all'&&<MuiButtonBase data-mui-coverage="MUI-ANALYTICS-CLEAR-SERVICE" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__clear"
             onClick={()=>{setService('all');setTag(null);}}>
             {tr('Show all payment services','সব পেমেন্টের ধরন দেখুন')}
-          </button>}
+          </MuiButtonBase>}
         </div>:<p role="status" className="taxpay-bento-analytics__empty">{source==='recorded'&&allowExamples
           ?tr('No itemized recorded payments for this year. Select Examples to view the sample scenario.',
             'এই করবর্ষের সংরক্ষিত পেমেন্টের পৃথক বরাদ্দ নেই। স্থানীয় নমুনা দেখতে নমুনা বাছুন।')
@@ -420,13 +434,13 @@ export const BentoPaymentAnalytics:React.FC<{
           {tr('Payments received from other people are separate from my spending. View Activity for received payments.',
             'অন্যদের কাছ থেকে প্রাপ্ত পেমেন্ট আমার ব্যয় থেকে পৃথক। প্রাপ্ত পেমেন্ট কার্যক্রমে দেখুন।')}
         </p>
-        <button type="button" className="taxpay-bento-analytics__link" onClick={()=>onOpenHistory(undefined,'all')}>
+        <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-ROLE-HISTORY" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link" onClick={()=>onOpenHistory(undefined,'all')}>
           {tr('View payment history','পেমেন্টের ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
-        </button>
+        </MuiButtonBase>
       </section>
 
         </div>
       </details>
     </div>
-  </section>;
+  </section></CitizenMuiScope>;
 };
