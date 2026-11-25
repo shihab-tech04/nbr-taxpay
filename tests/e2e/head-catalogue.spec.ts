@@ -131,6 +131,13 @@ test('public mobile header stays in shared Korbritto shell without account imper
 test('catalogue explicitly blocks payability without period/event/taxpayer evidence',async ({page})=>{
  await page.goto('/?action=head_catalogue');
  await expect(page.getByText(/No verified taxpayer-class, payment-event, effective-date/)).toBeVisible();
+ // Use the existing responsive navigation path; retain the original language-switch and legal-warning assertions.
+ if (!(await page.getByRole('button',{name:'বাংলা'}).isVisible())) {
+   await page.getByRole('button',{name:'Open menu'}).click();
+ }
  await page.getByRole('button',{name:'বাংলা'}).click();
+ if (await page.getByRole('dialog',{name:'সেবা ও মেনু'}).isVisible()) {
+   await page.getByRole('button',{name:'বন্ধ করুন'}).click();
+ }
  await expect(page.getByText(/করদাতার ধরন, পরিশোধের ঘটনা, কার্যকারিতার তারিখ/)).toBeVisible();
 });
