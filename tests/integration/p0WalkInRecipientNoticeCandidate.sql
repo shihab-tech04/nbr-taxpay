@@ -21,7 +21,7 @@ DECLARE
   v_ack_at timestamptz;
 BEGIN
   IF p_capability_hash IS NULL OR p_capability_hash !~ '^[0-9a-f]{64}$'
-     OR p_action NOT IN ('list','unread','ack')
+     OR p_action IS NULL OR p_action NOT IN ('list','unread','ack')
      OR p_offset IS NULL OR p_offset NOT BETWEEN 0 AND 100000
      OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100
   THEN RAISE EXCEPTION 'INVALID_NOTICE_REQUEST'; END IF;

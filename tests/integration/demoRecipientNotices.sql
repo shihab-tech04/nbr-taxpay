@@ -231,6 +231,27 @@ BEGIN
   recipient3_hash:=encode(extensions.digest(convert_to(recipient3->>'capability','UTF8'),'sha256'),'hex');
   SELECT id,data INTO STRICT source_id,source FROM demo_payment.story_payments
     WHERE data->'details'->'allocations'->0->>'allocationId'='ws3-recipient-2';
+  -- Recheck privileges on the replacement, not only the original function.
+  IF has_function_privilege('anon',
+       'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
+    OR has_function_privilege('authenticated',
+       'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
+    OR NOT has_function_privilege('service_role',
+       'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
+  THEN RAISE EXCEPTION 'P0_CANDIDATE_NOTICE_DIRECT_ACCESS'; END IF;
+  -- SQL NULL must not pass the action allowlist through three-valued logic.
+  BEGIN
+    PERFORM public.taxpay_demo_received_payment_notices(recipient2_hash,NULL);
+    RAISE EXCEPTION 'P0_NULL_ACTION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM IS DISTINCT FROM 'INVALID_NOTICE_REQUEST' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM public.taxpay_demo_received_payment_notices(recipient2_hash,'invalid-action');
+    RAISE EXCEPTION 'P0_INVALID_ACTION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM IS DISTINCT FROM 'INVALID_NOTICE_REQUEST' THEN RAISE; END IF;
+  END;
   -- Prove registered-source ACK and visibility survive the replacement.
   IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n
     WHERE n->>'paymentId'=source_id::text AND n->>'isRead'='true')
