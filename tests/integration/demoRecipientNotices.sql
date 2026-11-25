@@ -210,6 +210,8 @@ DECLARE
   guest_id uuid; source_id uuid; event2 text; event3 text;
   notice2 jsonb; notice3 jsonb; saved_ack jsonb;
   before_data jsonb; denied boolean:=false;
+  guest_v5 jsonb; guest_v5_id uuid; guest_v5_key uuid:=gen_random_uuid();
+  self_payload jsonb; self_id uuid; self_key uuid:=gen_random_uuid();
 BEGIN
   payer:=public.taxpay_demo_profile_login('user1','user1');
   recipient2:=public.taxpay_demo_profile_login('user2','user2');
@@ -228,10 +230,10 @@ BEGIN
   guest:=jsonb_set(source,'{idempotencyKey}',to_jsonb(guest_key::text));
   guest:=jsonb_set(guest,'{sessionId}',to_jsonb(guest_session::text));
   guest:=guest #- '{details,payerId}';
-  guest:=jsonb_set(guest,'{details,payerName}',to_jsonb('Disposable walk-in payer'::text));
+  guest:=jsonb_set(guest,'{details,payerName}',to_jsonb('User 4'::text));
   guest:=jsonb_set(guest,'{details,payerTin}',to_jsonb('444444444444'::text));
   guest:=jsonb_set(guest,'{details,receiptReference}',to_jsonb('SIM-'||guest_key::text));
-  guest:=jsonb_set(guest,'{details,receiptSnapshot,payerName}',to_jsonb('Disposable walk-in payer'::text));
+  guest:=jsonb_set(guest,'{details,receiptSnapshot,payerName}',to_jsonb('User 4'::text));
   guest:=jsonb_set(guest,'{details,receiptSnapshot,payerTin}',to_jsonb('444444444444'::text));
   guest:=jsonb_set(guest,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||guest_key::text));
   result:=public.demo_story1_submit(guest);
@@ -274,7 +276,38 @@ BEGIN
     OR (SELECT data FROM demo_payment.story_payments WHERE id=guest_id) IS DISTINCT FROM before_data
     OR (SELECT data FROM demo_payment.story_payments WHERE id=source_id) IS DISTINCT FROM source
   THEN RAISE EXCEPTION 'P0_WALKIN_ACK_OR_SOURCE_IMMUTABILITY_FAILED'; END IF;
-  RAISE NOTICE 'PASS: recorded walk-in v3 allocation isolation, source replay, registered ACK preservation, cross-owner denial and immutable originals';
+  -- A v5 anonymous walk-in uses the same exact allocation integrity rules,
+  -- and never gains account identity by leaving the optional payer TIN blank.
+  guest_v5:=jsonb_set(guest,'{idempotencyKey}',to_jsonb(guest_v5_key::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,allocationContractVersion}','5'::jsonb);
+  guest_v5:=jsonb_set(guest_v5,'{details,payerTin}',to_jsonb('GUEST'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,payerName}',to_jsonb('Disposable walk-in payer'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptSnapshot,payerTin}',to_jsonb('GUEST'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptSnapshot,payerName}',to_jsonb('Disposable walk-in payer'::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptReference}',to_jsonb('SIM-'||guest_v5_key::text));
+  guest_v5:=jsonb_set(guest_v5,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||guest_v5_key::text));
+  guest_v5_id:=(public.demo_story1_submit(guest_v5)->>'id')::uuid;
+  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=guest_v5_id::text AND n->>'allocationId'='ws3-recipient-2' AND n->>'amountMinor'='1500')
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=guest_v5_id::text AND n->>'allocationId'='ws3-recipient-3' AND n->>'amountMinor'='3500')
+  THEN RAISE EXCEPTION 'P0_WALKIN_V5_GUEST_ALLOCATION_FAILED'; END IF;
+  -- A confirmed walk-in payer who pays their own allocation must not receive
+  -- a third-party notice, while the other recipient still receives theirs.
+  self_payload:=jsonb_set(guest,'{idempotencyKey}',to_jsonb(self_key::text));
+  self_payload:=jsonb_set(self_payload,'{details,payerTin}',to_jsonb('222222222222'::text));
+  self_payload:=jsonb_set(self_payload,'{details,payerName}',to_jsonb('User 2'::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,payerTin}',to_jsonb('222222222222'::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,payerName}',to_jsonb('User 2'::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptReference}',to_jsonb('SIM-'||self_key::text));
+  self_payload:=jsonb_set(self_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||self_key::text));
+  self_id:=(public.demo_story1_submit(self_payload)->>'id')::uuid;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient2_hash,'list')->'items') n
+    WHERE n->>'paymentId'=self_id::text)
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_received_payment_notices(recipient3_hash,'unread')->'items') n
+    WHERE n->>'paymentId'=self_id::text AND n->>'allocationId'='ws3-recipient-3')
+  THEN RAISE EXCEPTION 'P0_WALKIN_SELF_NOTICE_NOT_EXCLUDED'; END IF;
+  RAISE NOTICE 'PASS: recorded walk-in v3/v5 allocation isolation, source replay, registered ACK preservation, cross-owner denial, self exclusion and immutable originals';
 END;
 $p0_walkin$;
 ROLLBACK;

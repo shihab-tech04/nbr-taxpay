@@ -49,6 +49,7 @@ BEGIN
     JOIN taxpay_guest_private.demo_profiles payer
       ON payer.demo_id=p.data->'details'->>'payerId'
     WHERE p.status='SIMULATED_SUCCESS' AND p.data->>'origin'='TAXPAY_UI'
+      AND payer.demo_id IS DISTINCT FROM v_demo
       AND (payer.payment_session_id=p.session_id OR EXISTS (
         SELECT 1 FROM taxpay_guest_private.demo_story_session_links link
         WHERE link.demo_id=payer.demo_id AND link.legacy_session_id=p.session_id
@@ -60,7 +61,7 @@ BEGIN
           )
       ))
     UNION ALL
-    -- A completed synthetic walk-in v3 payment is independently eligible only
+    -- A completed synthetic walk-in v3/v5 payment is independently eligible only
     -- through its explicit source allocation. Guest claims never confer Auth
     -- identity, verified payer identity, settlement, or access to other data.
     SELECT p.* FROM demo_payment.story_payments p
@@ -68,11 +69,18 @@ BEGIN
       AND p.data->>'origin'='TAXPAY_UI'
       AND p.data->'details'->>'payerId' IS NULL
       AND p.data->'details'->>'payerMode'='OTHER'
-      AND p.data->'details'->>'allocationContractVersion'='3'
+      AND p.data->'details'->>'allocationContractVersion' IN ('3','5')
       AND p.data->'details'->>'combinedPayment'='true'
       AND jsonb_typeof(p.data->'details'->'allocations')='array'
       AND char_length(btrim(coalesce(p.data->'details'->>'payerName',''))) BETWEEN 1 AND 200
       AND p.data->'details'->>'payerName'=p.data->'details'->'receiptSnapshot'->>'payerName'
+      AND NOT EXISTS (
+        SELECT 1 FROM taxpay_guest_private.walkin_confirmed_payer(
+          btrim(coalesce(p.data->'details'->>'payerTin',''))) known_payer
+        WHERE known_payer.profile_id=v_demo
+          AND p.data->'details'->>'payerName' IN (known_payer.name_en,known_payer.name_bn)
+          AND p.data->'details'->'receiptSnapshot'->>'payerTin'=btrim(p.data->'details'->>'payerTin')
+      )
       AND NOT EXISTS (
         SELECT 1 FROM taxpay_guest_private.demo_profiles reserved
         WHERE reserved.payment_session_id=p.session_id
