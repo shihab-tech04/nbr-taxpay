@@ -17,6 +17,8 @@ async function openGiftTax(page: Page, language: 'en' | 'bn') {
 
 for (const sample of [
   {language: 'en' as const, width: 1280, height: 850},
+  // Exact reported 25-Nov desktop viewport, not just the standard 1280 fixture.
+  {language: 'en' as const, width: 1191, height: 884},
   {language: 'bn' as const, width: 375, height: 812},
   {language: 'en' as const, width: 320, height: 720},
 ]) {
@@ -58,6 +60,10 @@ for (const sample of [
         expect(Math.abs(editorRect.x + editorRect.width - railRect.x)).toBeLessThanOrEqual(2);
         expect(Math.abs(bodyRect.x + bodyRect.width - (railRect.x + railRect.width))).toBeLessThanOrEqual(2);
         expect(Math.abs(editorRect.y - railRect.y)).toBeLessThanOrEqual(2);
+        expect(Math.abs(bodyRect.x - editorRect.x)).toBeLessThanOrEqual(2);
+        expect(Math.abs(bodyRect.y - railRect.y)).toBeLessThanOrEqual(2);
+        expect(Math.abs(editorRect.y + editorRect.height - (railRect.y + railRect.height))).toBeLessThanOrEqual(2);
+        expect(await gift.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
       }
     }
 
@@ -86,6 +92,12 @@ for (const sample of [
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
 
     await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('2');
+    const donorRect = await donor.boundingBox();
+    const doneeRect = await donee.boundingBox();
+    expect(donorRect && doneeRect).toBeTruthy();
+    if (donorRect && doneeRect) {
+      expect(doneeRect.y - donorRect.y - donorRect.height).toBeLessThanOrEqual(28);
+    }
     await expect(gift.getByTestId('gift-added-donee')).toContainText(bn ? 'বাবা' : 'Father');
     const header = gift.locator('.taxpay-modal__title');
     await expect(header).toHaveCSS('text-align', 'left');
@@ -110,6 +122,25 @@ for (const sample of [
     await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await expect(gift.getByTestId('gift-tax-review-complete')).toBeVisible();
     await expect(gift.getByRole('button', {name: /pay now|এখনই পরিশোধ/i})).toHaveCount(0);
+    if (sample.width <= 520) {
+      const rows = gift.locator('.gift-tax-approved-table tbody tr:not(.unified-v3-review__owner)');
+      await expect(rows).toHaveCount(2);
+      for (const row of await rows.all()) {
+        const cells = row.locator('td');
+        await expect(cells).toHaveCount(3);
+        const [label, date, amount] = await Promise.all([0, 1, 2].map(i => cells.nth(i).boundingBox()));
+        expect(label && date && amount, 'Gift Tax preview requires visible label, date and amount').toBeTruthy();
+        if (label && date && amount) {
+          expect(label.width).toBeGreaterThanOrEqual(160);
+          expect(date.width).toBeGreaterThanOrEqual(70);
+          expect(amount.width).toBeGreaterThanOrEqual(55);
+          expect(label.y + label.height).toBeLessThanOrEqual(date.y + 2);
+          expect(label.y + label.height).toBeLessThanOrEqual(amount.y + 2);
+          expect(date.x + date.width).toBeLessThanOrEqual(amount.x + 2);
+          expect(Math.abs(date.y - amount.y)).toBeLessThanOrEqual(2);
+        }
+      }
+    }
     const overflow = await gift.locator('.taxpay-modal__body').evaluate(element => element.scrollWidth - element.clientWidth);
     expect(overflow, 'Gift Tax modal body must not overflow at ' + sample.width + 'px').toBeLessThanOrEqual(2);
   });

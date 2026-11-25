@@ -18,6 +18,7 @@ const browser=await chromium.launch({headless:true});
 try{
   for(const sample of [
     {name:'desktop-en',width:1280,height:850,lang:'en'},
+    {name:'desktop-reported-en',width:1191,height:884,lang:'en'},
     {name:'mobile-375-bn',width:375,height:812,lang:'bn'},
     {name:'mobile-320-en',width:320,height:720,lang:'en'},
   ]){
@@ -64,6 +65,23 @@ try{
       if(mobile&&Math.abs(modalBox.width-sample.width)>2) {
         throw new Error('Mobile Gift Tax modal does not fill viewport: '+JSON.stringify(modalBox));
       }
+      if(sample.width>900){
+        const [editorRect,railRect,bodyRect]=await Promise.all([
+          gift.locator('.unified-taxpayer-workspace__editor').boundingBox(),
+          gift.getByTestId('gift-tax-identity-rail').boundingBox(),
+          gift.locator('.taxpay-modal__body').boundingBox()
+        ]);
+        if(!editorRect||!railRect||!bodyRect||
+          Math.abs(bodyRect.x-editorRect.x)>2||
+          Math.abs(bodyRect.y-railRect.y)>2||
+          Math.abs(editorRect.x+editorRect.width-railRect.x)>2||
+          Math.abs(bodyRect.x+bodyRect.width-railRect.x-railRect.width)>2||
+          Math.abs(editorRect.y+editorRect.height-railRect.y-railRect.height)>2||
+          modalBox.height>Math.min(sample.height*.9,800)+2){
+          throw new Error('Gift Tax empty desktop modal geometry mismatch: '+JSON.stringify({modalBox,editorRect,railRect,bodyRect}));
+        }
+      }
+      await gift.screenshot({path:'test-results/live-gift-tax-empty-'+sample.name+'.png',animations:'disabled'});
       const donor=gift.getByTestId('gift-donor-section');
       const donee=gift.getByTestId('gift-donee-section');
       const donorInput=donor.locator('#gift-donor-tin');
@@ -148,6 +166,23 @@ try{
       await review.locator('#gift-review-phone').fill('01712345678');
       await review.locator('#gift-review-email').fill('sample@example.com');
       await review.locator('#gift-review-reference').fill('GIFT-UX-ACCEPTANCE');
+      // Preserve #1017's existing approved three-cell mobile review acceptance.
+      if(mobile){
+        const table=review.locator('.gift-tax-approved-table');
+        const rows=table.locator('tbody tr:not(.unified-v3-review__owner)');
+        await expect(rows).toHaveCount(2);
+        for(const row of await rows.all()){
+          const cells=row.locator('td');
+          await expect(cells).toHaveCount(3);
+          const [label,date,amount]=await Promise.all([0,1,2].map(i=>cells.nth(i).boundingBox()));
+          if(!label||!date||!amount||label.width<160||date.width<70||amount.width<55||
+             label.y+label.height>date.y+2||label.y+label.height>amount.y+2||
+             date.x+date.width>amount.x+2||
+             Math.abs(date.y-amount.y)>2){
+            throw new Error('Gift Tax mobile preview unreadable or overlapping cells: '+JSON.stringify({label,date,amount}));
+          }
+        }
+      }
       const previewOverflow=await body.evaluate(element=>element.scrollWidth-element.clientWidth);
       if(previewOverflow>2)throw new Error('Final review horizontal overflow: '+previewOverflow);
       await gift.screenshot({path:'test-results/live-gift-tax-preview-'+sample.name+'.png',
