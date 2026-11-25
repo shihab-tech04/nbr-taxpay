@@ -110,6 +110,25 @@ for (const sample of [
     await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await expect(gift.getByTestId('gift-tax-review-complete')).toBeVisible();
     await expect(gift.getByRole('button', {name: /pay now|এখনই পরিশোধ/i})).toHaveCount(0);
+    if (sample.width <= 520) {
+      const rows = gift.locator('.gift-tax-approved-table tbody tr:not(.unified-v3-review__owner)');
+      await expect(rows).toHaveCount(2);
+      for (const row of await rows.all()) {
+        const cells = row.locator('td');
+        await expect(cells).toHaveCount(3);
+        const [label, date, amount] = await Promise.all([0, 1, 2].map(i => cells.nth(i).boundingBox()));
+        expect(label && date && amount, 'Gift Tax preview requires visible label, date and amount').toBeTruthy();
+        if (label && date && amount) {
+          expect(label.width).toBeGreaterThanOrEqual(160);
+          expect(date.width).toBeGreaterThanOrEqual(70);
+          expect(amount.width).toBeGreaterThanOrEqual(55);
+          expect(label.y + label.height).toBeLessThanOrEqual(date.y + 2);
+          expect(label.y + label.height).toBeLessThanOrEqual(amount.y + 2);
+          expect(date.x + date.width).toBeLessThanOrEqual(amount.x + 2);
+          expect(Math.abs(date.y - amount.y)).toBeLessThanOrEqual(2);
+        }
+      }
+    }
     const overflow = await gift.locator('.taxpay-modal__body').evaluate(element => element.scrollWidth - element.clientWidth);
     expect(overflow, 'Gift Tax modal body must not overflow at ' + sample.width + 'px').toBeLessThanOrEqual(2);
   });
