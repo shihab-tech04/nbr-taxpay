@@ -66,7 +66,9 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
       taxpay_guest_payment_form_drafts:`public.taxpay_guest_payment_form_drafts(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_draft_id==null?'NULL::uuid':sqlText(args.p_draft_id)+'::uuid'},${args.p_service==null?'NULL::text':sqlText(args.p_service)},${args.p_payload==null?'NULL::jsonb':sqlJson(args.p_payload)},${args.p_revision==null?'NULL::integer':args.p_revision+'::integer'})`,
       // Guest submission is the original anonymous-authorized RPC. Unlike
       // preview-profile submit it must not gain service-role privileges.
+      demo_story1_initiate:`public.demo_story1_initiate(${sqlJson(args.p_input)})`,
       demo_story1_submit:`public.demo_story1_submit(${sqlJson(args.p_input)})`,
+      taxpay_demo_story1_initiate:`public.taxpay_demo_story1_initiate(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
       taxpay_demo_story1_session_payments:`public.taxpay_demo_story1_session_payments(${sqlText(args.p_capability_hash)},${args.p_page}::integer,${args.p_per_page}::integer)`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
@@ -81,7 +83,7 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
   };
   const expression=definitions[databaseOrigin]?.[name];
   if(!expression)throw Error('Unexpected SQL RPC '+origin+'.'+name);
-  const role=name==='demo_story1_submit'?'anon'
+  const role=['demo_story1_submit','demo_story1_initiate'].includes(name)?'anon'
     :databaseOrigin==='OFFICE_SQL'&&['payment_v1_office_guarded_story_page','payment_v1_office_guarded_pay_again_lineage'].includes(name)
       ?'authenticated':'service_role';
   const claims=role==='authenticated'
@@ -250,6 +252,10 @@ try{
   assert.ok(sourceId,'Retry response must carry the original Taxpayer SQL parent ID');
   const sourceRow=psql(sourceDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
   assert.equal(sourceRow.id,sourceId);
+  const staged=psql(sourceDb,`SELECT jsonb_build_object('id',id,'status',status,'data',data) FROM demo_payment.story_payment_initiations WHERE idempotency_key=${sqlText(idempotencyKey)}::uuid;`);
+  assert.equal(staged.id,sourceId,'Completion must retain the actual staged identity');
+  assert.equal(staged.status,'SIMULATED_INITIATED');
+  assert.deepEqual(staged.data,sourceRow.data,'Initiation and completion must use the same immutable input');
   assert.equal(Number(sourceRow.amountMinor),5000);
   assert.equal(sourceRow.status,'SIMULATED_SUCCESS');
   assert.deepEqual(sourceRow.data.details.allocations,allocations);
@@ -263,6 +269,7 @@ try{
   assert.equal(retry.status,200,'Replaying the same source key must recover the Office mirror');
   assert.equal(retry.data.id,sourceId,'Retry must preserve the original payment parent ID');
   assert.equal(retry.data.replayed,true);
+  assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_payment_initiations WHERE idempotency_key=${sqlText(idempotencyKey)}::uuid;`),1,'Replay must not duplicate initiation');
   const history=await request('TAXPAY_SQL',`/payments/${sourceId}?sessionId=${encodeURIComponent(profile.paymentSessionId)}`,'GET',undefined,headers);
   assert.equal(history.status,200);
   assert.equal(history.data.data.id,sourceId);
@@ -371,6 +378,8 @@ try{
   assert.equal(recipient2Item.headId,'121');
   assert.equal(recipient2Item.assessmentYear,'2026-27');
   assert.equal(recipient2Item.amountMinor,1500);
+  assert.equal(recipient2Item.paymentStatus,'SIMULATED_SUCCESS');
+  assert.equal(Date.parse(recipient2Item.createdAt),Date.parse(psql(sourceDb,`SELECT to_jsonb(created_at) FROM demo_payment.story_payment_initiations WHERE id=${sqlText(sourceId)}::uuid;`)),'Notice must preserve original initiation timestamp');
   assert.equal(recipient2Item.receiptReference,'SIM-'+idempotencyKey);
   assert.equal(recipient3Item.allocationId,allocationIds[1]);
   assert.equal(recipient3Item.recipientTin,'333333333333');
