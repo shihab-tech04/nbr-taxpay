@@ -1,4 +1,4 @@
-import {TaxPayMuiDataGrid} from '../../design-system/mui-record-table';
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-table';
 import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
 import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
@@ -547,7 +547,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       {tr('All payment fields are retained. Scroll for additional columns; Payment, Amount, Status and Actions stay visible.',
         'সব পেমেন্টের তথ্য অক্ষত আছে। অতিরিক্ত কলামে স্ক্রল করুন; পেমেন্ট, পরিমাণ, অবস্থা ও কার্যক্রম দেখা যাবে।')}
     </p>}
-    {filtered.length ? <TaxPayMuiDataGrid variant="tabular" rows={visibleHistoryRows} getRowKey={item=>item.id}
+    {filtered.length ? <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={visibleHistoryRows} getRowKey={item=>item.id}
       pagination={{page:currentHistoryPage,perPage:historyPerPage,total:filtered.length,onPageChange:setHistoryPage,
         labels:bn?{previous:'আগের পৃষ্ঠা',next:'পরের পৃষ্ঠা',showing:'দেখানো হচ্ছে',of:'মোট',records:'রেকর্ড',page:'পৃষ্ঠা'}:undefined}}
       ariaLabel={tr('Payment transactions','পেমেন্ট লেনদেন')}
