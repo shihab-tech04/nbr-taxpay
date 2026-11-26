@@ -1,0 +1,313 @@
+-- DISPOSABLE RECEIVER CANDIDATE ONLY. Not an ordered migration.
+-- Reuses the existing signed Office command transport and service-only RPCs.
+-- New decisions are direct Super Admin; history and exact decision replay remain.
+-- No financial data mutation. Typed applied-change projection and paired Edge
+-- acceptance must be completed before promotion to a production migration.
+BEGIN;
+ALTER TABLE public.taxpay_correction_inquiries DROP CONSTRAINT taxpay_correction_inquiries_office_review_state_check;
+ALTER TABLE public.taxpay_correction_inquiries ADD CONSTRAINT taxpay_correction_inquiries_office_review_state_check CHECK (office_review_state IN ('PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','APPROVED','REJECTED'));
+ALTER TABLE public.taxpay_correction_review_decisions DROP CONSTRAINT taxpay_correction_review_decisions_officer_role_check;
+ALTER TABLE public.taxpay_correction_review_decisions ADD CONSTRAINT taxpay_correction_review_decisions_officer_role_check CHECK (officer_role IN ('MAKER','REVIEWER','APPROVER','SUPER_ADMIN'));
+ALTER TABLE public.taxpay_correction_review_decisions DROP CONSTRAINT taxpay_correction_review_decisions_action_code_check;
+ALTER TABLE public.taxpay_correction_review_decisions ADD CONSTRAINT taxpay_correction_review_decisions_action_code_check CHECK (action_code IN ('MAKER_ACKNOWLEDGE','REVIEWER_VERIFY','APPROVER_CLOSE','APPROVE','REJECT'));
+ALTER TABLE public.taxpay_correction_review_decisions DROP CONSTRAINT taxpay_correction_review_decisions_next_state_check;
+ALTER TABLE public.taxpay_correction_review_decisions ADD CONSTRAINT taxpay_correction_review_decisions_next_state_check CHECK (next_state IN ('MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','APPROVED','REJECTED'));
+ALTER TABLE payment_sync.office_initiated_correction_inbox DROP CONSTRAINT office_initiated_correction_inbox_officer_role_check;
+ALTER TABLE payment_sync.office_initiated_correction_inbox ADD CONSTRAINT office_initiated_correction_inbox_officer_role_check CHECK (officer_role IN ('MAKER','APPROVER','SUPER_ADMIN'));
+ALTER TABLE taxpay_guest_private.story_correction_requests DROP CONSTRAINT story_correction_requests_review_state_check;
+ALTER TABLE taxpay_guest_private.story_correction_requests ADD CONSTRAINT story_correction_requests_review_state_check CHECK (review_state IN ('PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','APPROVED','REJECTED'));
+ALTER TABLE taxpay_guest_private.story_correction_decisions DROP CONSTRAINT story_correction_decisions_officer_role_check;
+ALTER TABLE taxpay_guest_private.story_correction_decisions ADD CONSTRAINT story_correction_decisions_officer_role_check CHECK (officer_role IN ('MAKER','REVIEWER','APPROVER','SUPER_ADMIN'));
+CREATE OR REPLACE FUNCTION public.taxpay_correction_record_office_decision(p_command jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE
+  v_message uuid; v_inquiry uuid; v_actor uuid; v_idempotency uuid;
+  v_role text; v_action text; v_reason text; v_expected text;
+  v_fingerprint text; v_old_state text; v_new_state text; v_revision integer;
+  v_previous public.taxpay_correction_review_decisions%ROWTYPE;
+BEGIN
+  IF p_command IS NULL OR pg_catalog.jsonb_typeof(p_command) IS DISTINCT FROM 'object'
+     OR pg_catalog.octet_length(p_command::text) > 12000
+     OR p_command->>'schemaVersion' IS DISTINCT FROM '1.0.0'
+     OR p_command->>'commandType' IS DISTINCT FROM 'CORRECTION_REVIEW'
+     OR p_command->>'origin' IS DISTINCT FROM 'OFFICE_SQL' THEN
+    RAISE EXCEPTION 'Invalid correction review command';
+  END IF;
+  IF coalesce(p_command->>'messageId','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+     OR coalesce(p_command->>'requestId','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+     OR coalesce(p_command->>'officerUid','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+     OR coalesce(p_command->>'idempotencyKey','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+    RAISE EXCEPTION 'Invalid correction review identifiers';
+  END IF;
+
+  v_message := (p_command->>'messageId')::uuid;
+  v_inquiry := (p_command->>'requestId')::uuid;
+  v_actor := (p_command->>'officerUid')::uuid;
+  v_idempotency := (p_command->>'idempotencyKey')::uuid;
+  v_role := p_command->>'officerRole';
+  v_action := p_command->>'action';
+  v_reason := nullif(pg_catalog.btrim(p_command->>'reason'),'');
+  v_expected := p_command->>'expectedReviewState';
+  v_fingerprint := pg_catalog.md5(p_command::text);
+
+  IF v_role IS NULL OR v_action IS NULL OR v_reason IS NULL OR length(v_reason) NOT BETWEEN 5 AND 1000 THEN
+    RAISE EXCEPTION 'Invalid correction review action';
+  END IF;
+
+  SELECT * INTO v_previous FROM public.taxpay_correction_review_decisions
+    WHERE message_id=v_message;
+  IF FOUND THEN
+    IF v_previous.payload_fingerprint <> v_fingerprint THEN
+      RAISE EXCEPTION 'Conflicting correction review replay';
+    END IF;
+    RETURN pg_catalog.jsonb_build_object('messageId',v_message,'stored',true,
+      'duplicate',true,'reviewState',v_previous.next_state);
+  END IF;
+
+  IF v_role IS DISTINCT FROM 'SUPER_ADMIN' OR v_action NOT IN ('APPROVE','REJECT') THEN
+    RAISE EXCEPTION 'Invalid correction review action';
+  END IF;
+
+  SELECT office_review_state,office_review_revision
+    INTO v_old_state,v_revision FROM public.taxpay_correction_inquiries
+    WHERE inquiry_id=v_inquiry FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Correction inquiry not found'; END IF;
+  IF v_expected IS DISTINCT FROM v_old_state THEN
+    RAISE EXCEPTION 'Correction review state changed';
+  END IF;
+
+  IF v_old_state NOT IN ('PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED') THEN
+    RAISE EXCEPTION 'Correction review sequence mismatch';
+  END IF;
+  v_new_state := CASE v_action WHEN 'APPROVE' THEN 'APPROVED' ELSE 'REJECTED' END;
+
+  INSERT INTO public.taxpay_correction_review_decisions(
+    message_id,inquiry_id,idempotency_key,payload_fingerprint,officer_uid,
+    officer_role,action_code,reason,previous_state,next_state)
+  VALUES(v_message,v_inquiry,v_idempotency,v_fingerprint,v_actor,
+    v_role,v_action,v_reason,v_old_state,v_new_state);
+  UPDATE public.taxpay_correction_inquiries SET
+    office_review_state=v_new_state,
+    office_review_revision=v_revision+1,
+    office_review_updated_at=now()
+  WHERE inquiry_id=v_inquiry;
+
+  RETURN pg_catalog.jsonb_build_object('messageId',v_message,'stored',true,
+    'duplicate',false,'reviewState',v_new_state,'revision',v_revision+1);
+END;
+$function$;
+create or replace function public.taxpay_demo_correction_office_decision(p_command jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare v_request uuid; v_message uuid; v_actor uuid; v_action text; v_role text; v_reason text;
+ v_expected text; v_next text; v_row taxpay_guest_private.story_correction_requests%rowtype;
+ v_prior taxpay_guest_private.story_correction_decisions%rowtype;
+begin
+ if p_command->>'schemaVersion' is distinct from '1.0.0' or p_command->>'origin' is distinct from 'OFFICE_SQL'
+    or coalesce(p_command->>'sourceProject','') not in ('v2','original') or p_command->>'simulationOnly' is distinct from 'true'
+    or p_command->>'commandType' is distinct from 'CORRECTION_REVIEW' then
+   raise exception 'INVALID_OFFICE_CORRECTION_COMMAND';
+ end if;
+ v_request:=(p_command->>'requestId')::uuid;v_message:=(p_command->>'messageId')::uuid;
+ v_actor:=(p_command->>'officerUid')::uuid;v_action:=p_command->>'action';v_role:=p_command->>'officerRole';
+ v_reason:=btrim(p_command->>'reason');v_expected:=p_command->>'expectedReviewState';
+ if v_request is null or v_message is null or v_actor is null or v_reason is null or length(v_reason) not between 5 and 1000
+    or v_role is null or v_action is null then
+   raise exception 'INVALID_OFFICE_CORRECTION_ACTION';
+ end if;
+ select * into v_row from taxpay_guest_private.story_correction_requests where id=v_request for update;
+ if not found then raise exception 'DEMO_CORRECTION_NOT_FOUND'; end if;
+ if p_command->>'sourceProject'='original' and v_row.case_kind<>'UNSOLICITED_PAYMENT_REPORT' then raise exception 'INVALID_OFFICE_CORRECTION_COMMAND'; end if;
+ select * into v_prior from taxpay_guest_private.story_correction_decisions where message_id=v_message;
+ if found then
+   if v_prior.command is distinct from p_command then raise exception 'DEMO_CORRECTION_DECISION_CONFLICT'; end if;
+   return jsonb_build_object('messageId',v_message,'stored',true,'reviewState',v_prior.resulting_state);
+ end if;
+ if v_role is distinct from 'SUPER_ADMIN' or v_action not in ('APPROVE','REJECT') then
+   raise exception 'INVALID_OFFICE_CORRECTION_ACTION';
+ end if;
+ if v_expected is distinct from v_row.review_state or v_row.review_state not in ('PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED') then
+   raise exception 'DEMO_CORRECTION_REVIEW_SEQUENCE_MISMATCH';
+ end if;
+ v_next:=case when v_action='APPROVE' then 'APPROVED' else 'REJECTED' end;
+ insert into taxpay_guest_private.story_correction_decisions(message_id,request_id,officer_uid,officer_role,action,command,resulting_state)
+ values(v_message,v_request,v_actor,v_role,v_action,p_command,v_next);
+ update taxpay_guest_private.story_correction_requests set office_sync_state='ACKNOWLEDGED',
+   office_ack_at=coalesce(office_ack_at,now()),review_state=v_next,review_updated_at=now(),review_reason=v_reason
+ where id=v_request;
+ return jsonb_build_object('messageId',v_message,'stored',true,'reviewState',v_next);
+end;
+$$;
+CREATE OR REPLACE FUNCTION public.taxpay_correction_receive_office_initiation(p_command jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER VOLATILE SET search_path TO ''
+AS $receive$
+DECLARE v_case uuid;v_payment uuid;v_officer uuid;v_occurred timestamptz;
+ v_existing payment_sync.office_initiated_correction_inbox%ROWTYPE;
+ v_reason text;v_outcome text;v_note text;v_ref text;v_tin text;v_role text;
+BEGIN
+ IF p_command IS NULL OR pg_catalog.jsonb_typeof(p_command)<>'object'
+    OR pg_catalog.octet_length(p_command::text)>20000
+    OR p_command->>'schemaVersion' IS DISTINCT FROM '1.0.0'
+    OR p_command->>'commandType' IS DISTINCT FROM 'OFFICE_CORRECTION_INITIATED'
+    OR p_command->>'origin' IS DISTINCT FROM 'OFFICE_SQL'
+    OR coalesce(p_command->>'messageId','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    OR p_command->>'messageId' IS DISTINCT FROM p_command->>'requestId'
+    OR coalesce(p_command->>'sourcePaymentId','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    OR coalesce(p_command->>'officerUid','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    OR p_command ? 'requesterUid' OR p_command ? 'claimedBy' THEN
+  RAISE EXCEPTION 'INVALID_SIGNED_OFFICE_CORRECTION';
+ END IF;
+ v_case:=(p_command->>'messageId')::uuid;
+ v_payment:=(p_command->>'sourcePaymentId')::uuid;
+ v_officer:=(p_command->>'officerUid')::uuid;
+ v_ref:=p_command->>'originalReference';
+ v_tin:=p_command->>'taxpayerTin';
+ v_reason:=pg_catalog.btrim(p_command->>'reason');
+ v_outcome:=pg_catalog.btrim(p_command->>'requestedOutcome');
+ v_note:=p_command->>'evidenceNote';
+ v_role:=p_command->>'officerRole';
+ IF v_ref IS NULL OR v_ref !~ '^[A-Za-z0-9][A-Za-z0-9._/-]{5,79}$'
+    OR v_tin IS NULL OR v_tin !~ '^[0-9]{12,13}$'
+    OR v_reason IS NULL OR char_length(v_reason) NOT BETWEEN 10 AND 1000
+    OR v_outcome IS NULL OR char_length(v_outcome) NOT BETWEEN 10 AND 600
+    OR v_note IS NULL OR char_length(btrim(v_note)) NOT BETWEEN 10 AND 2000
+    OR octet_length(v_note)>8000 OR v_role IS DISTINCT FROM 'SUPER_ADMIN' THEN
+  RAISE EXCEPTION 'INVALID_SIGNED_OFFICE_CORRECTION_FIELDS';
+ END IF;
+ BEGIN
+  v_occurred:=(p_command->>'occurredAt')::timestamptz;
+ EXCEPTION WHEN invalid_datetime_format OR datetime_field_overflow THEN
+  RAISE EXCEPTION 'INVALID_OFFICE_CORRECTION_TIMESTAMP';
+ END;
+ IF v_occurred IS NULL OR v_occurred>now()+interval '5 minutes' THEN
+  RAISE EXCEPTION 'INVALID_OFFICE_CORRECTION_TIMESTAMP';
+ END IF;
+ IF NOT EXISTS(
+  SELECT 1 FROM demo_payment.story_payments p
+   WHERE p.id=v_payment AND p.status='SIMULATED_SUCCESS'
+     AND p.data->>'origin'='TAXPAY_UI'
+     AND (p.id::text=v_ref OR p.data#>>'{details,receiptReference}'=v_ref
+        OR p.data#>>'{details,receiptSnapshot,challanNo}'=v_ref)
+     AND (p.data#>>'{details,taxpayerTin}'=v_tin OR EXISTS (
+       SELECT 1 FROM pg_catalog.jsonb_array_elements(
+         CASE WHEN pg_catalog.jsonb_typeof(p.data#>'{details,allocations}')='array'
+           THEN p.data#>'{details,allocations}' ELSE '[]'::jsonb END
+       ) AS allocation(line)
+       WHERE allocation.line->>'taxpayerTin'=v_tin))
+ ) THEN RAISE EXCEPTION 'OFFICE_CORRECTION_SOURCE_PAYMENT_NOT_VERIFIED'; END IF;
+ INSERT INTO payment_sync.office_initiated_correction_inbox(
+  case_id,source_payment_id,original_reference,taxpayer_tin,reason,
+  requested_outcome,evidence_note,officer_uid,officer_role,occurred_at)
+ VALUES(v_case,v_payment,v_ref,v_tin,v_reason,v_outcome,v_note,v_officer,v_role,v_occurred)
+ ON CONFLICT(case_id) DO NOTHING;
+ SELECT * INTO v_existing FROM payment_sync.office_initiated_correction_inbox
+  WHERE case_id=v_case;
+ IF v_existing.case_id IS NULL OR v_existing.source_payment_id IS DISTINCT FROM v_payment
+  OR v_existing.original_reference IS DISTINCT FROM v_ref
+  OR v_existing.taxpayer_tin IS DISTINCT FROM v_tin
+  OR v_existing.reason IS DISTINCT FROM v_reason
+  OR v_existing.requested_outcome IS DISTINCT FROM v_outcome
+  OR v_existing.evidence_note IS DISTINCT FROM v_note
+  OR v_existing.officer_uid IS DISTINCT FROM v_officer
+  OR v_existing.officer_role IS DISTINCT FROM v_role
+  OR v_existing.occurred_at IS DISTINCT FROM v_occurred THEN
+  RAISE EXCEPTION 'CONFLICTING_OFFICE_CORRECTION_REPLAY';
+ END IF;
+ RETURN pg_catalog.jsonb_build_object('messageId',v_case,'stored',true,
+  'ownerLinked',v_existing.claimed_by IS NOT NULL);
+END;
+$receive$;
+CREATE OR REPLACE FUNCTION public.taxpay_demo_correction_office_initiation(p_command jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare v_id uuid; v_payment_id uuid; v_actor uuid; v_role text; v_reference text; v_tin text;
+ v_reason text; v_outcome text; v_evidence text; v_p demo_payment.story_payments%rowtype;
+ v_demo text; v_matches integer; v_details jsonb; v_snapshot jsonb; v_alloc jsonb; v_alloc_index integer;
+ v_alloc_id text; v_count integer; v_year text; v_circle text; v_head text;
+ v_row taxpay_guest_private.story_correction_requests%rowtype;
+begin
+ if p_command->>'schemaVersion' is distinct from '1.0.0' or p_command->>'origin' is distinct from 'OFFICE_SQL'
+ or p_command->>'sourceProject' is distinct from 'v2' or p_command->>'simulationOnly' is distinct from 'true'
+ or p_command->>'commandType' is distinct from 'OFFICE_CORRECTION_INITIATED' then raise exception 'INVALID_OFFICE_INITIATION'; end if;
+ v_id:=(p_command->>'requestId')::uuid; v_payment_id:=(p_command->>'sourcePaymentId')::uuid;
+ v_actor:=(p_command->>'officerUid')::uuid; v_role:=p_command->>'officerRole';
+ v_reference:=p_command->>'originalReference'; v_tin:=p_command->>'taxpayerTin';
+ v_reason:=btrim(p_command->>'reason');v_outcome:=btrim(p_command->>'requestedOutcome');v_evidence:=p_command->>'evidenceNote';
+ if v_id is null or v_id::text is distinct from p_command->>'messageId' or v_payment_id is null or v_actor is null
+ or v_role is distinct from 'SUPER_ADMIN' or v_reference is null or length(v_reference) not between 6 and 80
+ or v_tin is null or v_tin !~ '^[0-9]{12,13}$' or v_reason is null or length(v_reason) not between 10 and 1000
+ or v_outcome is null or length(v_outcome) not between 10 and 600 or v_evidence is null
+ or length(btrim(v_evidence)) not between 10 and 2000 or octet_length(v_evidence)>8000 then raise exception 'INVALID_OFFICE_INITIATION'; end if;
+ select * into v_p from demo_payment.story_payments where id=v_payment_id;
+ if not found then return jsonb_build_object('messageId',v_id,'stored',false,'sourceAbsent',true); end if;
+ if v_p.status is distinct from 'SIMULATED_SUCCESS' or v_p.data->>'origin' is distinct from 'TAXPAY_UI'
+ or not exists(select 1 from taxpay_guest_private.demo_profiles payer
+ where payer.demo_id=v_p.data#>>'{details,payerId}' and (payer.payment_session_id=v_p.session_id or exists(
+ select 1 from taxpay_guest_private.demo_story_session_links link where link.demo_id=payer.demo_id and link.legacy_session_id=v_p.session_id
+ and not exists(select 1 from demo_payment.story_payments unverified where unverified.session_id=link.legacy_session_id
+ and (unverified.data->>'origin' is distinct from 'TAXPAY_UI' or unverified.data#>>'{details,payerId}' is distinct from payer.demo_id)))))
+ then raise exception 'OFFICE_INITIATION_SOURCE_UNVERIFIED'; end if;
+ v_details:=v_p.data->'details';v_snapshot:=coalesce(v_details->'receiptSnapshot','{}'::jsonb);
+ if v_reference is distinct from v_payment_id::text and v_reference is distinct from v_details->>'receiptReference'
+ and v_reference is distinct from v_snapshot->>'challanNo' then raise exception 'OFFICE_INITIATION_REFERENCE_MISMATCH'; end if;
+ select count(*),min(p.demo_id) into v_matches,v_demo from taxpay_guest_private.demo_profiles p
+ cross join lateral (select substring(p.demo_id from 5)::integer as n) u
+ left join public.taxpay_taxpayer_registration_profiles reg on reg.account_id=p.demo_id
+ where v_tin in (reg.tin,
+ case when u.n between 1 and 9 then repeat(u.n::text,12) when u.n=10 then repeat('0',12) else '9090000000'||lpad(u.n::text,2,'0') end,
+ case when u.n between 1 and 9 then repeat(u.n::text,13) when u.n=10 then '1010101010101' else '90000000000'||lpad(u.n::text,2,'0') end);
+ if v_matches<>1 then raise exception 'OFFICE_INITIATION_RECIPIENT_UNBOUND'; end if;
+ select count(*) into v_count from jsonb_array_elements(case when jsonb_typeof(v_details->'allocations')='array' then v_details->'allocations' else '[]'::jsonb end) a where a->>'taxpayerTin'=v_tin;
+ if v_count=1 then
+ select a.value,(a.ordinality-1)::integer into v_alloc,v_alloc_index
+ from jsonb_array_elements(v_details->'allocations') with ordinality a(value,ordinality) where a.value->>'taxpayerTin'=v_tin;
+ v_alloc_id:=nullif(v_alloc->>'allocationId','');
+ elsif v_count=0 and (jsonb_typeof(v_details->'allocations')='array' or v_details->>'taxpayerTin' is distinct from v_tin) then
+ raise exception 'OFFICE_INITIATION_RECIPIENT_MISMATCH'; end if;
+ -- A multiple-allocation case is explicitly payment-level, not an invented allocation.
+ v_year:=coalesce(v_alloc->>'assessmentYear',v_snapshot->>'assessmentYear',v_details->>'assessmentYear','');
+ v_circle:=coalesce(v_snapshot->>'taxCircle',v_details->>'taxCircle','');
+ v_head:=coalesce(v_alloc->>'economicCode',case when v_count=0 then v_snapshot#>>'{items,0,economicCode}' end,'');
+ insert into taxpay_guest_private.story_correction_requests(id,demo_id,payment_id,request_key,allocation_index,allocation_id,
+ original_reference,current_year,proposed_year,current_circle,proposed_circle,current_head,proposed_head,reason,office_initiation)
+ values(v_id,v_demo,v_payment_id,v_id,v_alloc_index,v_alloc_id,v_reference,v_year,v_year,v_circle,v_circle,v_head,v_head,v_reason,p_command)
+ on conflict do nothing;
+ select * into v_row from taxpay_guest_private.story_correction_requests where id=v_id;
+ if not found or v_row.demo_id is distinct from v_demo or v_row.office_initiation is distinct from p_command
+ then raise exception 'OFFICE_INITIATION_CONFLICT'; end if;
+ return jsonb_build_object('messageId',v_id,'stored',true,'ownerLinked',true);
+end;
+$$;
+CREATE OR REPLACE FUNCTION public.taxpay_notify_correction_review_decision()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE v_recipient uuid; v_message_code text;
+BEGIN
+  v_message_code := CASE NEW.action_code
+    WHEN 'MAKER_ACKNOWLEDGE' THEN 'CORRECTION_MAKER_ACKNOWLEDGED'
+    WHEN 'REVIEWER_VERIFY' THEN 'CORRECTION_REVIEWER_VERIFIED'
+    WHEN 'APPROVER_CLOSE' THEN 'CORRECTION_APPROVER_CLOSED'
+    WHEN 'APPROVE' THEN 'CORRECTION_APPROVED'
+    WHEN 'REJECT' THEN 'CORRECTION_REJECTED'
+    ELSE NULL END;
+  IF v_message_code IS NULL THEN RAISE EXCEPTION 'Unknown correction notification action'; END IF;
+  SELECT i.requester_uid INTO v_recipient
+    FROM public.taxpay_correction_inquiries i WHERE i.inquiry_id=NEW.inquiry_id;
+  IF v_recipient IS NULL THEN RAISE EXCEPTION 'Correction notification owner not found'; END IF;
+  INSERT INTO public.taxpay_in_app_notifications(
+    recipient_uid,request_id,event_id,message_code,is_read,
+    correction_inquiry_id,correction_decision_id)
+  VALUES(v_recipient,NULL,NULL,v_message_code,false,NEW.inquiry_id,NEW.message_id)
+  ON CONFLICT (correction_decision_id)
+    WHERE correction_decision_id IS NOT NULL DO NOTHING;
+  RETURN NEW;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.taxpay_correction_record_office_decision(jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.taxpay_correction_record_office_decision(jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.taxpay_demo_correction_office_decision(jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.taxpay_demo_correction_office_decision(jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.taxpay_correction_receive_office_initiation(jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.taxpay_correction_receive_office_initiation(jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.taxpay_demo_correction_office_initiation(jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.taxpay_demo_correction_office_initiation(jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.taxpay_notify_correction_review_decision() FROM PUBLIC,anon,authenticated;
+COMMIT;

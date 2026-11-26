@@ -1,0 +1,38 @@
+name: Direct Super Admin Taxpayer receiver - disposable candidate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/integration/taxpayerSuperAdminDirectCandidate.sql'
+      - 'tests/integration/taxpayerSuperAdminDirectAcceptance.sql'
+      - '.github/workflows/taxpayer-super-admin-direct-candidate.yml'
+permissions:
+  contents: read
+jobs:
+  direct-taxpayer-receiver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+      - name: Prepare disposable SQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Start isolated local source without hosted credentials
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/isolate-local-supabase.py
+          supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - name: Run new direct receiver contract on local source only
+        run: |
+          set -euo pipefail
+          port="$(python3 -c 'import tomllib; print(tomllib.load(open("supabase/config.toml","rb"))["db"]["port"])')"
+          [[ "$port" =~ ^[0-9]+$ ]]
+          export PGHOST=127.0.0.1 PGPORT="$port" PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          pg_isready
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/taxpayerSuperAdminDirectCandidate.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/taxpayerSuperAdminDirectAcceptance.sql
+      - name: Remove only the disposable local project
+        if: always()
+        run: supabase stop --no-backup
