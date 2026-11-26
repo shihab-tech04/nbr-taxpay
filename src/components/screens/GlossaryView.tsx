@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { BookOpen, Search, X } from 'lucide-react';
+import { CitizenMuiScope, MuiButton, MuiIconButton, MuiInputBase, MuiNativeSelect } from '../../design-system/mui';
 import { GLOSSARY_TERMS } from '../../data/glossaryData';
 import { useTaxState } from '../../services/taxState';
 import '../../styles/public-guide-p3.css';
@@ -65,7 +66,8 @@ export const GlossaryView: React.FC = () => {
   });
 
   return (
-    <main className="public-glossary" aria-labelledby="public-glossary-title">
+    <CitizenMuiScope>
+    <main className="public-glossary" aria-labelledby="public-glossary-title" data-mui-citizen-region="glossary">
       <section className="public-glossary-card">
         <header className="public-glossary-header">
           <span className="public-glossary-icon" aria-hidden="true"><BookOpen size={22}/></span>
@@ -80,8 +82,10 @@ export const GlossaryView: React.FC = () => {
             <label htmlFor="public-glossary-search">{copy.search}</label>
             <div className="public-glossary-search">
               <Search size={18} aria-hidden="true"/>
-              <input
-                ref={searchRef}
+              <MuiInputBase
+                inputRef={searchRef}
+                fullWidth
+                sx={{minWidth:0, font:'inherit', '& .MuiInputBase-input':{padding:0}}}
                 id="public-glossary-search"
                 type="search"
                 value={search}
@@ -89,19 +93,19 @@ export const GlossaryView: React.FC = () => {
                 placeholder={copy.searchPlaceholder}
                 autoComplete="off"
               />
-              {search && <button type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'}
+              {search && <MuiIconButton type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'}
                 className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
                 onClick={() => { setSearch(''); searchRef.current?.focus(); }}>
                 <X size={18} aria-hidden="true"/>
-              </button>}
+              </MuiIconButton>}
             </div>
           </div>
           <div className="public-glossary-field">
             <label htmlFor="public-glossary-topic">{copy.category}</label>
-            <select id="public-glossary-topic" value={catFilter} onChange={event => setCatFilter(event.target.value as 'ALL' | Category)}>
+            <MuiNativeSelect fullWidth input={<MuiInputBase />} inputProps={{id:"public-glossary-topic"}} value={catFilter} onChange={event => setCatFilter(event.target.value as 'ALL' | Category)} sx={{minWidth:0, "& .MuiNativeSelect-select":{paddingRight:"32px"}}}>
               <option value="ALL">{copy.all}</option>
               {CATEGORIES.map(category => <option key={category} value={category}>{copy.categories[category]}</option>)}
-            </select>
+            </MuiNativeSelect>
           </div>
         </div>
 
@@ -124,12 +128,13 @@ export const GlossaryView: React.FC = () => {
           </article>)}
         </div> : <div className="public-glossary-empty">
           <p role="status">{copy.noResults}</p>
-          <button type="button" onClick={resetFilters}
+          <MuiButton variant="outlined" type="button" onClick={resetFilters}
             className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
             {bn?'সব ফিল্টার মুছুন':'Clear filters'}
-          </button>
+          </MuiButton>
         </div>}
       </section>
     </main>
+    </CitizenMuiScope>
   );
 };
