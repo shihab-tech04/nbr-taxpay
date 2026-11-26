@@ -1,4 +1,18 @@
 import {expect,test} from '@playwright/test';
+async function verifyPaperParity(el:import('@playwright/test').Locator){
+ await expect(el).toBeVisible();
+ await expect(el).toHaveClass(/MuiPaper-root/);
+ const result=await el.evaluate(node=>{
+  const native=document.createElement('section');
+  for(const a of Array.from(node.attributes))if(!['class','style','data-mui-coverage'].includes(a.name))native.setAttribute(a.name,a.value);
+  native.className=Array.from(node.classList).filter(c=>!c.startsWith('Mui')&&!c.startsWith('css-')).join(' ');
+  for(const child of Array.from(node.childNodes))native.append(child.cloneNode(true));
+  const metrics=(e:Element)=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {tag:e.tagName,width:r.width,height:r.height,color:s.color,bg:s.backgroundColor,radius:s.borderTopLeftRadius,border:s.borderTopWidth,padding:s.paddingTop,shadow:s.boxShadow,display:s.display,gap:s.gap};};
+  const actual=metrics(node);node.replaceWith(native);const original=metrics(native);native.replaceWith(node);return {actual,original};
+ });
+ expect(result.actual).toEqual(result.original);
+}
+
 for(const language of ['en','bn'] as const){
  test('scoped dashboard analytics MUI actions preserve selection and navigation '+language,async({page})=>{
   const bn=language==='bn',tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -28,6 +42,7 @@ for(const language of ['en','bn'] as const){
   await expect(site('TOP-FILTERED').first()).toBeVisible();
   await expect(site('TOP-FILTERED').first()).toHaveClass(/MuiButtonBase-root/);
   await analytics.getByTestId('dashboard-payment-extra').locator('summary').click();
+  for(const id of ['BENEFICIARY','RANKING','SERVICE','ROLES'])await verifyPaperParity(site('PAPER-'+id));
   const service=site('SERVICE-BAR').first();
   await expect(service).toBeVisible();
   await service.click();

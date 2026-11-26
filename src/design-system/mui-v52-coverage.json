@@ -2398,6 +2398,135 @@
       "test": "tests/e2e/mui-v4-guide-catalogue.spec.ts",
       "owner": "MUI migration",
       "implementation": "Previously migrated official MUI control, now explicitly registered; not counted as new migration"
+    },
+    {
+      "id": "MUI-ANALYTICS-PAPER-BENEFICIARY",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiPaper",
+      "control": "beneficiary chart surface",
+      "route": "taxpayer_home",
+      "classification": "GENERIC-MIGRATE",
+      "role": "taxpayer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "recorded",
+        "example",
+        "empty",
+        "responsive"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official Paper retaining semantic section, original classes and chart composition"
+    },
+    {
+      "id": "MUI-ANALYTICS-PAPER-RANKING",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiPaper",
+      "control": "ranking chart surface",
+      "route": "taxpayer_home",
+      "classification": "GENERIC-MIGRATE",
+      "role": "taxpayer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "recorded",
+        "example",
+        "empty",
+        "responsive"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official Paper retaining semantic section, original classes and chart composition"
+    },
+    {
+      "id": "MUI-ANALYTICS-PAPER-SERVICE",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiPaper",
+      "control": "service chart surface",
+      "route": "taxpayer_home",
+      "classification": "GENERIC-MIGRATE",
+      "role": "taxpayer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "recorded",
+        "example",
+        "empty",
+        "responsive"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official Paper retaining semantic section, original classes and chart composition"
+    },
+    {
+      "id": "MUI-ANALYTICS-PAPER-ROLES",
+      "file": "src/components/screens/BentoPaymentAnalytics.tsx",
+      "symbol": "BentoPaymentAnalytics",
+      "component": "MuiPaper",
+      "control": "roles chart surface",
+      "route": "taxpayer_home",
+      "classification": "GENERIC-MIGRATE",
+      "role": "taxpayer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "recorded",
+        "example",
+        "empty",
+        "responsive"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v60-dashboard-analytics.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official Paper retaining semantic section, original classes and chart composition"
+    },
+    {
+      "id": "MUI-MONTHLY-PAPER-SCENARIO",
+      "file": "src/components/screens/DashboardScenarioTrends.tsx",
+      "symbol": "DashboardScenarioTrends",
+      "component": "MuiPaper",
+      "control": "monthly scenario chart surface",
+      "route": "taxpayer_home",
+      "classification": "GENERIC-MIGRATE",
+      "role": "authenticated taxpayer",
+      "locale": [
+        "en",
+        "bn"
+      ],
+      "states": [
+        "recorded",
+        "empty",
+        "responsive"
+      ],
+      "sourceStatus": "IMPLEMENTED",
+      "testStatus": "UNVERIFIED",
+      "liveStatus": "UNVERIFIED",
+      "test": "tests/e2e/mui-v70-monthly-surface.spec.ts",
+      "owner": "MUI migration",
+      "implementation": "Official Paper, original section role and all chart math unchanged"
     }
   ],
   "unresolved": [
@@ -2479,6 +2608,26 @@
     {
       "file": "src/components/screens/ReceivedPaymentNoticeRegister.tsx",
       "reason": "Existing #779 overlap and #1102 recipient lifecycle dependency; retain current behavior",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/AuthenticatedDashboardPosition.tsx",
+      "reason": "Active #463 and #779 overlap; preserve owner changes",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/PublicUserGuide.tsx",
+      "reason": "Active #779 overlap; retain prior migrated controls and reconcile link/FAQ family",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/PreviewBeneficiarySpending.tsx",
+      "reason": "Current TaxpayerDashboard early return makes former preview branch unreachable under same condition; resolve all other callers before eligibility",
+      "status": "UNVERIFIED"
+    },
+    {
+      "file": "src/components/screens/DashboardMonthlyPayments.tsx",
+      "reason": "Runtime reachability not established; preserve source until resolved",
       "status": "UNVERIFIED"
     }
   ]

@@ -1,4 +1,6 @@
 import React from 'react';
+import MuiPaper from '@mui/material/Paper';
+import {CitizenMuiScope} from '../../design-system/mui';
 import type {DashboardSimulationTransaction} from '../../services/accountDashboardProjection';
 
 type Month = {month:string;label:string;amountMinor:bigint;count:number};
@@ -50,7 +52,7 @@ export const DashboardScenarioTrends:React.FC<{
     const fraction=new Intl.NumberFormat(locale,{minimumIntegerDigits:2,useGrouping:false}).format(Number(minor%100n));
     return '৳ '+whole+'.'+fraction;
   };
-  return <section className="taxpay-monthly-card" aria-labelledby="account-scenario-monthly-title"
+  return <CitizenMuiScope><MuiPaper component="section" elevation={0} data-mui-coverage="MUI-MONTHLY-PAPER-SCENARIO" sx={{borderRadius:"16px",backgroundColor:"#fff",backgroundImage:"none",color:"var(--color-taxpay-text,#17243c)"}} className="taxpay-monthly-card" aria-labelledby="account-scenario-monthly-title"
     data-testid="account-scenario-monthly">
     <div className="taxpay-monthly-card__heading">
       <div className="min-w-0">
@@ -80,5 +82,5 @@ export const DashboardScenarioTrends:React.FC<{
       'No completed payments initiated by this account for the selected assessment year.',
       'নির্বাচিত করবর্ষে এই অ্যাকাউন্ট থেকে সম্পন্ন কোনো পেমেন্ট নেই।'
     )}</p>}
-  </section>;
+  </MuiPaper></CitizenMuiScope>;
 };

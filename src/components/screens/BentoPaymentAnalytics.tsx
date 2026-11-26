@@ -1,5 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {CitizenMuiScope,MuiButtonBase,MuiInputBase,MuiNativeSelect} from '../../design-system/mui';
+import MuiPaper from '@mui/material/Paper';
+const analyticsPaperSx={borderRadius:'16px',backgroundColor:'var(--color-taxpay-surface,#fff)',backgroundImage:'none',color:'inherit'} as const;
 import '../../styles/taxpay-dashboard-interactive.css';
 import {ArrowRight} from 'lucide-react';
 import {
@@ -146,7 +148,7 @@ export const BentoPaymentAnalytics:React.FC<{
         'সংরক্ষিত পেমেন্ট লোড হয়নি। কোনো নমুনা পরিমাণ দেখানো হচ্ছে না।')}
     </p>}
     <div className="taxpay-bento-analytics__cards">
-      <section className="taxpay-bento-analytics__card" data-testid="dashboard-beneficiary-breakdown"
+      <MuiPaper component="section" elevation={0} sx={analyticsPaperSx} data-mui-coverage="MUI-ANALYTICS-PAPER-BENEFICIARY" className="taxpay-bento-analytics__card" data-testid="dashboard-beneficiary-breakdown"
         aria-labelledby="dashboard-beneficiary-breakdown-title">
         <div className="taxpay-bento-analytics__card-header">
           <div>
@@ -308,9 +310,9 @@ export const BentoPaymentAnalytics:React.FC<{
         {!filtered.totalMinor&&<p role="status" className="taxpay-bento-analytics__empty">{tr(
           'No beneficiary allocations for this selection.','এই বাছাইয়ের জন্য কোনো উপকারভোগী বরাদ্দ নেই।')}</p>}
         </details>
-      </section>
+      </MuiPaper>
 
-      <section className="taxpay-bento-analytics__card taxpay-bento-analytics__card--ranking"
+      <MuiPaper component="section" elevation={0} sx={analyticsPaperSx} data-mui-coverage="MUI-ANALYTICS-PAPER-RANKING" className="taxpay-bento-analytics__card taxpay-bento-analytics__card--ranking"
         data-testid="dashboard-ranked-beneficiaries" aria-labelledby="dashboard-ranked-beneficiaries-title">
         <div className="taxpay-bento-analytics__card-header">
           <div><h3 id="dashboard-ranked-beneficiaries-title">{tr('Top beneficiaries','শীর্ষ উপকারভোগী')}</h3>
@@ -349,11 +351,11 @@ export const BentoPaymentAnalytics:React.FC<{
         {onManageBeneficiaries&&<MuiButtonBase data-mui-coverage="MUI-ANALYTICS-MANAGE-ALL" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link"
           onClick={onManageBeneficiaries}>{tr('View all beneficiaries','সব উপকারভোগী দেখুন')}
           <ArrowRight size={16} aria-hidden="true"/></MuiButtonBase>}
-      </section>
+      </MuiPaper>
       <details className="taxpay-payment-extra" data-testid="dashboard-payment-extra">
         <summary>{tr('Payment breakdown by service and payer','পেমেন্টের ধরন ও পরিশোধকারীর বিস্তারিত')}</summary>
         <div className="taxpay-payment-extra__cards">
-      <section className="taxpay-bento-analytics__card" data-testid="dashboard-service-breakdown"
+      <MuiPaper component="section" elevation={0} sx={analyticsPaperSx} data-mui-coverage="MUI-ANALYTICS-PAPER-SERVICE" className="taxpay-bento-analytics__card" data-testid="dashboard-service-breakdown"
         aria-labelledby="dashboard-service-breakdown-title">
         <div className="taxpay-bento-analytics__card-header">
           <div>
@@ -394,9 +396,9 @@ export const BentoPaymentAnalytics:React.FC<{
             {tr('Some historical records lack itemized allocations and are excluded from these totals.',
               'কিছু পুরনো রেকর্ডে পৃথক বরাদ্দ নেই; এগুলো এই মোট হিসাব থেকে বাদ রাখা হয়েছে।')}
           </p>}
-      </section>
+      </MuiPaper>
 
-      <section className="taxpay-bento-analytics__card taxpay-bento-analytics__card--roles"
+      <MuiPaper component="section" elevation={0} sx={analyticsPaperSx} data-mui-coverage="MUI-ANALYTICS-PAPER-ROLES" className="taxpay-bento-analytics__card taxpay-bento-analytics__card--roles"
         data-testid="dashboard-role-breakdown" aria-labelledby="dashboard-role-breakdown-title">
         <div className="taxpay-bento-analytics__card-header">
           <div><h3 id="dashboard-role-breakdown-title">{tr('Payment relationships','পেমেন্টের সম্পর্ক')}</h3>
@@ -437,7 +439,7 @@ export const BentoPaymentAnalytics:React.FC<{
         <MuiButtonBase data-mui-coverage="MUI-ANALYTICS-ROLE-HISTORY" disableRipple sx={chartActions.link} type="button" className="taxpay-bento-analytics__link" onClick={()=>onOpenHistory(undefined,'all')}>
           {tr('View payment history','পেমেন্টের ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
         </MuiButtonBase>
-      </section>
+      </MuiPaper>
 
         </div>
       </details>
