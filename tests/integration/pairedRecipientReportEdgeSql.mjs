@@ -19,6 +19,9 @@ for(const url of urls)assert.ok(['127.0.0.1','localhost'].includes(new URL(url).
 assert.equal(new Set(urls.map(url=>new URL(url).port)).size,3,'Three distinct local instance ports required');
 const hosts={original:'eyqhoavnitkrajvyqvxn.supabase.co',v2:'gmuhitmaynfhipcvbvkh.supabase.co',office:'ihbtabrvmyiwikqqbhrf.supabase.co'};
 const keys={original:'ab'.repeat(32),v2:'cd'.repeat(32)};
+const directAdmin=process.env.WS5_DIRECT_SUPER_ADMIN==='true';
+const adminFixture=process.env.WS5_DIRECT_ADMIN_FIXTURE;
+if(directAdmin)assert.match(adminFixture,/^[0-9a-f-]{36}$/i);
 const maker='80000000-0000-4000-8000-000000000011',reviewer='80000000-0000-4000-8000-000000000012',approver='80000000-0000-4000-8000-000000000013';
 const t=v=>"'"+String(v).replaceAll("'","''")+"'";
 const j=v=>t(JSON.stringify(v))+'::jsonb';
@@ -103,7 +106,7 @@ const keyConfig=sql(sourceDbs.original,'SELECT public.payment_v1_internal_bridge
 const officeConfig=sql(officeDb,'SELECT public.payment_v1_internal_bridge_config();');
 assert.equal(keyConfig.signingKey,keys.original);assert.equal(officeConfig.signingKey,keys.original);
 for(const db of [sourceDbs.original,sourceDbs.v2,officeDb])sql(db,'INSERT INTO payment_sync.demo_correction_bridge_key(singleton,signing_key) VALUES(true,'+t(keys.v2)+') ON CONFLICT(singleton) DO UPDATE SET signing_key=excluded.signing_key; SELECT true;');
-for(const [actor,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROVER']]){
+if(!directAdmin)for(const [actor,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROVER']]){
  assert.equal(sql(officeDb,'SELECT to_jsonb(role) FROM payment_sync.officer_roles WHERE active AND user_uid='+u(actor)),role,'Use only existing disposable fixture roles');
 }
 for(const origin of ['original','v2'])handlers[origin+'|source']=load(resolve('supabase/functions/demo-story1-taxpay/index.ts'),origin);
@@ -117,7 +120,7 @@ for(const origin of ['original','v2']){
  assert.ok(payer.capability&&recipient.capability&&outsider.capability);
  // Fresh V2 has its own capabilities, beneficiary membership and payment session.
  // Reuse the validated payload shape, not any original DB records or session.
- if(origin==='v2'){
+ if(origin==='v2'&&!directAdmin){
   const hash=capHash(payer.capability),list=sql(sourceDb,'SELECT public.taxpay_guest_beneficiary_create_list('+t(hash)+','+t('Disposable independent recipient fixture')+');');
   assert.ok(list?.id);
   const people=seed.details.allocations.map(a=>({tin:a.taxpayerTin,display_name:a.taxpayerName,tag:'clients'}));
@@ -155,7 +158,7 @@ for(const origin of ['original','v2']){
   const cmd=decisions.find(x=>{const value=JSON.parse(x.body.commandText);return value.requestId===reportId&&value.action===action;});
   assert.equal(cmd?.origin,origin);
   const value=JSON.parse(cmd.body.commandText);
-  assert.equal(value.sourceProject,origin);assert.equal(value.officerUid,actor);assert.ok(!messageIds.has(value.messageId));messageIds.add(value.messageId);
+  assert.equal(value.sourceProject,origin);assert.equal(value.officerUid,actor);if(directAdmin)assert.equal(value.officerRole,'SUPER_ADMIN');assert.ok(!messageIds.has(value.messageId));messageIds.add(value.messageId);
   const read=await call(origin,'source',sourcePath+'?limit=100&offset=0',undefined,cap);
   const current=read.data.data.find(x=>x.id===reportId);
   assert.equal(current.reviewState,state);assert.equal(current.paymentCompleted,false);
@@ -170,18 +173,23 @@ for(const origin of ['original','v2']){
   assert.equal(sql(sourceDb,'SELECT count(*) FROM taxpay_guest_private.story_correction_decisions WHERE message_id='+u(value.messageId)),1);
   assert.deepEqual(fingerprint(sourceDb),beforeSource);assert.deepEqual(fingerprint(officeDb),beforeOffice);
  }
- await review(id,recipient.capability,maker,'MAKER_ACKNOWLEDGE','MAKER_ACKNOWLEDGED');
- await review(id,recipient.capability,reviewer,'REVIEWER_VERIFY','REVIEWER_VERIFIED');
- await review(id,recipient.capability,approver,'APPROVER_CLOSE','APPROVER_CLOSED');
+ if(directAdmin){
+  assert.throws(()=>sql(officeDb,"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub',"+t(maker)+",true); SELECT public.payment_v1_correction_officer_action("+u(id)+",'APPROVE','Disposable denial check',"+u(randomUUID())+"); COMMIT;"),/Verified Office Super Admin required/);
+  await review(id,recipient.capability,adminFixture,'APPROVE','APPROVED');
+ }else{
+  await review(id,recipient.capability,maker,'MAKER_ACKNOWLEDGE','MAKER_ACKNOWLEDGED');
+  await review(id,recipient.capability,reviewer,'REVIEWER_VERIFY','REVIEWER_VERIFIED');
+  await review(id,recipient.capability,approver,'APPROVER_CLOSE','APPROVER_CLOSED');
+ }
  // The second allocation belongs to the other fictional recipient and is a
  // distinct report, allowing an independently authorized terminal rejection.
  const event3=staged.id+':allocation:2';
  const rejected=await call(origin,'source',sourcePath,{...input,eventId:event3,requestKey:randomUUID()},outsider.capability);
  assert.equal(rejected.status,200);assert.equal(rejected.data.data.paymentCompleted,false);assert.equal(rejected.data.data.officeSyncState,'ACKNOWLEDGED');
  const rejectedId=rejected.data.data.id;assert.notEqual(rejectedId,id);
- await review(rejectedId,outsider.capability,reviewer,'REJECT','REJECTED');
+ await review(rejectedId,outsider.capability,directAdmin?adminFixture:reviewer,'REJECT','REJECTED');
  const own=await call(origin,'source',sourcePath+'?limit=100&offset=0',undefined,recipient.capability);
  assert.ok(!own.data.data.some(x=>x.id===rejectedId),'Recipient cannot read another allocation report');
  assert.deepEqual(fingerprint(sourceDb),beforeSource);assert.deepEqual(fingerprint(officeDb),beforeOffice);assert.deepEqual(fingerprint(otherDb),beforeOther);
- console.log('PASS '+origin+' independent disposable cluster, actual signed immediate report/ACK/Maker/Reviewer/Approver/rejection, retry/replay, cross-source denial and immutable payment ledgers');
+ console.log('PASS '+origin+' independent disposable cluster, actual signed immediate report/ACK/'+(directAdmin?'direct Super Admin approve/reject':'historical Maker/Reviewer/Approver/rejection')+', retry/replay, cross-source denial and immutable payment ledgers');
 }

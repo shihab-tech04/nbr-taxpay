@@ -630,9 +630,27 @@ jobs:
           done
           pg_isready -h 127.0.0.1 -p "$V2_DB_PORT" -U postgres -d postgres
           node tests/integration/pairedRecipientReportEdgeSql.mjs
-          (cd "$V2_LOCAL_DIR" && supabase stop --no-backup) >/dev/null
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           node tests/integration/pairedOfficeUiReadback.mjs
+          # Preserve all historical integration checks above, then rehearse the
+          # paired direct-admin candidates on the same three disposable instances.
+          DIRECT_OFFICE_DIR="$RUNNER_TEMP/ws5-v12-direct-office"
+          DIRECT_OFFICE_SHA="5d5ad8f746e93e3931707e77364eca7d54f2d6ca"
+          git clone --depth 1 --branch fix/correction-super-admin-office-contract-20261126 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$DIRECT_OFFICE_DIR"
+          git -C "$DIRECT_OFFICE_DIR" fetch --depth 1 origin "$DIRECT_OFFICE_SHA"
+          git -C "$DIRECT_OFFICE_DIR" checkout --detach "$DIRECT_OFFICE_SHA"
+          test "$(git -C "$DIRECT_OFFICE_DIR" rev-parse HEAD)" = "$DIRECT_OFFICE_SHA"
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$DIRECT_OFFICE_DIR/tests/integration/officeSuperAdminDirectCandidate.sql"
+          for dsn in "$WS3_TAXPAYER_DB_URL" "$WS3_REPLACEMENT_DB_URL"; do
+            psql -X -v ON_ERROR_STOP=1 "$dsn" -f tests/integration/taxpayerSuperAdminDirectCandidate.sql
+          done
+          # Reuse only the existing direct-candidate disposable auth fixture,
+          # never a production login, token or credential.
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" <<'SQL'
+          INSERT INTO auth.users(id,email,email_confirmed_at,is_anonymous) VALUES('a05f8fc6-a134-4a43-9b94-54881d858783'::uuid,'shihabshajib01@gmail.com',now(),false);
+          SQL
+          WS5_DIRECT_SUPER_ADMIN=true WS5_DIRECT_ADMIN_FIXTURE="a05f8fc6-a134-4a43-9b94-54881d858783" WS3_V7_OFFICE_SOURCE="$DIRECT_OFFICE_DIR" node tests/integration/pairedRecipientReportEdgeSql.mjs
+          (cd "$V2_LOCAL_DIR" && supabase stop --no-backup) >/dev/null
           echo "PASS: current Work A composer matrix, original Taxpayer Edge/SQL, separate current Office SQL/API, same paired record in Office UI, retry and authorized readback"
 
 
