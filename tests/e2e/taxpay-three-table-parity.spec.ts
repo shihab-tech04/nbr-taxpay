@@ -52,6 +52,14 @@ for(const language of ['en','bn'] as const){
       const row=desktop?root.locator('table.taxpay-unified-table tbody tr').first()
         :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
+      const muiTable=root.locator('table[data-mui-record-table="true"]').first();
+      await expect(muiTable).toHaveClass(/MuiTable-root/);
+      await expect(muiTable.locator('thead')).toHaveClass(/MuiTableHead-root/);
+      await expect(muiTable.locator('tbody')).toHaveClass(/MuiTableBody-root/);
+      await expect(muiTable.locator('tbody tr').first()).toHaveClass(/MuiTableRow-root/);
+      await expect(muiTable.locator('thead th').first()).toHaveClass(/MuiTableCell-root/);
+      await expect(muiTable.locator('tbody td').first()).toHaveClass(/MuiTableCell-root/);
+      if(desktop)await expect(muiTable).toBeVisible();else await expect(muiTable).toBeHidden();
       if(view==='ledger'&&desktop){
         const ledgerTable=root.getByTestId('event-ledger-table');
         const viewport=root.locator('.taxpay-table-viewport').first();
@@ -232,6 +240,8 @@ for(const language of ['en','bn'] as const){
     await expect(panel).toBeVisible();
     const desktop=info.project.name==='desktop-1280';
     const table=panel.getByTestId('signed-in-payment-activity-table');
+    await expect(table).toHaveClass(/MuiTable-root/);
+    await expect(table).toHaveAttribute('data-mui-record-table','true');
     const cards=panel.getByTestId('signed-in-payment-activity-cards');
     const visibleRecords=desktop?table:cards;
     await expect(visibleRecords.getByText(language==='bn'
