@@ -1,4 +1,4 @@
-import {useRef, useState} from 'react';
+import {lazy, Suspense, useRef, useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {PublicHelpChat} from '../layout/PublicHelpChat';
@@ -8,13 +8,15 @@ import {DesktopView} from './home2/views/DesktopView';
 import {MobileView} from './home2/views/MobileView';
 import './home2.css';
 
-type Props = {onSearch: (reference:string)=>void; onOtherTax:()=>void; sliderPaused:boolean};
-export function Home2Layout({onSearch,onOtherTax,sliderPaused}:Props){
+const GiftTaxEntryModal=lazy(()=>import('./GiftTaxEntryModal').then(m=>({default:m.GiftTaxEntryModal})));
+type Props = {onSearch: (reference:string)=>void; onOtherTax:()=>void; onTravel:()=>void; sliderPaused:boolean};
+export function Home2Layout({onSearch,onOtherTax,onTravel,sliderPaused}:Props){
   const {language,setLanguage,navigate,openAllTaxPayments,previewAccount}=useTaxState();
   const {user}=useAccountIdentity();
   const signedIn=Boolean(user||previewAccount);
   const desktop=useMediaQuery('(min-width: 960px)');
   const [helpRequest,setHelpRequest]=useState(0);
+  const [giftOpen,setGiftOpen]=useState(false);
   const helpTrigger=useRef<HTMLElement|null>(null);
   const onAction=(action:Home2Action)=>{
     const origin={fromHome2:true};
@@ -23,6 +25,8 @@ export function Home2Layout({onSearch,onOtherTax,sliderPaused}:Props){
       case 'original': navigate('landing'); break;
       case 'pay': openAllTaxPayments(); break;
       case 'other': onOtherTax(); break;
+      case 'gift': setGiftOpen(true); break;
+      case 'travel': onTravel(); break;
       case 'login': navigate(signedIn?'taxpayer_home':'taxpayer_login',origin); break;
       case 'guide': navigate('user_guide'); break;
       case 'report': navigate('incident'); break;
@@ -39,7 +43,8 @@ export function Home2Layout({onSearch,onOtherTax,sliderPaused}:Props){
   };
   const View=desktop?DesktopView:MobileView;
   return <div data-testid="home2-root" data-design="uploaded-mobile-bento" data-viewport={desktop?'desktop':'mobile'} className="home2-import-root" lang={language}>
-    <div data-home2-view><View c={copy[language]} onToggleLang={()=>setLanguage(language==='en'?'bn':'en')} onAction={onAction} onSearch={onSearch} signedIn={signedIn} sliderPaused={sliderPaused}/></div>
+    <div data-home2-view><View c={copy[language]} onToggleLang={()=>setLanguage(language==='en'?'bn':'en')} onAction={onAction} onSearch={onSearch} signedIn={signedIn} sliderPaused={sliderPaused||giftOpen}/></div>
+    {giftOpen&&<Suspense fallback={<p role="status">{language==='bn'?'দানকর লোড হচ্ছে…':'Loading Gift Tax…'}</p>}><GiftTaxEntryModal signedIn={signedIn} onClose={()=>setGiftOpen(false)}/></Suspense>}
     <PublicHelpChat externalOpenRequest={helpRequest} externalTrigger={helpTrigger} hideLauncher/>
   </div>;
 }

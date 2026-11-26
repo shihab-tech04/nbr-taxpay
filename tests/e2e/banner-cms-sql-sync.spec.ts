@@ -387,21 +387,26 @@ test('Slider 2 shares published CMS images, ordering, dynamic colors and fixed b
   await expect(frame).toHaveCSS('background-color','rgb(248, 247, 235)');
   await expect(layers.first().locator('img')).toHaveAttribute('src',/slider2-desktop.png/);
   await expect(layers.first().locator('source')).toHaveAttribute('srcset',/slider2-mobile.png/);
-  // Desktop fills the frame; dedicated mobile artwork keeps its approved contain fit.
-  await expect(layers.first().locator('img')).toHaveCSS('object-fit',desktop?'cover':'contain');
-  const pay=frame.getByTestId('home2-pay'),other=frame.getByTestId('home2-other');
+  // Both layouts fill their own artwork region, including wide mobile/fallback assets.
+  await expect(layers.first().locator('img')).toHaveCSS('object-fit','cover');
+  const pay=frame.getByTestId('home2-pay');
+  const card=page.getByTestId('home2-other-payments');
   await expect(pay).toHaveText('Start tax payment');
-  await expect(other).toHaveText('Other Tax');
+  await expect(frame.getByTestId('home2-other')).toHaveCount(0);
+  await expect(card.getByTestId('home2-gift-action')).toBeVisible();
+  await expect(card.getByTestId('home2-travel-action')).toBeVisible();
   const before=await pay.boundingBox();
   await slider.getByRole('button',{name:'Next slide'}).click();
   await expect(frame).toHaveAttribute('data-banner-id','return');
   await expect(frame).toHaveCSS('background-color','rgb(231, 244, 237)');
   await expect(frame.getByRole('heading')).toHaveCSS('color','rgb(24, 79, 55)');
   await expect(frame.locator('p')).toHaveCSS('color','rgb(41, 94, 71)');
-  await expect(other).toHaveCSS('border-color','rgb(40, 101, 75)');
+  await expect(frame).toHaveCSS('border-color','rgb(40, 101, 75)');
   await expect(frame.getByRole('heading',{name:heading})).toBeVisible();
   await expect(pay).toHaveText('Start tax payment');
-  await expect(other).toHaveText('Other Tax');
+  await expect(frame.getByTestId('home2-other')).toHaveCount(0);
+  await expect(card.getByTestId('home2-gift-action')).toBeVisible();
+  await expect(card.getByTestId('home2-travel-action')).toBeVisible();
   const after=await pay.boundingBox();
   expect(after?.x).toBeCloseTo(before!.x,0); expect(after?.y).toBeCloseTo(before!.y,0);
   await frame.focus(); await page.keyboard.press('ArrowRight');
@@ -419,12 +424,13 @@ test('Slider 2 shares published CMS images, ordering, dynamic colors and fixed b
   await page.getByRole('button',{name:'Switch to Bangla'}).click();
   await expect(frame.getByRole('heading',{name:desktop?'এসকিউএল-নিয়ন্ত্রিত শিরোনাম':'মোবাইল শিরোনাম'})).toBeVisible();
   await expect(pay).toHaveText('কর পরিশোধ শুরু');
-  await expect(other).toHaveText('অন্যান্য কর');
+  await expect(card.getByTestId('home2-gift-action')).toHaveText('দানকর দিন');
+  await expect(card.getByTestId('home2-travel-action')).toHaveText('ভ্রমণ কর দিন');
   rows=[];
   await advanceBrandingRefresh(page);
   await expect(layers).toHaveCount(0);
   await expect(frame).toHaveAttribute('data-banner-count','0');
-  await expect(pay).toBeVisible(); await expect(other).toBeVisible();
+  await expect(pay).toBeVisible(); await expect(card.getByTestId('home2-travel-action')).toBeVisible();
   await expect(slider.getByRole('group',{name:'ব্যানার পরিবর্তন করুন'})).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
@@ -447,11 +453,11 @@ test('Slider 2 uses shared image fallback, autoplay and reduced-motion controls'
   await frame.focus();await page.keyboard.press('ArrowLeft');
   await expect(frame).toHaveAttribute('data-active-slide','0');
   await expect(frame.getByTestId('home2-pay')).toBeVisible();
-  await expect(frame.getByTestId('home2-other')).toBeVisible();
+  await expect(frame.getByTestId('home2-other')).toHaveCount(0);
 });
 
 // The existing payment dialog's open state must also suspend Slider 2.
-test('Slider 2 pauses during the existing Other Tax modal', async ({page})=>{
+test('Slider 2 pauses during the direct Travel Tax modal', async ({page})=>{
   await page.clock.install();
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.route('**/rest/v1/taxpay_site_banners**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
@@ -459,7 +465,7 @@ test('Slider 2 pauses during the existing Other Tax modal', async ({page})=>{
   const frame=page.getByTestId('slider2').getByRole('region');
   await expect(frame.getByTestId('home2-pay')).toHaveText('Start tax payment');
   await expect(frame).toHaveAttribute('data-paused','false');
-  await frame.getByTestId('home2-other').click();
+  await page.getByTestId('home2-travel-action').click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(frame).toHaveAttribute('data-paused','true');
   const index=await frame.getAttribute('data-active-slide');

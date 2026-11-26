@@ -1,8 +1,9 @@
 import { ArrowRight, ArrowUpRight, CalendarCheck, CircleHelp, Download, FilePen, Globe, House, MessageCircle, Receipt, ShieldAlert, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { Slider2 } from '../Slider2'
+import { OtherTaxCard } from '../OtherTaxCard'
 import { LineArt, type LineArtName } from '../lineArt'
 import { Logo, SearchPanel, Tile, type ViewProps, type Home2Action } from '../shared'
-const surface = 'rounded-[20px] ring-1 ring-black/[0.05]'
+const surface = 'rounded-[20px] ring-1 ring-[#e2e5eb]'
 const hover = 'transition duration-200 hover:ring-black/10 hover:shadow-[0_12px_28px_-18px_rgba(15,29,52,0.35)]'
 export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn, sliderPaused }: ViewProps) {
   const f = c.features
@@ -24,36 +25,29 @@ return <div className="flex min-h-screen flex-col bg-[#f4f6fa]"><header role="ba
     <p className="mt-1.5 text-[13px] leading-snug text-[#3e4b62]">{c.find.body}</p>
   </div>
   <div className="relative mt-5"><SearchPanel c={c} onSearch={onSearch} /></div>
-</Tile><Tile delay={140} className="flex flex-1 flex-col"><div className={"relative flex flex-1 flex-col justify-between gap-5 overflow-hidden bg-[#cce4eb] p-6 " + surface}>
- <LineArt name="guide" accent="#acd0dc" className="absolute top-4 right-4 size-16 text-[#162d53]" />
- <div className="relative pr-20"><h3 className="text-[18px] leading-tight font-bold tracking-[-0.015em]">{c.help.title}</h3><p className="mt-1.5 text-[13px] leading-snug text-[#3e4b62]">{c.help.body}</p></div>
- <div className="relative grid grid-cols-2 gap-2">
-   <button data-testid="home2-guide-action" onClick={open('guide')} className="home2-press flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-white px-3 text-[13px] font-semibold ring-1 ring-black/5 hover:bg-white/80">{c.help.guide} <ArrowRight className="size-4 shrink-0" /></button>
-   <button data-testid="home2-chat-action" onClick={open('help')} className="home2-press flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-white/50 px-3 text-[13px] font-semibold ring-1 ring-black/5 hover:bg-white/80"><MessageCircle className="size-4 shrink-0" /> {c.help.chat}</button>
- </div>
-</div></Tile></div></section>
-<section className="home2-v2-type mt-12" aria-labelledby="features-title"><Tile delay={200} className="mb-5 flex items-center justify-between gap-6"><h2 id="features-title" className="min-w-0 text-[28px] leading-tight font-bold tracking-[-0.025em]">{c.section.title}</h2><button type="button" data-testid="home2-dashboard-action" onClick={open('login')} className="home2-press group flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-[14px] font-semibold text-[#244d8f] ring-1 ring-[#dfe5ee] transition hover:bg-[#f7f9fd] hover:text-[#162d53]">{signedIn ? (c.langSwitch === 'English' ? 'ড্যাশবোর্ড দেখুন' : 'Open dashboard') : c.section.cta}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></button></Tile>
+</Tile><OtherTaxCard c={c} onAction={onAction} desktop/></div></section>
+<section className="home2-v2-type mt-12" aria-labelledby="features-title"><Tile delay={200} className="mb-5 flex items-center justify-between gap-6"><h2 id="features-title" className="min-w-0 text-[28px] leading-tight font-bold tracking-[-0.025em]">{c.section.title}</h2></Tile>
 <div className="grid grid-cols-12 grid-rows-[repeat(2,minmax(150px,auto))_minmax(112px,auto)] gap-4"><Tile delay={240} className="col-span-6 row-span-2">
-<button onClick={open('pay')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-[#a5bce1] p-7 text-left " + surface + " " + hover}>
+<button onClick={open('pay')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-white p-7 text-left " + surface + " " + hover}>
  <LineArt name="wallet" accent="#cad8ef" className="absolute top-6 right-6 size-28 text-[#162d53]" />
  <div className="relative flex min-w-0 flex-1 flex-col">
  <div data-testid="home2-all-payments-copy" className="min-h-28 pr-28">
  <h3 className="flex items-center gap-2 text-[26px] leading-tight font-bold tracking-[-0.025em]">{f.all.title} <ArrowUpRight className="size-5 text-[#162d53]/50 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#0f1d34]" /></h3>
  <p className="mt-1.5 max-w-[320px] text-[14px] leading-snug text-[#0f1d34]/75">{f.all.body}</p>
  </div>
- <div className="mt-auto flex flex-wrap gap-1.5 pt-4">{f.all.chips.map(x=><span key={x} className="rounded-md bg-white/70 px-2.5 py-1 text-[12px] font-medium">{x}</span>)}</div>
- <ol className="mt-5 grid grid-cols-3 gap-2">{f.all.steps.map((step,i)=><li key={step} className="rounded-xl bg-white/75 p-3.5"><span className="grid size-6 place-items-center rounded-full bg-[#162d53] text-[11px] font-bold text-white">{i+1}</span><span className="mt-2.5 text-[13px] block leading-tight font-semibold">{step}</span></li>)}</ol>
+ <div className="mt-auto flex flex-wrap gap-1.5 pt-4">{f.all.chips.map(x=><span key={x} className="rounded-md bg-[#edf3fc] px-2.5 py-1 text-[12px] font-medium">{x}</span>)}</div>
+ <ol className="mt-5 grid grid-cols-3 gap-2">{f.all.steps.map((step,i)=><li key={step} className="rounded-xl bg-[#edf3fc] p-3.5"><span className="grid size-6 place-items-center rounded-full bg-[#162d53] text-[11px] font-bold text-white">{i+1}</span><span className="mt-2.5 text-[13px] block leading-tight font-semibold">{step}</span></li>)}</ol>
  </div></button></Tile>
- <Tile delay={280} className="col-span-3 row-span-2"><button onClick={open('history')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-[#e3ddd4] p-6 text-left " + surface + " " + hover}>
+ <Tile delay={280} className="col-span-3 row-span-2"><button onClick={open('history')} className={"home2-press group relative flex h-full w-full flex-col overflow-hidden bg-white p-6 text-left " + surface + " " + hover}>
  <LineArt name="receipts" accent="#cfc6b9" className="absolute top-5 right-5 size-16 text-[#162d53]" />
  <div className="relative pr-20">
  <h3 className="text-[18px] leading-tight font-bold tracking-[-0.015em]">{f.history.title}</h3><p className="mt-1.5 text-[13px] leading-snug text-[#3e4b62]">{f.history.body}</p></div>
- <div className="relative mt-auto space-y-1.5 pt-5">{c.taxYears.map(y=><div key={y} aria-hidden="true" className="flex items-center gap-2.5 rounded-lg bg-white/75 px-3 py-2.5"><Receipt className="size-4 shrink-0 text-[#5d697e]" aria-hidden /><span className="min-w-0 flex-1 truncate text-[12.5px] text-[#3e4b62]">{f.history.taxYear} <span className="font-semibold text-[#0f1d34]">{y}</span></span><Download className="size-3.5 shrink-0 text-[#5d697e]" aria-hidden /></div>)}</div></button></Tile>
- <MiniTile delay={320} art="certificate" title={f.certs.title} body={f.certs.body} onClick={open('certificates')} tone="bg-[#cecfeb]" accent="#b0b1dc" />
-<MiniTile delay={360} art="edit" title={f.corrections.title} body={f.corrections.body} onClick={open('corrections')} tone="bg-[#e3d2d4]" accent="#cfb5b9" />
-<WideTile delay={400} art="repeat" title={f.again.title} body={f.again.body} onClick={open('again')} tone="bg-[#e3ddd4]" accent="#cfc6b9" />
-<WideTile delay={440} art="folder" title={f.drafts.title} body={f.drafts.body} onClick={open('drafts')} tone="bg-[#d5e6d4]" accent="#bad4b9" />
- <WideTile delay={480} art="shield" title={f.secure.title} body={f.secure.body} onClick={open('security')} tone="bg-[#cad8ef]" accent="#a5bce1" /></div></section></section>
+ <div className="relative mt-auto space-y-1.5 pt-5">{c.taxYears.map(y=><div key={y} aria-hidden="true" className="flex items-center gap-2.5 rounded-lg bg-transparent px-3 py-2.5"><Receipt className="size-4 shrink-0 text-[#5d697e]" aria-hidden /><span className="min-w-0 flex-1 truncate text-[12.5px] text-[#3e4b62]">{f.history.taxYear} <span className="font-semibold text-[#0f1d34]">{y}</span></span><Download className="size-3.5 shrink-0 text-[#5d697e]" aria-hidden /></div>)}</div></button></Tile>
+ <MiniTile delay={320} art="certificate" title={f.certs.title} body={f.certs.body} onClick={open('certificates')} tone="bg-white" accent="#b0b1dc" />
+<MiniTile delay={360} art="edit" title={f.corrections.title} body={f.corrections.body} onClick={open('corrections')} tone="bg-white" accent="#cfb5b9" />
+<WideTile delay={400} art="repeat" title={f.again.title} body={f.again.body} onClick={open('again')} tone="bg-white" accent="#cfc6b9" />
+<WideTile delay={440} art="folder" title={f.drafts.title} body={f.drafts.body} onClick={open('drafts')} tone="bg-white" accent="#bad4b9" />
+ <WideTile delay={480} art="shield" title={f.secure.title} body={f.secure.body} onClick={open('security')} tone="bg-white" accent="#a5bce1" /></div></section></section>
 <footer role="contentinfo" className="home2-v2-type border-t border-[#dfe5ee] bg-white"><div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-x-8 gap-y-3 px-8 py-5"><div className="flex items-center gap-4"><Logo /><span className="h-8 w-px bg-[#dfe5ee]" aria-hidden /><p className="max-w-[130px] text-[12px] leading-snug text-[#5d697e]">{c.footer.tagline}</p></div><nav aria-label="Footer" className="flex flex-wrap items-center gap-1">{links.map(l=><button key={l.label} onClick={open(l.action)} className="flex items-center gap-1 rounded-md px-3 py-1.5 text-[13px] font-medium text-[#3e4b62] transition hover:bg-[#f4f6fa] hover:text-[#0f1d34]">{l.label}{l.external&&<ArrowUpRight className="size-3.5" />}</button>)}</nav><div className="text-[12px] text-[#5f6880]"><p>{c.footer.copyright}</p><a href="?action=landing" className="underline" onClick={e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){e.preventDefault();onAction('original')}}}>{c.langSwitch === 'English' ? 'মূল পাতা' : 'Original Home'}</a>{' · '}<a href={c.langSwitch === 'English'?'?action=home-3&lang=bn':'?action=home-3'} className="underline">Home 3</a></div>
 </div></footer>
 <button onClick={open('help')} className="home2-v2-type home2-press fixed right-6 bottom-6 z-30 flex h-11 items-center gap-2 rounded-full bg-white pr-4.5 pl-3.5 text-[13.5px] font-semibold text-[#1c3d70] shadow-[0_10px_28px_-12px_rgba(15,29,52,0.35)] ring-1 ring-[#dfe5ee] hover:bg-[#f4f7fc]"><MessageCircle className="size-[18px]" /> {c.nav.help}</button></div>}
