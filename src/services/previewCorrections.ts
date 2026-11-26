@@ -7,7 +7,13 @@ export type PreviewCorrectionInput = {
   proposedAY:string; proposedCircle:string; proposedHeadCode:string; reason:string;
 };
 export type PreviewReportInput={caseKind:'UNSOLICITED_PAYMENT_REPORT';eventId:string;requestKey:string;reason:string};
+export type AppliedPreviewCorrection = Readonly<{
+  paymentId:string; allocationIndex:number|null; allocationId:string|null;
+  assessmentYear:string; circle:string; headCode:string;
+  sourceProject:'original'|'v2'; decisionMessageId:string;
+}>;
 export type PreviewCorrectionRecord = {
+  appliedCorrection?:AppliedPreviewCorrection|null;
   caseKind?:'CORRECTION_REVIEW'|'UNSOLICITED_PAYMENT_REPORT';recipientEventId?:string|null;paymentCompleted?:boolean;
   id:string; paymentId:string|null; originalReference:string; allocationIndex:number|null; allocationId:string|null;
   currentAY:string; proposedAY:string; currentCircle:string; proposedCircle:string;
@@ -37,6 +43,23 @@ export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'off
     default:return bn?'অফিসে জমা হয়েছে':'Submitted to Office';
   }
 }
+/** Never infer applied changes from proposed values or status alone. */
+export function validateAppliedPreviewCorrection(row:Record<string,unknown>):AppliedPreviewCorrection|null{
+  if(row.appliedCorrection===undefined||row.appliedCorrection===null)return null;
+  const raw=row.appliedCorrection;
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid applied correction');
+  const value=raw as Record<string,unknown>;
+  if(row.caseKind!=='CORRECTION_REVIEW'||row.reviewState!=='APPROVED'||row.officeSyncState!=='ACKNOWLEDGED'||
+    typeof row.paymentId!=='string'||value.paymentId!==row.paymentId||
+    value.allocationIndex!==row.allocationIndex||value.allocationId!==row.allocationId||
+    typeof value.assessmentYear!=='string'||value.assessmentYear!==row.proposedAY||
+    typeof value.circle!=='string'||value.circle!==row.proposedCircle||
+    typeof value.headCode!=='string'||value.headCode!==row.proposedHeadCode||
+    !['original','v2'].includes(String(value.sourceProject))||typeof value.decisionMessageId!=='string'||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.decisionMessageId))
+    throw Error('Invalid applied correction provenance');
+  return value as unknown as AppliedPreviewCorrection;
+}
 function checked(raw:unknown):PreviewCorrectionRecord{
   if(!raw||typeof raw!=='object')throw Error('Invalid correction response');
   const row=raw as Record<string,unknown>;
@@ -51,6 +74,7 @@ function checked(raw:unknown):PreviewCorrectionRecord{
   if(row.paymentCompleted!==undefined&&typeof row.paymentCompleted!=='boolean')throw Error('Invalid report payment state');
   if(row.caseKind!==undefined&&!['CORRECTION_REVIEW','UNSOLICITED_PAYMENT_REPORT'].includes(String(row.caseKind)))throw Error('Invalid case kind');
   if(row.caseKind==='UNSOLICITED_PAYMENT_REPORT'&&(typeof row.recipientEventId!=='string'||!row.recipientEventId.startsWith(String(row.paymentId)+':')))throw Error('Invalid report event identity');
+  validateAppliedPreviewCorrection(row);
   return row as unknown as PreviewCorrectionRecord;
 }
 async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|PreviewReportInput|{eventId:string}):Promise<unknown>{

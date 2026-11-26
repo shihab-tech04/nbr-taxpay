@@ -18,6 +18,24 @@ ALTER TABLE taxpay_guest_private.story_correction_requests DROP CONSTRAINT story
 ALTER TABLE taxpay_guest_private.story_correction_requests ADD CONSTRAINT story_correction_requests_review_state_check CHECK (review_state IN ('PENDING_OFFICER','MAKER_ACKNOWLEDGED','REVIEWER_VERIFIED','APPROVER_CLOSED','APPROVED','REJECTED'));
 ALTER TABLE taxpay_guest_private.story_correction_decisions DROP CONSTRAINT story_correction_decisions_officer_role_check;
 ALTER TABLE taxpay_guest_private.story_correction_decisions ADD CONSTRAINT story_correction_decisions_officer_role_check CHECK (officer_role IN ('MAKER','REVIEWER','APPROVER','SUPER_ADMIN'));
+-- Persist a nonfinancial, source-owned projection only for approved ordinary
+-- requests tied to a completed payment. Original payment and receipt are immutable.
+ALTER TABLE taxpay_guest_private.story_correction_requests
+ ADD COLUMN applied_correction jsonb,
+ ADD CONSTRAINT story_applied_correction_shape CHECK (
+  applied_correction IS NULL OR (
+   case_kind='CORRECTION_REVIEW' AND payment_id IS NOT NULL
+   AND office_initiation IS NULL AND review_state='APPROVED' AND office_sync_state='ACKNOWLEDGED'
+   AND pg_catalog.jsonb_typeof(applied_correction)='object'
+   AND (applied_correction->>'paymentId' = payment_id::text) IS TRUE
+   AND applied_correction->'allocationIndex' IS NOT DISTINCT FROM coalesce(pg_catalog.to_jsonb(allocation_index),'null'::jsonb)
+   AND applied_correction->'allocationId' IS NOT DISTINCT FROM coalesce(pg_catalog.to_jsonb(allocation_id),'null'::jsonb)
+   AND (applied_correction->>'assessmentYear' = proposed_year) IS TRUE
+   AND (applied_correction->>'circle' = proposed_circle) IS TRUE
+   AND (applied_correction->>'headCode' = proposed_head) IS TRUE
+   AND (applied_correction->>'sourceProject' IN ('original','v2')) IS TRUE
+   AND (applied_correction->>'decisionMessageId' ~ '^[0-9a-f-]{36}$') IS TRUE
+  ));
 CREATE OR REPLACE FUNCTION public.taxpay_correction_record_office_decision(p_command jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $function$
 DECLARE
@@ -132,7 +150,16 @@ begin
  insert into taxpay_guest_private.story_correction_decisions(message_id,request_id,officer_uid,officer_role,action,command,resulting_state)
  values(v_message,v_request,v_actor,v_role,v_action,p_command,v_next);
  update taxpay_guest_private.story_correction_requests set office_sync_state='ACKNOWLEDGED',
-   office_ack_at=coalesce(office_ack_at,now()),review_state=v_next,review_updated_at=now(),review_reason=v_reason
+   office_ack_at=coalesce(office_ack_at,now()),review_state=v_next,review_updated_at=now(),review_reason=v_reason,
+   applied_correction=case when v_next='APPROVED' and v_row.case_kind='CORRECTION_REVIEW'
+       and v_row.payment_id is not null and v_row.office_initiation is null
+       and (v_row.current_year,v_row.current_circle,v_row.current_head)
+           is distinct from (v_row.proposed_year,v_row.proposed_circle,v_row.proposed_head)
+     then jsonb_build_object('paymentId',v_row.payment_id,'allocationIndex',v_row.allocation_index,
+       'allocationId',v_row.allocation_id,'assessmentYear',v_row.proposed_year,
+       'circle',v_row.proposed_circle,'headCode',v_row.proposed_head,
+       'sourceProject',p_command->>'sourceProject','decisionMessageId',v_message)
+     else null end
  where id=v_request;
  return jsonb_build_object('messageId',v_message,'stored',true,'reviewState',v_next);
 end;
@@ -276,6 +303,24 @@ begin
  return jsonb_build_object('messageId',v_id,'stored',true,'ownerLinked',true);
 end;
 $$;
+create or replace function taxpay_guest_private.story_correction_json(p_row taxpay_guest_private.story_correction_requests)
+returns jsonb language sql stable set search_path='' as $$
+ select jsonb_build_object(
+ 'caseKind',(p_row).case_kind,'recipientEventId',(p_row).recipient_event_id,'id',(p_row).id,'paymentId',coalesce((p_row).payment_id,(p_row).recipient_initiation_id),'originalReference',(p_row).original_reference,
+ 'allocationIndex',(p_row).allocation_index,'allocationId',(p_row).allocation_id,
+ 'currentAY',(p_row).current_year,'proposedAY',(p_row).proposed_year,
+ 'currentCircle',(p_row).current_circle,'proposedCircle',(p_row).proposed_circle,
+ 'currentHeadCode',(p_row).current_head,'proposedHeadCode',(p_row).proposed_head,
+ 'reason',(p_row).reason,'createdAt',(p_row).created_at,'status','RECORDED',
+ 'officeSyncState',(p_row).office_sync_state,'reviewState',(p_row).review_state,
+ 'reviewUpdatedAt',(p_row).review_updated_at,'reviewReason',(p_row).review_reason,
+ 'appliedCorrection',(p_row).applied_correction,
+ 'initiatedBy',case when (p_row).office_initiation is null then 'TAXPAYER' else 'OFFICE' end,
+ 'requestedOutcome',(p_row).office_initiation->>'requestedOutcome','evidenceNote',(p_row).office_initiation->>'evidenceNote') || case when (p_row).case_kind='UNSOLICITED_PAYMENT_REPORT' then jsonb_build_object('paymentCompleted',exists(select 1 from demo_payment.story_payments p where p.id=coalesce((p_row).payment_id,(p_row).recipient_initiation_id))) else '{}'::jsonb end
+$$;
+revoke all on function taxpay_guest_private.story_correction_json(taxpay_guest_private.story_correction_requests) from public,anon,authenticated;
+
+
 CREATE OR REPLACE FUNCTION public.taxpay_notify_correction_review_decision()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
 DECLARE v_recipient uuid; v_message_code text;
