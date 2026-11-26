@@ -606,7 +606,26 @@ jobs:
             psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$V7_OFFICE_DIR/supabase/migrations/20261125205132_office_recipient_immediate_dual_source.sql"
           fi
           export WS3_V7_OFFICE_SOURCE="$V7_OFFICE_DIR"
+          # Fresh second disposable Supabase project: no linked metadata or hosted credentials.
+          V2_LOCAL_DIR="$RUNNER_TEMP/ws5-v11-local-replacement"
+          mkdir -p "$V2_LOCAL_DIR/supabase"
+          cp supabase/config.toml "$V2_LOCAL_DIR/supabase/config.toml"
+          cp -R supabase/migrations "$V2_LOCAL_DIR/supabase/migrations"
+          # Different project identifier and all configured listener ports.
+          python3 - "$V2_LOCAL_DIR/supabase/config.toml" <<'PY'
+          import pathlib, re, sys
+          p = pathlib.Path(sys.argv[1])
+          s = p.read_text()
+          s = re.sub(r'^project_id = ".*"$', 'project_id = "ws5-v11-disposable-replacement"', s, flags=re.M)
+          s = re.sub(r'^(\s*(?:port|shadow_port|inspector_port)\s*=\s*)(\d+)(\s*)$', lambda m: m[1]+str(int(m[2])+1000)+m[3], s, flags=re.M)
+          p.write_text(s)
+          PY
+          trap '(cd "$V2_LOCAL_DIR" && supabase stop --no-backup) >/dev/null 2>&1 || true; docker stop "$OFFICE_CONTAINER" >/dev/null 2>&1 || true' EXIT
+          (cd "$V2_LOCAL_DIR" && supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta > "$RUNNER_TEMP/ws5-v11-v2-start.log" 2>&1) || { tail -n 40 "$RUNNER_TEMP/ws5-v11-v2-start.log"; exit 1; }
+          export WS3_REPLACEMENT_DB_URL="postgresql://postgres:postgres@127.0.0.1:55322/postgres"
+          pg_isready -h 127.0.0.1 -p 55322 -U postgres -d postgres
           node tests/integration/pairedRecipientReportEdgeSql.mjs
+          (cd "$V2_LOCAL_DIR" && supabase stop --no-backup) >/dev/null
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           node tests/integration/pairedOfficeUiReadback.mjs
           echo "PASS: current Work A composer matrix, original Taxpayer Edge/SQL, separate current Office SQL/API, same paired record in Office UI, retry and authorized readback"
