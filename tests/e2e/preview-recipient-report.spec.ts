@@ -55,7 +55,7 @@ for(const language of ['en','bn'] as const){
     posts++;
     if(posts===1)return route.fulfill({status:503,json:{success:false}});
     reported=true;
-    if(posts===3){completed=true;officeAck=true;}
+    if(posts===3){officeAck=true;}
     return send(report());
    }
    if(url.pathname.endsWith('/profile-history')||url.pathname.endsWith('/authorizations'))return send([]);
@@ -78,12 +78,16 @@ for(const language of ['en','bn'] as const){
   await expect(dialog.getByRole('alert')).toBeVisible();
   await submit.click();
   await expect(dialog).toContainText(reportId);
-  await expect(dialog).toContainText(tr('Awaiting payment completion','পেমেন্ট সম্পন্ন হওয়ার অপেক্ষায়'));
-  await dialog.getByRole('button',{name:tr('Check report status','রিপোর্টের অবস্থা দেখুন'),exact:true}).click();
+  await expect(dialog).toContainText(tr('Awaiting Office','অফিসে পাঠানো হচ্ছে'));
+  await dialog.getByRole('button',{name:tr('Retry Office delivery','অফিসে আবার পাঠান'),exact:true}).click();
   await expect(dialog).toContainText(tr('Submitted to Office','অফিসে জমা হয়েছে'));
+  // Office acknowledgement and decision must precede payment completion.
   reviewed=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   await expect(dialog).toContainText(tr('Acknowledged','অফিস গ্রহণ করেছে'));
+  completed=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await expect(dialog).toContainText(reportId);
   await dialog.getByRole('button',{name:tr('Close','বন্ধ করুন'),exact:true}).click();
   await expect(popup).toBeVisible();
   await page.getByTestId('received-notice-close').click();

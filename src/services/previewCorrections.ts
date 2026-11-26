@@ -27,7 +27,6 @@ export function recentPreviewCorrections(rows:readonly PreviewCorrectionRecord[]
 }
 export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'|'paymentCompleted'>,language:'en'|'bn'){
   const bn=language==='bn';
-  if(record.paymentCompleted===false)return bn?'পেমেন্ট সম্পন্ন হওয়ার অপেক্ষায়':'Awaiting payment completion';
   if(record.officeSyncState!=='ACKNOWLEDGED')return bn?'অফিসে পাঠানো হচ্ছে':'Awaiting Office';
   switch(record.reviewState){
     case 'MAKER_ACKNOWLEDGED':return bn?'অফিস গ্রহণ করেছে':'Acknowledged';

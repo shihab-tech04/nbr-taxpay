@@ -42,23 +42,36 @@ const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
 const v2Origin='https://gmuhitmaynfhipcvbvkh.supabase.co';
 const correctionOfficeEndpoint='https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/payment-sync-bridge';
-async function correctionKey(admin:ReturnType<typeof serviceClient>){
- const {data,error}=await admin.rpc('payment_v1_demo_correction_key');
- if(error||typeof data!=='string'||!/^[0-9a-f]{64}$/.test(data))return null;
- return crypto.subtle.importKey('raw',Uint8Array.from(data.match(/../g)!,s=>parseInt(s,16)),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
+const originalOrigin='https://eyqhoavnitkrajvyqvxn.supabase.co';
+async function correctionKey(url:string,admin:ReturnType<typeof serviceClient>){
+ const origin=new URL(url).origin;
+ let secret:unknown;
+ if(origin===v2Origin){
+  const {data,error}=await admin.rpc('payment_v1_demo_correction_key');
+  if(error)return null;secret=data;
+ }else if(origin===originalOrigin){
+  // Reuse only the already enabled original↔Office HMAC contract.
+  const {data,error}=await admin.rpc('payment_v1_internal_bridge_config');
+  if(error||data?.enabled!==true||data.origin!=='TAXPAY_SQL'||data.selfUrl!==originalOrigin+'/functions/v1/payment-sync-bridge'||data.peerUrl!==correctionOfficeEndpoint)return null;
+  secret=data.signingKey;
+ }else return null;
+ if(typeof secret!=='string'||!/^[0-9a-f]{64}$/.test(secret))return null;
+ return crypto.subtle.importKey('raw',Uint8Array.from(secret.match(/../g)!,s=>parseInt(s,16)),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
 }
 async function deliverCorrections(url:string,admin:ReturnType<typeof serviceClient>,id:string|null=null){
- // Disposable and original databases must never dispatch V2 correction traffic.
- if(new URL(url).origin!==v2Origin)return {claimed:0,acknowledged:0,failed:0};
- const key=await correctionKey(admin);
+ const origin=new URL(url).origin;
+ if(origin!==v2Origin&&origin!==originalOrigin)return {claimed:0,acknowledged:0,failed:0};
+ const source=origin===v2Origin?'v2':'original';
+ const key=await correctionKey(url,admin);
  if(!key)return {claimed:0,acknowledged:0,failed:0};
- const {data,error}=await admin.rpc('taxpay_demo_correction_claim',{p_limit:id?1:20,p_id:id});
+ const {data,error}=await admin.rpc(source==='v2'?'taxpay_demo_correction_claim':'taxpay_demo_original_report_claim',{p_limit:id?1:20,p_id:id});
  if(error||!Array.isArray(data))throw Error('CORRECTION_CLAIM_FAILED');
  let acknowledged=0,failed=0;
  for(let offset=0;offset<data.length;offset+=5){
   await Promise.all(data.slice(offset,offset+5).map(async item=>{
    let okay=false;
    try{
+    if(item.event?.sourceProject!==source||source==='original'&&item.event?.payload?.caseKind!=='UNSOLICITED_PAYMENT_REPORT')throw Error('CORRECTION_SOURCE_MISMATCH');
     const eventText=JSON.stringify(item.event);
     const signature=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,encoder.encode(eventText))),x=>x.toString(16).padStart(2,'0')).join('');
     const response=await fetch(correctionOfficeEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -124,17 +137,20 @@ Deno.serve(async(req)=>{
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
   if(path==='/corrections/office-decision'&&req.method==='POST'){
-   if(new URL(url).origin!==v2Origin)return respond({error:'INVALID_CORRECTION_ROUTE'},403);
+   const origin=new URL(url).origin;
+   if(origin!==v2Origin&&origin!==originalOrigin)return respond({error:'INVALID_CORRECTION_ROUTE'},403);
+   const source=origin===v2Origin?'v2':'original';
    const raw=await req.text();
    if(raw.length>24000)return respond({error:'INVALID_CORRECTION_COMMAND'},400);
    let input:Record<string,unknown>;
    try{input=JSON.parse(raw);}catch{return respond({error:'INVALID_CORRECTION_COMMAND'},400);}
    if(input?.mode!=='ingest'||typeof input.commandText!=='string'||typeof input.signature!=='string'||
       !/^[0-9a-f]{64}$/.test(input.signature))return respond({error:'INVALID_CORRECTION_COMMAND'},400);
-   const admin=serviceClient(url),secret=await correctionKey(admin);
+   const admin=serviceClient(url),secret=await correctionKey(url,admin);
    if(!secret||!await crypto.subtle.verify('HMAC',secret,Uint8Array.from(input.signature.match(/../g)!,s=>parseInt(s,16)),encoder.encode(input.commandText)))
      return respond({error:'UNAUTHORIZED_CORRECTION_COMMAND'},401);
    const command=JSON.parse(input.commandText);
+   if(command?.sourceProject!==source||source==='original'&&command?.commandType!=='CORRECTION_REVIEW')return respond({error:'INVALID_CORRECTION_ROUTE'},403);
    const initiation=command?.commandType==='OFFICE_CORRECTION_INITIATED';
    const {data,error}=await admin.rpc(initiation?'taxpay_demo_correction_office_initiation':'taxpay_demo_correction_office_decision',{p_command:command});
    if(error)return respond({error:'CORRECTION_DECISION_NOT_ACCEPTED'},409);
