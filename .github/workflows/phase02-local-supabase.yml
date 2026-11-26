@@ -635,7 +635,7 @@ jobs:
           # Preserve all historical integration checks above, then rehearse the
           # paired direct-admin candidates on the same three disposable instances.
           DIRECT_OFFICE_DIR="$RUNNER_TEMP/ws5-v12-direct-office"
-          DIRECT_OFFICE_SHA="5d5ad8f746e93e3931707e77364eca7d54f2d6ca"
+          DIRECT_OFFICE_SHA="5cb8bfc70fb9d013dc50cc69f3f4b1f3b88ca6d6"
           git clone --depth 1 --branch fix/correction-super-admin-office-contract-20261126 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$DIRECT_OFFICE_DIR"
           git -C "$DIRECT_OFFICE_DIR" fetch --depth 1 origin "$DIRECT_OFFICE_SHA"
           git -C "$DIRECT_OFFICE_DIR" checkout --detach "$DIRECT_OFFICE_SHA"

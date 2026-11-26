@@ -65,7 +65,7 @@ INSERT INTO demo_payment.story_payments(
     'sessionId','80000000-0000-4000-8000-000000000043',
     'service','OTHER_TAX_PAYMENT','amountMinor',100,'origin','TAXPAY_UI',
     'details',jsonb_build_object(
-      'payerMode','OTHER','payerId','user30','payerTin','909000000030',
+      'payerMode','OTHER','payerTin','909000000030',
       'payerName','Taxpayer Account 30','receiptReference','SYN-REF-003',
       'allocations',jsonb_build_array(
         jsonb_build_object('allocationId','ws3-parent-owner-line',
@@ -81,6 +81,19 @@ INSERT INTO demo_payment.story_payments(
   ),
   'SIMULATED_SUCCESS'
 );
+
+-- Separate synthetic self-payment passes the existing authorized line/total guard.
+-- The historical walk-in fixture above remains unchanged in ownership semantics.
+INSERT INTO demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status)
+VALUES('90000000-0000-4000-8000-000000000082','90000000-0000-4000-8000-000000000083',
+ '80000000-0000-4000-8000-000000000043','OTHER_TAX_PAYMENT',100,
+ jsonb_build_object('origin','TAXPAY_UI','details',jsonb_build_object(
+  'payerId','user30','payerMode','SELF','payerTin','909000000030','taxpayerTin','909000000030',
+  'receiptReference','SYN-TYPED-082','assessmentYear','2025-2026','taxCircle','Circle A',
+  'lines',jsonb_build_array(jsonb_build_object('beneficiary','user30','amountMinor',100,'assessmentYear','2025-2026','economicCode','HEAD-A')),
+  'allocations',jsonb_build_array(jsonb_build_object('allocationId','typed-owner-line','taxpayerTin','909000000030','amountMinor',100,'assessmentYear','2025-2026')),
+  'receiptSnapshot',jsonb_build_object('challanNo','SYN-TYPED-082','taxCircle','Circle A',
+   'allocationItems',jsonb_build_array(jsonb_build_object('allocationId','typed-owner-line','economicCode','HEAD-A','amountMinor',100))))),'SIMULATED_SUCCESS');
 
 CREATE TEMP TABLE correction_financial_guard(
   relation_name text PRIMARY KEY,row_count bigint NOT NULL,content_digest text NOT NULL
@@ -262,10 +275,10 @@ DECLARE cmd jsonb; got jsonb; again jsonb; bad jsonb;
 BEGIN
  cmd:=jsonb_build_object('schemaVersion','1.0.0','commandType','OFFICE_CORRECTION_INITIATED','origin','OFFICE_SQL',
  'messageId','90000000-0000-4000-8000-000000000081','requestId','90000000-0000-4000-8000-000000000081',
- 'sourcePaymentId','80000000-0000-4000-8000-000000000041','originalReference','SYN-REF-003','taxpayerTin','909000000030',
+ 'sourcePaymentId','90000000-0000-4000-8000-000000000082','originalReference','SYN-TYPED-082','taxpayerTin','909000000030',
  'officerUid','90000000-0000-4000-8000-000000000099','officerRole','SUPER_ADMIN','reason','Verified typed correction reason',
  'requestedOutcome','Correct the assessment year','evidenceNote','Verified evidence note','occurredAt',now(),'sourceProject','v2','simulationOnly',true,
- 'typedCorrection','{"allocationIndex":0,"allocationId":"ws3-parent-owner-line","currentAY":"2025-2026","currentCircle":"Circle A","currentHeadCode":"HEAD-A","proposedAY":"2026-2027","proposedCircle":"Circle A","proposedHeadCode":"HEAD-A"}'::jsonb);
+ 'typedCorrection','{"allocationIndex":0,"allocationId":"typed-owner-line","currentAY":"2025-2026","currentCircle":"Circle A","currentHeadCode":"HEAD-A","proposedAY":"2026-2027","proposedCircle":"Circle A","proposedHeadCode":"HEAD-A"}'::jsonb);
  got:=public.taxpay_demo_correction_office_initiation(cmd);
  again:=public.taxpay_demo_correction_office_initiation(cmd);
  IF got IS DISTINCT FROM again OR got->>'reviewState' IS DISTINCT FROM 'APPROVED'

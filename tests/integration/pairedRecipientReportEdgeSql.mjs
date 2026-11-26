@@ -44,6 +44,7 @@ function rpc(origin,name,a={}){
   taxpay_demo_correction_list:'public.taxpay_demo_correction_list('+t(a.p_capability_hash)+','+Number(a.p_limit)+','+Number(a.p_offset)+')',
   taxpay_demo_correction_notices:'public.taxpay_demo_correction_notices('+t(a.p_capability_hash)+','+Number(a.p_limit)+','+Number(a.p_offset)+')',
   taxpay_demo_correction_office_decision:'public.taxpay_demo_correction_office_decision('+j(a.p_command)+')',
+  taxpay_demo_correction_office_initiation:'public.taxpay_demo_correction_office_initiation('+j(a.p_command)+')',
  };
  const office={
   payment_v1_internal_bridge_config:source.payment_v1_internal_bridge_config,
@@ -52,6 +53,8 @@ function rpc(origin,name,a={}){
   payment_v1_demo_correction_route:"coalesce(to_jsonb(public.payment_v1_demo_correction_route("+u(a.p_id)+")),'null'::jsonb)",
   payment_v1_internal_claim_commands:'public.payment_v1_internal_claim_commands('+Number(a.p_limit)+')',
   payment_v1_internal_ack_correction_command:'public.payment_v1_internal_ack_correction_command('+u(a.p_message_id)+','+u(a.p_claim_token)+','+a.p_success+','+(a.p_review_state===null?'NULL':t(a.p_review_state))+','+(a.p_error===null?'NULL':t(a.p_error))+')',
+  payment_v1_internal_ack_typed_office_correction:'public.payment_v1_internal_ack_typed_office_correction('+u(a.p_message_id)+','+u(a.p_claim_token)+','+j(a.p_applied_correction)+')',
+  payment_v1_internal_ack_command:'public.payment_v1_internal_ack_command('+u(a.p_message_id)+','+u(a.p_claim_token)+','+a.p_success+','+(a.p_error===null?'NULL':t(a.p_error))+')',
  };
  const expression=(origin==='office'?office:source)[name];
  if(!expression)throw Error('Unexpected disposable report RPC '+origin+'.'+name);
@@ -191,5 +194,41 @@ for(const origin of ['original','v2']){
  const own=await call(origin,'source',sourcePath+'?limit=100&offset=0',undefined,recipient.capability);
  assert.ok(!own.data.data.some(x=>x.id===rejectedId),'Recipient cannot read another allocation report');
  assert.deepEqual(fingerprint(sourceDb),beforeSource);assert.deepEqual(fingerprint(officeDb),beforeOffice);assert.deepEqual(fingerprint(otherDb),beforeOther);
+ if(directAdmin&&origin==='v2'){
+  // Completion of the already validated local initiation is independent of report handling.
+  const completed=sql(sourceDb,'SELECT public.taxpay_demo_story1_submit('+t(capHash(payer.capability))+','+j(payload)+');');
+  assert.equal(completed.id,staged.id);assert.equal(completed.status,'SIMULATED_SUCCESS');
+  // The disposable Office SQL parent must be the exact immutable source row, not a
+  // fabricated correction result. Existing separate mirror tests cover its transport.
+  const parent=sql(sourceDb,'SELECT to_jsonb(p) FROM demo_payment.story_payments p WHERE p.id='+u(staged.id));
+  assert.equal(parent.status,'SIMULATED_SUCCESS');
+  sql(officeDb,'INSERT INTO demo_payment.story_payments(id,session_id,service_code,amount_minor,data,status,created_at) VALUES('+u(parent.id)+','+u(parent.session_id)+','+t(parent.service_code)+','+Number(parent.amount_minor)+','+j(parent.data)+','+t(parent.status)+','+t(parent.created_at)+'::timestamptz) ON CONFLICT(id) DO NOTHING; SELECT true;');
+  const mirroredParent=sql(officeDb,'SELECT to_jsonb(p) FROM demo_payment.story_payments p WHERE p.id='+u(staged.id));
+  assert.deepEqual(mirroredParent.data,parent.data);assert.equal(mirroredParent.amount_minor,parent.amount_minor);
+  const d=parent.data.details,s=d.receiptSnapshot??{},a=d.allocations[0],sa=s.allocationItems?.[0],line=d.lines?.[0];
+  const currentAY=a.assessmentYear||sa?.assessmentYear||line?.assessmentYear||s.assessmentYear||d.assessmentYear||'';
+  const currentCircle=s.taxCircle??d.taxCircle??'';
+  const currentHeadCode=sa?.economicCode||line?.economicCode||s.items?.[0]?.economicCode||'';
+  const correction={allocationIndex:0,allocationId:a.allocationId,currentAY,currentCircle,currentHeadCode,
+    proposedAY:currentAY==='2024-2025'?'2023-2024':'2024-2025',proposedCircle:currentCircle,proposedHeadCode:currentHeadCode};
+  const typedBefore=fingerprint(sourceDb),typedOfficeBefore=fingerprint(officeDb);
+  const queued=sql(officeDb,"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub',"+t(adminFixture)+",true); SELECT public.payment_v1_office_initiate_correction("+u(staged.id)+","+t(a.taxpayerTin)+","+t(d.receiptReference)+","+t('Disposable exact typed correction reason')+","+t('Correct the assessment year')+","+t('Verified disposable evidence note')+","+u(randomUUID())+","+j(correction)+"); COMMIT;");
+  assert.equal(queued.queued,true);
+  const dispatched=await call('office','command','/payment-command-bridge',{mode:'dispatch',token:officeConfig.dispatchToken});
+  assert.equal(dispatched.status,200);
+  const cmd=decisions.find(x=>JSON.parse(x.body.commandText).messageId===queued.caseId);
+  assert.equal(cmd?.origin,'v2');
+  const result=await call('v2','source',sourcePath+'/office-decision',cmd.body);
+  assert.equal(result.status,200);assert.equal(result.data.reviewState,'APPROVED');assert.equal(result.data.appliedCorrection.assessmentYear,correction.proposedAY);
+  const ownerRows=await call('v2','source',sourcePath+'?limit=100&offset=0',undefined,recipient.capability);
+  const applied=ownerRows.data.data.find(x=>x.id===queued.caseId);
+  assert.deepEqual(applied?.appliedCorrection,result.data.appliedCorrection);
+  const otherRows=await call('v2','source',sourcePath+'?limit=100&offset=0',undefined,outsider.capability);
+  assert.ok(!otherRows.data.data.some(x=>x.id===queued.caseId));
+  const ack=sql(officeDb,'SELECT jsonb_build_object(\'applied\',c.source_applied_correction,\'delivery\',o.delivery_state) FROM payment_sync.office_initiated_corrections c JOIN payment_sync.control_outbox o ON o.message_id=c.case_id WHERE c.case_id='+u(queued.caseId));
+  assert.equal(ack.delivery,'ACKNOWLEDGED');assert.deepEqual(ack.applied,result.data.appliedCorrection);
+  assert.deepEqual(fingerprint(sourceDb),typedBefore);assert.deepEqual(fingerprint(officeDb),typedOfficeBefore);assert.deepEqual(fingerprint(otherDb),beforeOther);
+  console.log('PASS V2 actual signed typed Office initiation, owner readback, exact ACK, replay and immutable original record');
+ }
  console.log('PASS '+origin+' independent disposable cluster, actual signed immediate report/ACK/'+(directAdmin?'direct Super Admin approve/reject':'historical Maker/Reviewer/Approver/rejection')+', retry/replay, cross-source denial and immutable payment ledgers');
 }
