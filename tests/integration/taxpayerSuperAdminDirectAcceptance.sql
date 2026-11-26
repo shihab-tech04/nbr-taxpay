@@ -211,10 +211,10 @@ VALUES
  ('90000000-0000-4000-8000-000000000002','user1',NULL,'90000000-0000-4000-8000-000000000012','DEMO-DIRECT-REJECT','2025-2026','2026-2027','Circle A','Circle A','HEAD-A','HEAD-A','Disposable historical request');
 SET LOCAL ROLE service_role;
 DO $direct$
-DECLARE cmd jsonb; got jsonb; replay jsonb; id uuid; x record;
+DECLARE cmd jsonb; got jsonb; replay jsonb; v_inquiry uuid; x record;
 BEGIN
- SELECT inquiry_id INTO id FROM correction_bridge_test_state;
- cmd:=jsonb_build_object('schemaVersion','1.0.0','commandType','CORRECTION_REVIEW','origin','OFFICE_SQL','messageId','90000000-0000-4000-8000-000000000021','requestId',id,'officerUid','90000000-0000-4000-8000-000000000099','officerRole','SUPER_ADMIN','action','APPROVE','idempotencyKey','90000000-0000-4000-8000-000000000031','reason','Verified correction in disposable fixture','expectedReviewState','PENDING_OFFICER','occurredAt',now());
+ SELECT inquiry_id INTO v_inquiry FROM correction_bridge_test_state;
+ cmd:=jsonb_build_object('schemaVersion','1.0.0','commandType','CORRECTION_REVIEW','origin','OFFICE_SQL','messageId','90000000-0000-4000-8000-000000000021','requestId',v_inquiry,'officerUid','90000000-0000-4000-8000-000000000099','officerRole','SUPER_ADMIN','action','APPROVE','idempotencyKey','90000000-0000-4000-8000-000000000031','reason','Verified correction in disposable fixture','expectedReviewState','PENDING_OFFICER','occurredAt',now());
  BEGIN
   PERFORM public.taxpay_correction_record_office_decision(cmd||'{"officerRole":"MAKER","action":"MAKER_ACKNOWLEDGE"}');
   RAISE EXCEPTION 'TEST_UNEXPECTED_LEGACY_ACTION';
@@ -241,12 +241,12 @@ END;
 $direct$;
 RESET ROLE;
 DO $verify$
-DECLARE x record; n bigint; d text; id uuid;
+DECLARE x record; n bigint; d text; v_inquiry uuid;
 BEGIN
- SELECT inquiry_id INTO id FROM correction_bridge_test_state;
- IF (SELECT count(*) FROM public.taxpay_correction_review_decisions WHERE inquiry_id=id)<>1 OR
-    (SELECT office_review_state FROM public.taxpay_correction_inquiries WHERE inquiry_id=id) IS DISTINCT FROM 'APPROVED' THEN RAISE EXCEPTION 'Authenticated direct decision persistence failed'; END IF;
- IF (SELECT count(*) FROM public.taxpay_in_app_notifications WHERE correction_inquiry_id=id AND message_code='CORRECTION_APPROVED')<>1 THEN RAISE EXCEPTION 'Approval notice missing or duplicated'; END IF;
+ SELECT inquiry_id INTO v_inquiry FROM correction_bridge_test_state;
+ IF (SELECT count(*) FROM public.taxpay_correction_review_decisions WHERE inquiry_id=v_inquiry)<>1 OR
+    (SELECT office_review_state FROM public.taxpay_correction_inquiries WHERE inquiry_id=v_inquiry) IS DISTINCT FROM 'APPROVED' THEN RAISE EXCEPTION 'Authenticated direct decision persistence failed'; END IF;
+ IF (SELECT count(*) FROM public.taxpay_in_app_notifications WHERE correction_inquiry_id=v_inquiry AND message_code='CORRECTION_APPROVED')<>1 THEN RAISE EXCEPTION 'Approval notice missing or duplicated'; END IF;
  IF (SELECT count(*) FROM taxpay_guest_private.story_correction_decisions WHERE request_id IN ('90000000-0000-4000-8000-000000000001','90000000-0000-4000-8000-000000000002'))<>2 THEN RAISE EXCEPTION 'Simulation decision replay duplicated'; END IF;
  IF (SELECT count(*) FROM taxpay_guest_private.story_correction_notice_events WHERE request_id IN ('90000000-0000-4000-8000-000000000001','90000000-0000-4000-8000-000000000002') AND code IN ('APPROVED','REJECTED'))<>2 THEN RAISE EXCEPTION 'Simulation decision notice missing'; END IF;
  FOR x IN SELECT * FROM correction_financial_guard LOOP
