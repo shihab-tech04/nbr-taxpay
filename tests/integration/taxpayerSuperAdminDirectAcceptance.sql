@@ -65,15 +65,16 @@ INSERT INTO demo_payment.story_payments(
     'sessionId','80000000-0000-4000-8000-000000000043',
     'service','OTHER_TAX_PAYMENT','amountMinor',100,'origin','TAXPAY_UI',
     'details',jsonb_build_object(
-      'payerMode','OTHER','payerTin','909000000030',
+      'payerMode','OTHER','payerId','user30','payerTin','909000000030',
       'payerName','Taxpayer Account 30','receiptReference','SYN-REF-003',
       'allocations',jsonb_build_array(
         jsonb_build_object('allocationId','ws3-parent-owner-line',
-          'taxpayerTin','909000000030','amountMinor',50),
+          'taxpayerTin','909000000030','assessmentYear','2025-2026','amountMinor',50),
         jsonb_build_object('allocationId','ws3-verified-other-recipient',
           'taxpayerTin','444444444444','amountMinor',50)),
       'receiptSnapshot',jsonb_build_object(
-        'challanNo','SYN-REF-003','payerTin','909000000030',
+        'challanNo','SYN-REF-003','payerTin','909000000030','taxCircle','Circle A',
+        'allocationItems',jsonb_build_array(jsonb_build_object('allocationId','ws3-parent-owner-line','economicCode','HEAD-A'),jsonb_build_object('allocationId','ws3-verified-other-recipient','economicCode','HEAD-B')),
         'payerName','Taxpayer Account 30'
       )
     )
@@ -256,6 +257,36 @@ BEGIN
  END LOOP;
 END;
 $direct$;
+DO $typed_initiation$
+DECLARE cmd jsonb; got jsonb; again jsonb; bad jsonb;
+BEGIN
+ cmd:=jsonb_build_object('schemaVersion','1.0.0','commandType','OFFICE_CORRECTION_INITIATED','origin','OFFICE_SQL',
+ 'messageId','90000000-0000-4000-8000-000000000081','requestId','90000000-0000-4000-8000-000000000081',
+ 'sourcePaymentId','80000000-0000-4000-8000-000000000041','originalReference','SYN-REF-003','taxpayerTin','909000000030',
+ 'officerUid','90000000-0000-4000-8000-000000000099','officerRole','SUPER_ADMIN','reason','Verified typed correction reason',
+ 'requestedOutcome','Correct the assessment year','evidenceNote','Verified evidence note','occurredAt',now(),'sourceProject','v2','simulationOnly',true,
+ 'typedCorrection','{"allocationIndex":0,"allocationId":"ws3-parent-owner-line","currentAY":"2025-2026","currentCircle":"Circle A","currentHeadCode":"HEAD-A","proposedAY":"2026-2027","proposedCircle":"Circle A","proposedHeadCode":"HEAD-A"}'::jsonb);
+ got:=public.taxpay_demo_correction_office_initiation(cmd);
+ again:=public.taxpay_demo_correction_office_initiation(cmd);
+ IF got IS DISTINCT FROM again OR got->>'reviewState' IS DISTINCT FROM 'APPROVED'
+   OR got#>>'{appliedCorrection,assessmentYear}' IS DISTINCT FROM '2026-2027' THEN RAISE EXCEPTION 'Typed Office source readback/replay mismatch'; END IF;
+ FOR bad IN SELECT * FROM (VALUES
+   (jsonb_set(cmd,'{typedCorrection,allocationId}','"wrong"'::jsonb)),
+   (jsonb_set(cmd,'{typedCorrection,currentAY}','"2024-2025"'::jsonb)),
+   (jsonb_set(cmd,'{typedCorrection,proposedAY}','"2025-26"'::jsonb)),
+   (jsonb_set(cmd,'{typedCorrection,proposedAY}','"2027-2028"'::jsonb)),
+   (cmd||'{"sourceProject":"original"}'::jsonb),
+   (cmd||'{"officerRole":"MAKER"}'::jsonb)
+ ) q(value) LOOP
+  BEGIN
+   PERFORM public.taxpay_demo_correction_office_initiation(bad);
+   RAISE EXCEPTION 'TEST_UNEXPECTED_TYPED_INITIATION';
+  EXCEPTION WHEN OTHERS THEN
+   IF SQLERRM NOT IN ('INVALID_OFFICE_CORRECTION_ALLOCATION','OFFICE_CORRECTION_STALE_VALUES','CORRECTION_NO_CHANGE','OFFICE_INITIATION_CONFLICT','INVALID_OFFICE_INITIATION') THEN RAISE; END IF;
+  END;
+ END LOOP;
+END;
+$typed_initiation$;
 RESET ROLE;
 DO $verify$
 DECLARE x record; n bigint; d text; v_inquiry uuid;
@@ -280,6 +311,10 @@ BEGIN
    '90000000-0000-4000-8000-000000000004','90000000-0000-4000-8000-000000000005')
   AND (r.applied_correction IS NOT NULL OR taxpay_guest_private.story_correction_json(r)->'appliedCorrection' IS DISTINCT FROM 'null'::jsonb))
  THEN RAISE EXCEPTION 'Rejection, report or reference-only request manufactured an applied correction'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM taxpay_guest_private.story_correction_requests r WHERE r.id='90000000-0000-4000-8000-000000000081'
+   AND r.demo_id='user30' AND r.review_state='APPROVED' AND r.office_sync_state='ACKNOWLEDGED'
+   AND taxpay_guest_private.story_correction_json(r)#>>'{appliedCorrection,assessmentYear}'='2026-2027'
+   AND taxpay_guest_private.story_correction_json(r)->>'initiatedBy'='OFFICE') THEN RAISE EXCEPTION 'Typed Office owner projection missing'; END IF;
  FOR x IN SELECT * FROM correction_financial_guard LOOP
   EXECUTE format('SELECT count(*)::bigint,pg_catalog.md5(coalesce(pg_catalog.string_agg(pg_catalog.md5(row_to_json(t)::text), '''' ORDER BY row_to_json(t)::text),'''')) FROM %s t',x.relation_name) INTO n,d;
   IF n IS DISTINCT FROM x.row_count OR d IS DISTINCT FROM x.content_digest THEN RAISE EXCEPTION 'Original financial records changed: %',x.relation_name; END IF;

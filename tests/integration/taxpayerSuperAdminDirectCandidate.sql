@@ -25,7 +25,8 @@ ALTER TABLE taxpay_guest_private.story_correction_requests
  ADD CONSTRAINT story_applied_correction_shape CHECK (
   applied_correction IS NULL OR (
    case_kind='CORRECTION_REVIEW' AND payment_id IS NOT NULL
-   AND office_initiation IS NULL AND review_state='APPROVED' AND office_sync_state='ACKNOWLEDGED'
+   AND (office_initiation IS NULL OR (office_initiation ? 'typedCorrection' AND office_initiation->>'messageId'=applied_correction->>'decisionMessageId'))
+   AND review_state='APPROVED' AND office_sync_state='ACKNOWLEDGED'
    AND pg_catalog.jsonb_typeof(applied_correction)='object'
    AND (applied_correction->>'paymentId' = payment_id::text) IS TRUE
    AND applied_correction->'allocationIndex' IS NOT DISTINCT FROM coalesce(pg_catalog.to_jsonb(allocation_index),'null'::jsonb)
@@ -183,6 +184,9 @@ BEGIN
     OR p_command ? 'requesterUid' OR p_command ? 'claimedBy' THEN
   RAISE EXCEPTION 'INVALID_SIGNED_OFFICE_CORRECTION';
  END IF;
+ -- The legacy authenticated inbox/claim contract cannot yet certify a typed
+ -- applied correction. Never acknowledge a typed command as merely stored.
+ IF p_command ? 'typedCorrection' THEN RAISE EXCEPTION 'TYPED_OFFICE_CORRECTION_REQUIRES_SOURCE_PROJECTION'; END IF;
  v_case:=(p_command->>'messageId')::uuid;
  v_payment:=(p_command->>'sourcePaymentId')::uuid;
  v_officer:=(p_command->>'officerUid')::uuid;
@@ -249,6 +253,9 @@ declare v_id uuid; v_payment_id uuid; v_actor uuid; v_role text; v_reference tex
  v_reason text; v_outcome text; v_evidence text; v_p demo_payment.story_payments%rowtype;
  v_demo text; v_matches integer; v_details jsonb; v_snapshot jsonb; v_alloc jsonb; v_alloc_index integer;
  v_alloc_id text; v_count integer; v_year text; v_circle text; v_head text;
+ v_typed jsonb; v_allocs jsonb; v_items jsonb; v_lines jsonb; v_snap_alloc jsonb;
+ v_new_year text; v_new_circle text; v_new_head text; v_year_normal text; v_new_year_normal text;
+ v_applied jsonb;
  v_row taxpay_guest_private.story_correction_requests%rowtype;
 begin
  if p_command->>'schemaVersion' is distinct from '1.0.0' or p_command->>'origin' is distinct from 'OFFICE_SQL'
@@ -282,6 +289,71 @@ begin
  case when u.n between 1 and 9 then repeat(u.n::text,12) when u.n=10 then repeat('0',12) else '9090000000'||lpad(u.n::text,2,'0') end,
  case when u.n between 1 and 9 then repeat(u.n::text,13) when u.n=10 then '1010101010101' else '90000000000'||lpad(u.n::text,2,'0') end);
  if v_matches<>1 then raise exception 'OFFICE_INITIATION_RECIPIENT_UNBOUND'; end if;
+ -- Exact signed allocation and current values are checked against the
+ -- originating immutable payment, not the Office copy or free-text outcome.
+ v_typed:=p_command->'typedCorrection';
+ IF p_command ? 'typedCorrection' THEN
+  IF jsonb_typeof(v_typed) IS DISTINCT FROM 'object' OR
+     NOT(v_typed ?& ARRAY['allocationIndex','allocationId','currentAY','currentCircle','currentHeadCode','proposedAY','proposedCircle','proposedHeadCode']) OR
+     (SELECT count(*) FROM jsonb_object_keys(v_typed))<>8 OR
+     EXISTS(SELECT 1 FROM jsonb_each(v_typed) e WHERE e.key NOT IN ('allocationIndex','allocationId') AND jsonb_typeof(e.value)<>'string') OR
+     jsonb_typeof(v_typed->'allocationIndex') NOT IN ('number','null') OR
+     jsonb_typeof(v_typed->'allocationId') NOT IN ('string','null') THEN
+   RAISE EXCEPTION 'INVALID_OFFICE_TYPED_CORRECTION';
+  END IF;
+  v_allocs:=case when jsonb_typeof(v_details->'allocations')='array' then v_details->'allocations' else '[]'::jsonb end;
+  v_items:=case when jsonb_typeof(v_snapshot->'allocationItems')='array' then v_snapshot->'allocationItems' else '[]'::jsonb end;
+  v_lines:=case when jsonb_typeof(v_details->'lines')='array' then v_details->'lines' else '[]'::jsonb end;
+  v_count:=greatest(jsonb_array_length(v_allocs),jsonb_array_length(v_items),jsonb_array_length(v_lines));
+  IF v_typed->>'allocationIndex' IS NOT NULL THEN
+   IF v_typed->>'allocationIndex' !~ ('^[0-9]{1,6}'||chr(36)) THEN RAISE EXCEPTION 'INVALID_OFFICE_CORRECTION_ALLOCATION'; END IF;
+   v_alloc_index:=(v_typed->>'allocationIndex')::integer;
+  END IF;
+  IF (v_count=0 AND v_alloc_index IS NOT NULL) OR (v_count>0 AND (v_alloc_index IS NULL OR v_alloc_index>=v_count)) THEN
+   RAISE EXCEPTION 'INVALID_OFFICE_CORRECTION_ALLOCATION';
+  END IF;
+  v_alloc:=v_allocs->v_alloc_index;v_snap_alloc:=v_items->v_alloc_index;
+  v_alloc_id:=nullif(coalesce(v_alloc->>'allocationId',v_snap_alloc->>'allocationId'),'');
+  IF v_typed->>'allocationId' IS DISTINCT FROM v_alloc_id OR
+     (v_count>1 AND (v_alloc_id IS NULL OR (v_alloc IS NULL AND v_snap_alloc IS NULL))) THEN
+   RAISE EXCEPTION 'INVALID_OFFICE_CORRECTION_ALLOCATION';
+  END IF;
+  IF coalesce(nullif(v_alloc->>'taxpayerTin',''),nullif(v_snap_alloc->>'taxpayerTin',''),
+     CASE WHEN v_count<=1 THEN nullif(v_details->>'taxpayerTin','') END) IS DISTINCT FROM v_tin THEN
+   RAISE EXCEPTION 'OFFICE_INITIATION_RECIPIENT_MISMATCH';
+  END IF;
+  v_year:=coalesce(nullif(v_alloc->>'assessmentYear',''),nullif(v_snap_alloc->>'assessmentYear',''),
+    nullif(v_lines->v_alloc_index->>'assessmentYear',''),nullif(v_snapshot->>'assessmentYear',''),nullif(v_details->>'assessmentYear',''),'');
+  v_circle:=coalesce(v_snapshot->>'taxCircle',v_details->>'taxCircle','');
+  v_head:=coalesce(nullif(v_snap_alloc->>'economicCode',''),nullif(v_lines->v_alloc_index->>'economicCode',''),
+    nullif(v_snapshot->'items'->v_alloc_index->>'economicCode',''),
+    CASE WHEN v_count<=1 THEN nullif(v_snapshot#>>'{items,0,economicCode}','') END,'');
+  IF (v_typed->>'currentAY',v_typed->>'currentCircle',v_typed->>'currentHeadCode') IS DISTINCT FROM (v_year,v_circle,v_head) THEN
+   RAISE EXCEPTION 'OFFICE_CORRECTION_STALE_VALUES';
+  END IF;
+  v_new_year:=btrim(v_typed->>'proposedAY');v_new_circle:=btrim(v_typed->>'proposedCircle');v_new_head:=btrim(v_typed->>'proposedHeadCode');
+  IF (v_new_year IS DISTINCT FROM v_year AND v_new_year !~ ('^[0-9]{4}-([0-9]{2}|[0-9]{4})'||chr(36))) OR
+     length(v_new_circle)>120 OR length(v_new_head)>120 OR
+     (v_new_circle='' AND v_circle<>'') OR (v_new_head='' AND v_head<>'') THEN RAISE EXCEPTION 'INVALID_OFFICE_TYPED_CORRECTION'; END IF;
+  v_year_normal:=case when v_year ~ ('^[0-9]{4}-[0-9]{2}'||chr(36)) then left(v_year,5)||left(v_year,2)||right(v_year,2) else v_year end;
+  v_new_year_normal:=case when v_new_year ~ ('^[0-9]{4}-[0-9]{2}'||chr(36)) then left(v_new_year,5)||left(v_new_year,2)||right(v_new_year,2) else v_new_year end;
+  IF (v_year_normal,v_circle,v_head) IS NOT DISTINCT FROM (v_new_year_normal,v_new_circle,v_new_head) THEN
+   RAISE EXCEPTION 'CORRECTION_NO_CHANGE';
+  END IF;
+  v_applied:=jsonb_build_object('paymentId',v_payment_id,'allocationIndex',v_alloc_index,'allocationId',v_alloc_id,
+   'assessmentYear',v_new_year,'circle',v_new_circle,'headCode',v_new_head,'sourceProject','v2','decisionMessageId',v_id);
+  INSERT INTO taxpay_guest_private.story_correction_requests(id,demo_id,payment_id,request_key,allocation_index,allocation_id,
+    original_reference,current_year,proposed_year,current_circle,proposed_circle,current_head,proposed_head,reason,office_initiation,
+    office_sync_state,office_ack_at,review_state,review_updated_at,review_reason,applied_correction)
+  VALUES(v_id,v_demo,v_payment_id,v_id,v_alloc_index,v_alloc_id,v_reference,v_year,v_new_year,v_circle,v_new_circle,v_head,v_new_head,
+    v_reason,p_command,'ACKNOWLEDGED',now(),'APPROVED',now(),v_reason,v_applied)
+  ON CONFLICT DO NOTHING;
+  SELECT * INTO v_row FROM taxpay_guest_private.story_correction_requests WHERE id=v_id;
+  IF NOT FOUND OR v_row.demo_id IS DISTINCT FROM v_demo OR v_row.office_initiation IS DISTINCT FROM p_command
+    OR v_row.applied_correction IS DISTINCT FROM v_applied THEN RAISE EXCEPTION 'OFFICE_INITIATION_CONFLICT'; END IF;
+  RETURN jsonb_build_object('messageId',v_id,'stored',true,'ownerLinked',true,'reviewState','APPROVED','appliedCorrection',v_applied);
+ END IF;
+ -- Unchanged historical free-text path, never presented as applied.
  select count(*) into v_count from jsonb_array_elements(case when jsonb_typeof(v_details->'allocations')='array' then v_details->'allocations' else '[]'::jsonb end) a where a->>'taxpayerTin'=v_tin;
  if v_count=1 then
  select a.value,(a.ordinality-1)::integer into v_alloc,v_alloc_index
