@@ -9,10 +9,10 @@ const storageState={...demoLoginOtpCompletedState,origins:[
 ]};
 export default defineConfig({
  testDir:'./tests/visual',testMatch:'mui-v4-protected-home.spec.ts',
- timeout:240000,expect:{timeout:20000},workers:2,retries:0,reporter:'list',
+ timeout:240000,expect:{timeout:20000},workers:1,retries:0,reporter:'list',
  snapshotPathTemplate:snapshots+'/{projectName}/{arg}{ext}',
  use:{baseURL:'http://127.0.0.1:4173',browserName:'chromium',
- launchOptions:{args:['--disable-gpu','--disable-lcd-text','--disable-font-subpixel-positioning','--disable-skia-runtime-opts','--font-render-hinting=none','--force-color-profile=srgb','--num-raster-threads=1']},
+ launchOptions:{args:['--disable-gpu','--disable-lcd-text','--disable-font-subpixel-positioning','--disable-skia-runtime-opts','--font-render-hinting=none','--force-color-profile=srgb','--num-raster-threads=1','--run-all-compositor-stages-before-draw','--disable-threaded-animation','--disable-threaded-scrolling']},
  deviceScaleFactor:1,timezoneId:'Asia/Dhaka',reducedMotion:'reduce',storageState,trace:'retain-on-failure'},
  projects:[320,375,768,1280,1920].map(width=>({name:'width-'+width,use:{viewport:{width,height:width<768?812:900}}})),
  webServer:[
