@@ -9,6 +9,8 @@ on:
       - 'src/components/screens/AuthenticatedReceivedPaymentPopup.tsx'
       - 'src/services/accountReceivedPaymentNotices.ts'
       - 'tests/e2e/authenticated-received-notice-mount.spec.ts'
+      - 'src/components/screens/PreviewReceivedPaymentReport.tsx'
+      - 'tests/e2e/preview-recipient-report-refresh.spec.ts'
       - '.github/workflows/received-payment-notice-ui.yml'
   workflow_dispatch:
 permissions:
@@ -55,7 +57,7 @@ jobs:
           VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED: 'true'
       - name: Verify direct fictional recipient report, retry and later access
         run: >-
-          npx playwright test tests/e2e/preview-recipient-report.spec.ts
+          npx playwright test tests/e2e/preview-recipient-report.spec.ts tests/e2e/preview-recipient-report-refresh.spec.ts
           --project=desktop-1280 --project=mobile-320 --project=mobile-375 --workers=1
         env:
           VITE_SUPABASE_DISABLED: 'false'
