@@ -606,9 +606,62 @@ jobs:
             psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$V7_OFFICE_DIR/supabase/migrations/20261125205132_office_recipient_immediate_dual_source.sql"
           fi
           export WS3_V7_OFFICE_SOURCE="$V7_OFFICE_DIR"
+          # Fresh second disposable Supabase project: no linked metadata or hosted credentials.
+          V2_LOCAL_DIR="$RUNNER_TEMP/ws5-v11-local-replacement"
+          mkdir -p "$V2_LOCAL_DIR/supabase"
+          # Use the unmodified checked-out config, not the already randomized first project.
+          cp "$RUNNER_TEMP/taxpay-original-supabase.toml" "$V2_LOCAL_DIR/supabase/config.toml"
+          cp -R supabase/migrations "$V2_LOCAL_DIR/supabase/migrations"
+          trap '(cd "$V2_LOCAL_DIR" && supabase stop --no-backup) >/dev/null 2>&1 || true; docker stop "$OFFICE_CONTAINER" >/dev/null 2>&1 || true' EXIT
+          # Reuse the checked-in port allocator and parse the actual configured DB port.
+          # Numeric attempt suffix distinguishes this project from the first project.
+          python3 - "$V2_LOCAL_DIR/supabase/config.toml" <<'PY'
+          import os, pathlib, runpy, sys
+          allocator = runpy.run_path("scripts/ci/isolate-local-supabase.py")
+          allocator["prepare"](pathlib.Path(sys.argv[1]), os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"] + "0")
+          PY
+          V2_DB_PORT="$(python3 -c 'import sys,tomllib; print(tomllib.load(open(sys.argv[1],"rb"))["db"]["port"])' "$V2_LOCAL_DIR/supabase/config.toml")"
+          [[ "$V2_DB_PORT" =~ ^[0-9]+$ ]] && test "$V2_DB_PORT" -ne "$TAXPAY_LOCAL_DB_PORT" && test "$V2_DB_PORT" -ne "$OFFICE_PORT"
+          (cd "$V2_LOCAL_DIR" && supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta > "$RUNNER_TEMP/ws5-v11-v2-start.log" 2>&1) || { tail -n 40 "$RUNNER_TEMP/ws5-v11-v2-start.log"; exit 1; }
+          export WS3_REPLACEMENT_DB_URL="postgresql://postgres:postgres@127.0.0.1:${V2_DB_PORT}/postgres"
+          for attempt in $(seq 1 35); do
+            if pg_isready -h 127.0.0.1 -p "$V2_DB_PORT" -U postgres -d postgres; then break; fi
+            sleep 2
+          done
+          pg_isready -h 127.0.0.1 -p "$V2_DB_PORT" -U postgres -d postgres
           node tests/integration/pairedRecipientReportEdgeSql.mjs
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           node tests/integration/pairedOfficeUiReadback.mjs
+          # Preserve all historical integration checks above, then rehearse the
+          # paired direct-admin candidates on the same three disposable instances.
+          DIRECT_OFFICE_DIR="$RUNNER_TEMP/ws5-v12-direct-office"
+          DIRECT_OFFICE_SHA="5cb8bfc70fb9d013dc50cc69f3f4b1f3b88ca6d6"
+          git clone --depth 1 --branch fix/correction-super-admin-office-contract-20261126 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$DIRECT_OFFICE_DIR"
+          git -C "$DIRECT_OFFICE_DIR" fetch --depth 1 origin "$DIRECT_OFFICE_SHA"
+          git -C "$DIRECT_OFFICE_DIR" checkout --detach "$DIRECT_OFFICE_SHA"
+          test "$(git -C "$DIRECT_OFFICE_DIR" rev-parse HEAD)" = "$DIRECT_OFFICE_SHA"
+          # Match the already-passing Office candidate's Auth column fixture.
+          # This database is the loopback-only disposable PostgreSQL container above;
+          # never change the real Supabase auth.users schema or authentication guard.
+          node -e "const u=new URL(process.env.WS3_OFFICE_DB_URL); if(u.hostname!=='127.0.0.1'||!u.port)process.exit(1)"
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" <<'SQL'
+          ALTER TABLE auth.users
+            ADD COLUMN IF NOT EXISTS email_confirmed_at timestamptz,
+            ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+            ADD COLUMN IF NOT EXISTS is_anonymous boolean NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS banned_until timestamptz;
+          SQL
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$DIRECT_OFFICE_DIR/tests/integration/officeSuperAdminDirectCandidate.sql"
+          for dsn in "$WS3_TAXPAYER_DB_URL" "$WS3_REPLACEMENT_DB_URL"; do
+            psql -X -v ON_ERROR_STOP=1 "$dsn" -f tests/integration/taxpayerSuperAdminDirectCandidate.sql
+          done
+          # Reuse only the existing direct-candidate disposable auth fixture,
+          # never a production login, token or credential.
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" <<'SQL'
+          INSERT INTO auth.users(id,email,email_confirmed_at,is_anonymous) VALUES('a05f8fc6-a134-4a43-9b94-54881d858783'::uuid,'shihabshajib01@gmail.com',now(),false);
+          SQL
+          WS5_DIRECT_SUPER_ADMIN=true WS5_DIRECT_ADMIN_FIXTURE="a05f8fc6-a134-4a43-9b94-54881d858783" WS3_V7_OFFICE_SOURCE="$DIRECT_OFFICE_DIR" node tests/integration/pairedRecipientReportEdgeSql.mjs
+          (cd "$V2_LOCAL_DIR" && supabase stop --no-backup) >/dev/null
           echo "PASS: current Work A composer matrix, original Taxpayer Edge/SQL, separate current Office SQL/API, same paired record in Office UI, retry and authorized readback"
 
 
