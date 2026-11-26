@@ -640,6 +640,17 @@ jobs:
           git -C "$DIRECT_OFFICE_DIR" fetch --depth 1 origin "$DIRECT_OFFICE_SHA"
           git -C "$DIRECT_OFFICE_DIR" checkout --detach "$DIRECT_OFFICE_SHA"
           test "$(git -C "$DIRECT_OFFICE_DIR" rev-parse HEAD)" = "$DIRECT_OFFICE_SHA"
+          # Match the already-passing Office candidate's Auth column fixture.
+          # This database is the loopback-only disposable PostgreSQL container above;
+          # never change the real Supabase auth.users schema or authentication guard.
+          node -e "const u=new URL(process.env.WS3_OFFICE_DB_URL); if(u.hostname!=='127.0.0.1'||!u.port)process.exit(1)"
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" <<'SQL'
+          ALTER TABLE auth.users
+            ADD COLUMN IF NOT EXISTS email_confirmed_at timestamptz,
+            ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+            ADD COLUMN IF NOT EXISTS is_anonymous boolean NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS banned_until timestamptz;
+          SQL
           psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$DIRECT_OFFICE_DIR/tests/integration/officeSuperAdminDirectCandidate.sql"
           for dsn in "$WS3_TAXPAYER_DB_URL" "$WS3_REPLACEMENT_DB_URL"; do
             psql -X -v ON_ERROR_STOP=1 "$dsn" -f tests/integration/taxpayerSuperAdminDirectCandidate.sql
