@@ -1,4 +1,4 @@
-name: MUI v7.0 exact foundation full strict synchronized compositor acceptance
+name: MUI v7.0 current-Main foundation strict visual acceptance
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
@@ -13,13 +13,13 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
-      CANDIDATE_SHA: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
+      BASE_SHA: 84134509af607d2977b4cd3927d0aba295412c1e
+      CANDIDATE_SHA: 6e69de5f2005d34bf48abfc77c3f167bcfc505cb
       DIAGNOSTIC_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
+          ref: 6e69de5f2005d34bf48abfc77c3f167bcfc505cb
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -33,14 +33,8 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
           git show "$DIAGNOSTIC_SHA:tests/visual/mui-v60-paint-probe.spec.ts" > tests/visual/mui-v4-protected-home.spec.ts
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('playwright.mui-protected.config.ts')
-          s=p.read_text()
-          old="'--num-raster-threads=1'"
-          assert s.count(old)==1
-          p.write_text(s.replace(old,old+",'--run-all-compositor-stages-before-draw','--disable-threaded-animation','--disable-threaded-scrolling'"))
-          PY
+          grep -F -- '--run-all-compositor-stages-before-draw' playwright.mui-protected.config.ts
+          grep -F -- 'workers:1,retries:0' playwright.mui-protected.config.ts
           export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
           mkdir -p "$MUI_BASELINE_DIR"
           git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
@@ -80,7 +74,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v70-foundation-full-synchronized-matrix
+          name: mui-v70-foundation-current-main-84134509
           path: |
             ${{ runner.temp }}/mui-snapshots
             test-results/
