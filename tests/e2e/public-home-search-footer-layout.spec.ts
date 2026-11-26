@@ -111,3 +111,38 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
     }
   }
 });
+
+test('Original Home wide benefit rows are 10% shorter at the 1400px boundary', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One responsive boundary matrix');
+  test.setTimeout(120_000);
+  for (const viewport of [
+    {width:1399,height:1300,minimum:136},
+    {width:1400,height:1300,minimum:122.4},
+    {width:1440,height:900,minimum:79.2},
+    {width:1920,height:1080,minimum:79.2},
+    {width:1920,height:1300,minimum:122.4},
+  ]) {
+    await page.setViewportSize({width:viewport.width,height:viewport.height});
+    for (const lang of ['en','bn']) {
+      await page.goto('/?action=landing&lang='+lang);
+      const items=page.locator('.public-benefits__grid .public-benefits__item');
+      await expect(items).toHaveCount(6);
+      await page.evaluate(async()=>{await document.fonts.ready});
+      const geometry=await items.evaluateAll(elements=>elements.map(el=>{
+        const item=el.getBoundingClientRect();
+        const copy=el.querySelector('.public-benefits__copy')!.getBoundingClientRect();
+        const icon=el.querySelector('.public-benefits__icon')!.getBoundingClientRect();
+        return {min:parseFloat(getComputedStyle(el).minHeight),height:item.height,
+          contained:copy.top>=item.top-1 && copy.bottom<=item.bottom+1 &&
+            icon.top>=item.top-1 && icon.bottom<=item.bottom+1};
+      }));
+      for(const cell of geometry) {
+        expect(cell.min,JSON.stringify({viewport,lang,cell})).toBeCloseTo(viewport.minimum,1);
+        expect(cell.contained,JSON.stringify({viewport,lang,cell})).toBe(true);
+      }
+      if(viewport.height===1300) {
+        for(const cell of geometry) expect(cell.height).toBeCloseTo(viewport.minimum,0);
+      }
+    }
+  }
+});

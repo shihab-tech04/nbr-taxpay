@@ -812,3 +812,39 @@
     opacity: 1;
   }
 }
+
+/* Original Home only: reduce the wide desktop benefit-cell height by 10%.
+ * Keep the shared 3x2 grid, typography, icons, borders and outer insets.
+ * Compact, content-sized short screens (<=820px high) already have no fixed
+ * cell minimum and are intentionally left unchanged. */
+@media (min-width: 1400px) and (min-height: 960px) {
+  .taxpay-citizen-shell .public-home-sections .public-benefits__item {
+    min-height: clamp(86.4px, 9.72dvh, 122.4px);
+  }
+}
+@media (min-width: 1400px) and (min-height: 821px) and (max-height: 959px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-sections .public-benefits__item {
+    min-height: 79.2px;
+    padding-block: 10px;
+  }
+}
+/* The full-height desktop grid shares available space between its hero and
+ * benefit panel. Transfer 10% of the old 1.15fr benefit allocation to the
+ * hero (0.85 + 0.115 = 0.965), retaining the fixed-footer/no-gap contract.
+ * Keep existing padding at normal heights and avoid clipping bilingual copy. */
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 1200px) {
+  .taxpay-citizen-shell .public-home-sections {
+    grid-template-rows: minmax(210px, .965fr) auto minmax(237.6px, 1.035fr);
+  }
+  .taxpay-citizen-shell .public-home-sections > .public-benefits {
+    min-height: 237.6px;
+  }
+  .taxpay-citizen-shell .public-home-sections .public-benefits__item {
+    min-height: 79.2px;
+  }
+}
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 959px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-sections .public-benefits__item {
+    padding-block: 12px;
+  }
+}
