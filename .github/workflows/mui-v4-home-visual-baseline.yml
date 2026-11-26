@@ -14,12 +14,12 @@ jobs:
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
       BASE_SHA: e58d364872cdd1b175a4a672ed276e09bdca9546
-      CANDIDATE_SHA: fde278b3c851458cf898db450e716ec094c9432c
+      CANDIDATE_SHA: cba66cf39df68e81a9ddf630e687e6bbe05a41ae
       DIAGNOSTIC_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fde278b3c851458cf898db450e716ec094c9432c
+          ref: cba66cf39df68e81a9ddf630e687e6bbe05a41ae
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
