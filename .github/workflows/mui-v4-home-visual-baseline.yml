@@ -1,122 +1,35 @@
-name: MUI v7.0 failed-frame attribution and compositor experiment
+name: MUI v7.0 exact foundation full strict synchronized compositor acceptance
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
 permissions:
   contents: read
 jobs:
-  analyze-failed-frames:
+  compare:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: mui-v70-foundation-full-strict-matrix
-          run-id: 45703450979
-          github-token: ${{ github.token }}
-          path: evidence/foundation
-      - uses: actions/download-artifact@v4
-        with:
-          name: mui-v4-combined-acceptance
-          run-id: 45702816272
-          github-token: ${{ github.token }}
-          path: evidence/combined
-      - name: Attribute every new failed exact image without choosing a replacement reference
-        run: |
-          set -euo pipefail
-          python -m pip install --quiet Pillow==12.0.0
-          mkdir -p diagnosis
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image, ImageChops
-          import json
-          report=[]
-          for label, names in {
-              'foundation':['default-en-light-guest.png','landing-en-light-local-account.png','landing-bn-light-guest.png'],
-              'combined':['landing-en-dark-local-account.png','home2-bn-dark-guest.png']
-          }.items():
-              for name in names:
-                  root=Path('evidence')/label
-                  candidates=[p for p in root.rglob('*'+name) if 'width-320' in p.parts]
-                  refs=[p for p in candidates if p.name==name]
-                  aa=sorted([p for p in candidates if p.name.startswith('aa-')])
-                  if not refs:
-                      assert len(aa)>=2, (label,name,candidates)
-                      reference=aa[-2]
-                      others=[aa[-1]]
-                  else:
-                      assert len(refs)==1, refs
-                      reference=refs[0]
-                      others=[p for p in candidates if p.name in ['candidate-'+name,'main-control-'+name]]
-                  assert others,(label,name)
-                  for other in others:
-                      with Image.open(reference) as ar,Image.open(other) as br:
-                          a,b=ar.convert('RGB'),br.convert('RGB')
-                          row={'source':label,'reference':reference.name,'other':other.name,'dimensions':[a.size,b.size],'bytesEqual':reference.read_bytes()==other.read_bytes()}
-                          if a.size==b.size:
-                              diff=ImageChops.difference(a,b)
-                              bbox=diff.getbbox()
-                              row.update({'bbox':bbox,'pixels':sum(p!=(0,0,0) for p in diff.getdata())})
-                              if bbox:
-                                  region=(max(0,bbox[0]-24),max(0,bbox[1]-24),min(a.width,bbox[2]+24),min(a.height,bbox[3]+24))
-                                  for side,img in [('main',a),('other',b),('diff',diff)]:
-                                      img.crop(region).save(Path('diagnosis')/(label+'-'+other.stem+'-'+side+'.png'))
-                          mainProbe=reference.with_name('main-paint-'+name+'.json')
-                          candidateProbe=reference.with_name('candidate-paint-'+name+'.json')
-                          if mainProbe.is_file() and candidateProbe.is_file():
-                              row['paintProbeEqual']=json.loads(mainProbe.read_text())==json.loads(candidateProbe.read_text())
-                          report.append(row)
-          out=json.dumps(report,indent=2)
-          Path('diagnosis/report.json').write_text(out)
-          print(out)
-          assert any(not r['bytesEqual'] for r in report),'No original failures reproduced from artifacts'
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mui-v70-failed-frame-attribution
-          path: diagnosis/
-          if-no-files-found: error
-          retention-days: 7
-  compositor-experiment:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - label: foundation
-            sha: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
-            selection: 'frozen homepage (en light guest|en light local-account|bn light guest)$'
-            count: 3
-          - label: combined
-            sha: 99f2c73974356cd629df2a40b496109bfcffef5f
-            selection: 'frozen homepage (en dark local-account|bn dark guest)$'
-            count: 2
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       CI: 'true'
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
       BASE_SHA: dd366bbfb97d09faf6252f43d1f3b3d07d6ad88f
-      CANDIDATE_SHA: ${{ matrix.sha }}
+      CANDIDATE_SHA: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
       DIAGNOSTIC_SHA: ${{ github.sha }}
-      TEST_SELECTION: ${{ matrix.selection }}
-      TEST_COUNT: ${{ matrix.count }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.sha }}
+          ref: 84bc1da27e3108db1e8f855f69011fc4b5b84d86
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Build unchanged exact sources and instrument test-only compositor configuration
+      - name: Build exact foundation and exact Main
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          git merge-base --is-ancestor "$BASE_SHA" HEAD
+          git merge-base --is-ancestor "$BASE_SHA" "$CANDIDATE_SHA"
           npm ci --no-audit --no-fund
           npm run build
           git show "$DIAGNOSTIC_SHA:tests/visual/mui-v60-paint-probe.spec.ts" > tests/visual/mui-v4-protected-home.spec.ts
@@ -133,7 +46,7 @@ jobs:
           git archive "$BASE_SHA" | tar -x -C "$MUI_BASELINE_DIR"
           (cd "$MUI_BASELINE_DIR" && npm ci --no-audit --no-fund && npm run build)
           npx playwright install chromium
-      - name: Run original strict equality tests against all five failed scenarios with synchronized compositor
+      - name: Full strict 40-case matrix after successful five-case compositor experiment
         run: |
           set -euo pipefail
           export MUI_BASELINE_DIR="$RUNNER_TEMP/mui-exact-main"
@@ -141,14 +54,33 @@ jobs:
           mkdir -p "$MUI_SNAPSHOT_DIR"
           printf '%s\n' "$BASE_SHA" > "$MUI_SNAPSHOT_DIR/BASE_SHA"
           printf '%s\n' "$CANDIDATE_SHA" > "$MUI_SNAPSHOT_DIR/CANDIDATE_SHA"
+          npx playwright test --config playwright.mui-protected.config.ts --list | tee "$MUI_SNAPSHOT_DIR/test-selection.txt"
+          grep -F 'Total: 40 tests' "$MUI_SNAPSHOT_DIR/test-selection.txt"
           cp playwright.mui-protected.config.ts "$MUI_SNAPSHOT_DIR/experiment-config.ts"
-          npx playwright test --config playwright.mui-protected.config.ts --project=width-320 --grep "$TEST_SELECTION" --list | tee "$MUI_SNAPSHOT_DIR/test-selection.txt"
-          grep -F "Total: $TEST_COUNT tests" "$MUI_SNAPSHOT_DIR/test-selection.txt"
-          npx playwright test --config playwright.mui-protected.config.ts --project=width-320 --grep "$TEST_SELECTION" --workers=1
+          npx playwright test --config playwright.mui-protected.config.ts --workers=1
+      - name: Independently verify all exact PNG and paint probe pairs
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import os, json
+          root=Path(os.environ['RUNNER_TEMP'])/'mui-snapshots'
+          candidates=list(root.rglob('candidate-*.png'))
+          assert len(candidates)==160, len(candidates)
+          for c in candidates:
+              name=c.name.removeprefix('candidate-')
+              main=c.with_name(name)
+              control=c.with_name('main-control-'+name)
+              assert main.read_bytes()==control.read_bytes()==c.read_bytes(),name
+              ma=json.loads(c.with_name('main-paint-'+name+'.json').read_text())
+              ca=json.loads(c.with_name('candidate-paint-'+name+'.json').read_text())
+              assert ma==ca,(str(c),'paint probe differs')
+          print('160/160 exact Main/control/candidate PNG and paint probe pairs PASS')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v70-compositor-experiment-${{ matrix.label }}
+          name: mui-v70-foundation-full-synchronized-matrix
           path: |
             ${{ runner.temp }}/mui-snapshots
             test-results/
