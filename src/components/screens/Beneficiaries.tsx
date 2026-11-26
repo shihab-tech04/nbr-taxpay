@@ -1,3 +1,4 @@
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-table';
 import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-unified-table.css';
 // The shared taxpayer lookup result card must be styled on direct Beneficiaries entry.
@@ -873,7 +874,7 @@ export function Beneficiaries(){
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
               <TaxPayTablePanel className="beneficiary-directory__table">
-              <TaxPayDataGrid variant="tabular" rows={filteredPeople} getRowKey={person=>person.id}
+              <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={filteredPeople} getRowKey={person=>person.id}
                 testId="beneficiary-directory-desktop" mobileTestId="beneficiary-directory-mobile"
                 isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"beneficiary-directory__tabular-row"}
                 columns={[

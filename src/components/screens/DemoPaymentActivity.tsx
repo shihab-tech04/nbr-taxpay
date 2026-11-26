@@ -1,3 +1,4 @@
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-table';
 import React,{useCallback,useEffect,useState} from 'react';
 import {recordedActivityCategoryLabel} from '../../services/activityRecordedCategory';
 import {useTaxState} from '../../services/taxState';
@@ -482,7 +483,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            {txt('Retry','আবার চেষ্টা করুন')}</button></div>:
        rows.length===0?<TaxPayTableState>{txt('No transactions yet.','এখনো কোনো লেনদেন নেই।')}</TaxPayTableState>:
        visibleRows.length===0?<TaxPayTableState>{txt('No transactions match your filters.','ফিল্টারে কোনো লেনদেন নেই।')}</TaxPayTableState>:
-       <TaxPayDataGrid variant="tabular" rows={visibleRows} getRowKey={tx=>tx.transactionId}
+       <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={visibleRows} getRowKey={tx=>tx.transactionId}
          ariaLabel={txt('Transactions','লেনদেন')} testId="signed-in-payment-activity-table"
          mobileTestId="signed-in-payment-activity-cards" className="taxpay-convay-signed-in-table" onViewRow={tx=>setSelectedPayment(tx)} columns={[
            {key:'reference',header:txt('Reference','রেফারেন্স'),renderCell:tx=>
