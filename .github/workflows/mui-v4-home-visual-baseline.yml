@@ -1,4 +1,4 @@
-name: MUI v7.0 current-Main foundation strict visual acceptance
+name: MUI active tables exact-Main strict protected-home acceptance
 on:
   push:
     branches: [ops/mui-v4-visual-baseline-bb3fcb77]
@@ -13,19 +13,19 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 35201643b882565be4ec643a47ea021d9cdaf9af
-      CANDIDATE_SHA: fb7026a35932a52333b877887a9b76c796aa77c3
+      BASE_SHA: e58d364872cdd1b175a4a672ed276e09bdca9546
+      CANDIDATE_SHA: fde278b3c851458cf898db450e716ec094c9432c
       DIAGNOSTIC_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fb7026a35932a52333b877887a9b76c796aa77c3
+          ref: fde278b3c851458cf898db450e716ec094c9432c
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Build exact foundation and exact Main
+      - name: Build exact table candidate and exact Main
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v70-foundation-current-main-35201643
+          name: mui-active-tables-current-main-e58d3648
           path: |
             ${{ runner.temp }}/mui-snapshots
             test-results/
