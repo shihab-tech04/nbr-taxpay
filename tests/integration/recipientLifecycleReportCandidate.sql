@@ -9,7 +9,7 @@ DECLARE
   lines jsonb; allocations jsonb; snapshot jsonb; payload jsonb;
   payment jsonb; replay jsonb; notice2 jsonb; notice3 jsonb;
   event2 text; event3 text; ack jsonb;
-  payment_id uuid; before_data jsonb; early_report jsonb;
+  payment_id uuid; before_data jsonb; early_report jsonb; early_claim jsonb; retry_claim jsonb; original_report jsonb; original_claim jsonb;
   before_outbox bigint; before_payment_count bigint;
   before_story_notices bigint; denied boolean;
   invalid_case text; bad_payload jsonb; v_bad_key uuid;
@@ -85,9 +85,37 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(notice2->'items') x WHERE x->>'eventId'=event2 AND x->>'paymentStatus'='SIMULATED_INITIATED' AND x->>'amountMinor'='1500')
   THEN RAISE EXCEPTION 'INITIATION_RECIPIENT_MISSING'; END IF;
   early_report:=public.taxpay_demo_received_payment_report_save(recipient2_hash,event2,gen_random_uuid(),'Unrecognized simulated payment allocation');
+  early_claim:=public.taxpay_demo_correction_claim(1,(early_report->>'id')::uuid);
   IF early_report->>'paymentId'<>payment_id::text OR early_report->>'paymentCompleted'<>'false'
-    OR jsonb_array_length(public.taxpay_demo_correction_claim(1,(early_report->>'id')::uuid))<>0
-  THEN RAISE EXCEPTION 'INITIATED_REPORT_OR_PREMATURE_OFFICE_DISPATCH'; END IF;
+    OR jsonb_array_length(early_claim)<>1 OR early_claim#>>'{0,event,payload,recipientInitiation,state}' IS DISTINCT FROM 'SIMULATED_INITIATED'
+    OR early_claim#>>'{0,event,payload,recipientInitiation,eventId}' IS DISTINCT FROM event2
+    OR early_claim#>>'{0,event,payload,recipientInitiation,allocationId}' IS DISTINCT FROM 'ws3-recipient-2'
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_NOT_IMMEDIATELY_CLAIMED'; END IF;
+  IF NOT public.taxpay_demo_correction_ack((early_report->>'id')::uuid,(early_claim#>>'{0,claimToken}')::uuid,false)
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_RETRY_NOT_RECORDED'; END IF;
+  -- Disposable fixture only: advance retry eligibility without sleeping.
+  UPDATE taxpay_guest_private.story_correction_requests SET sync_next_at=now() WHERE id=(early_report->>'id')::uuid;
+  retry_claim:=public.taxpay_demo_correction_claim(1,(early_report->>'id')::uuid);
+  IF jsonb_array_length(retry_claim)<>1 OR retry_claim#>'{0,event}' IS DISTINCT FROM early_claim#>'{0,event}'
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_RETRY_EVENT_MISMATCH'; END IF;
+  IF NOT public.taxpay_demo_correction_ack((early_report->>'id')::uuid,(retry_claim#>>'{0,claimToken}')::uuid,true)
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_ACK_WRITE_FAILED'; END IF;
+  -- Read in a separate SQL statement after the volatile ACK; a STABLE getter
+  -- in the same expression may still observe its earlier statement snapshot.
+  IF public.taxpay_demo_correction_get((early_report->>'id')::uuid)->>'officeSyncState' IS DISTINCT FROM 'ACKNOWLEDGED'
+    OR public.taxpay_demo_correction_get((early_report->>'id')::uuid)->>'paymentCompleted' IS DISTINCT FROM 'false'
+  THEN RAISE EXCEPTION 'INITIATED_REPORT_ACK_READBACK_MISMATCH'; END IF;
+  original_report:=public.taxpay_demo_received_payment_report_save(recipient3_hash,payment_id::text||':allocation:2',gen_random_uuid(),'Original source simulated recipient report');
+  original_claim:=public.taxpay_demo_original_report_claim(1,(original_report->>'id')::uuid);
+  IF jsonb_array_length(original_claim)<>1 OR original_claim#>>'{0,event,sourceProject}' IS DISTINCT FROM 'original'
+    OR original_claim#>>'{0,event,payload,recipientInitiation,state}' IS DISTINCT FROM 'SIMULATED_INITIATED'
+    OR original_claim#>>'{0,event,payload,targetAllocationId}' IS DISTINCT FROM 'ws3-recipient-3'
+  THEN RAISE EXCEPTION 'ORIGINAL_INITIATED_REPORT_CLAIM_FAILED'; END IF;
+  IF NOT public.taxpay_demo_correction_ack((original_report->>'id')::uuid,(original_claim#>>'{0,claimToken}')::uuid,true)
+  THEN RAISE EXCEPTION 'ORIGINAL_INITIATED_REPORT_ACK_FAILED'; END IF;
+  IF (public.taxpay_demo_correction_office_decision(jsonb_build_object('schemaVersion','1.0.0','origin','OFFICE_SQL','sourceProject','original','simulationOnly',true,'commandType','CORRECTION_REVIEW','requestId',(original_report->>'id')::uuid,'messageId',gen_random_uuid(),'officerUid','80000000-0000-4000-8000-000000000011','officerRole','MAKER','action','MAKER_ACKNOWLEDGE','expectedReviewState','PENDING_OFFICER','reason','Received the simulated report'))->>'reviewState') IS DISTINCT FROM 'MAKER_ACKNOWLEDGED'
+  THEN RAISE EXCEPTION 'ORIGINAL_REPORT_DECISION_FAILED'; END IF;
+  IF (SELECT count(*) FROM demo_payment.story_payments)<>before_payment_count THEN RAISE EXCEPTION 'REPORT_CREATED_PAYMENT'; END IF;
   payment:=public.taxpay_demo_story1_submit(payer_hash,payload);
   IF payment->>'id'<>payment_id::text OR payment->>'status'<>'SIMULATED_SUCCESS'
   THEN RAISE EXCEPTION 'INITIATION_COMPLETION_ID_DRIFT'; END IF;
@@ -227,7 +255,7 @@ BEGIN
     report:=public.taxpay_demo_received_payment_report_save(recipient2_hash,event2,gen_random_uuid(),'Unrecognized simulated payment allocation');
     report_id:=(report->>'id')::uuid;
     duplicate:=public.taxpay_demo_received_payment_report_save(recipient2_hash,event2,gen_random_uuid(),'Unrecognized simulated payment allocation');
-    IF report->>'caseKind'<>'UNSOLICITED_PAYMENT_REPORT' OR duplicate->>'id'<>report_id::text OR report->>'id'<>early_report->>'id' OR report->>'paymentCompleted'<>'true' OR report->>'officeSyncState'<>'PENDING' THEN RAISE EXCEPTION 'REPORT_IDEMPOTENCY_FAILED'; END IF;
+    IF report->>'caseKind'<>'UNSOLICITED_PAYMENT_REPORT' OR duplicate->>'id'<>report_id::text OR report->>'id'<>early_report->>'id' OR report->>'paymentCompleted'<>'true' OR report->>'officeSyncState'<>'ACKNOWLEDGED' THEN RAISE EXCEPTION 'REPORT_IDEMPOTENCY_FAILED'; END IF;
     BEGIN
       PERFORM public.taxpay_demo_received_payment_report_save(recipient3_hash,event2,gen_random_uuid(),'Unauthorized other allocation report');
     EXCEPTION WHEN OTHERS THEN
@@ -235,10 +263,8 @@ BEGIN
     END;
     IF NOT denied_report THEN RAISE EXCEPTION 'REPORT_OUTSIDER_ACCEPTED'; END IF;
     claimed:=public.taxpay_demo_correction_claim(1,report_id);
-    IF jsonb_array_length(claimed)<>1 OR claimed#>>'{0,event,payload,caseKind}'<>'UNSOLICITED_PAYMENT_REPORT' OR claimed#>>'{0,event,payload,recipientEventId}'<>event2 OR claimed#>>'{0,event,payload,targetAllocationId}'<>'ws3-recipient-2' OR claimed#>>'{0,event,payload,correctionChanges}' IS NOT NULL
-      THEN RAISE EXCEPTION 'REPORT_OFFICE_EVENT_MISMATCH'; END IF;
-    IF NOT public.taxpay_demo_correction_ack(report_id,(claimed#>>'{0,claimToken}')::uuid,true)
-      THEN RAISE EXCEPTION 'REPORT_ACK_FAILED'; END IF;
+    IF jsonb_array_length(claimed)<>0 OR early_claim#>>'{0,event,payload,caseKind}'<>'UNSOLICITED_PAYMENT_REPORT' OR early_claim#>>'{0,event,payload,recipientEventId}'<>event2 OR early_claim#>>'{0,event,payload,targetAllocationId}'<>'ws3-recipient-2' OR early_claim#>>'{0,event,payload,correctionChanges}' IS NOT NULL
+      THEN RAISE EXCEPTION 'REPORT_OFFICE_EVENT_OR_DUPLICATE_MISMATCH'; END IF;
     IF public.taxpay_demo_correction_get(report_id)->>'officeSyncState'<>'ACKNOWLEDGED'
       THEN RAISE EXCEPTION 'REPORT_ACK_READBACK_FAILED'; END IF;
     IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.taxpay_demo_correction_notices(recipient2_hash,100,0)->'items') n WHERE n->>'requestId'=report_id::text AND n->>'code'='REPORT_OFFICE_RECEIVED')
