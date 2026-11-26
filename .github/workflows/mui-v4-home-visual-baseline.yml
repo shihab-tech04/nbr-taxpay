@@ -13,13 +13,13 @@ jobs:
       VITE_SUPABASE_DISABLED: 'true'
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
-      BASE_SHA: 84134509af607d2977b4cd3927d0aba295412c1e
-      CANDIDATE_SHA: 6e69de5f2005d34bf48abfc77c3f167bcfc505cb
+      BASE_SHA: 35201643b882565be4ec643a47ea021d9cdaf9af
+      CANDIDATE_SHA: fb7026a35932a52333b877887a9b76c796aa77c3
       DIAGNOSTIC_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 6e69de5f2005d34bf48abfc77c3f167bcfc505cb
+          ref: fb7026a35932a52333b877887a9b76c796aa77c3
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mui-v70-foundation-current-main-84134509
+          name: mui-v70-foundation-current-main-35201643
           path: |
             ${{ runner.temp }}/mui-snapshots
             test-results/
