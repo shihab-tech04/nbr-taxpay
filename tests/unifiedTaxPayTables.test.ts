@@ -108,8 +108,13 @@ test('actual signed-in payment paths use shared semantic desktop tables and comp
  assert.match(switcher,/DemoPaymentActivity/);
  for(const [name,source] of [['owner',history],['linked',activity]] as const){
    assert.match(source,/<TaxPayDataGrid variant="tabular"/,name);
-   assert.match(source,/TaxPayTableControls/,name);
-   assert.match(source,/TaxPayTableCounter/,name);
+   // Assert the controls and count actually rendered, not unused named imports.
+   assert.match(source,/<TaxPayOfficeRegisterFilters open=\{[^}]+\}/,name);
+   assert.match(source,/<TaxPayOfficeRegisterFooter shown=\{[^}]+\.length\} total=\{[^}]+\.length\}/,name);
+   assert.match(source,/count=\{[^}]+\.length\} total=\{[^}]+\.length\} countLabel=/,name);
+   assert.match(source,/searchValue=\{[^}]+\} onSearchChange=\{[^}]+\}/,name);
+   assert.match(shared,/export function TaxPayOfficeRegisterFilters\([\s\S]*?return <TaxPayTableControls/,name);
+   assert.match(shared,/export function TaxPayOfficeRegisterFooter\([\s\S]*?role="status" aria-live="polite"/,name);
    assert.match(source,/mobileTestId=/,name);
    assert.match(source,/getRowKey=/,name);
    assert.match(source,/<TaxPayOfficeRegisterToolbar/,name);
