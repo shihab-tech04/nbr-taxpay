@@ -3,7 +3,7 @@ import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-unified-table.css';
 // The shared taxpayer lookup result card must be styled on direct Beneficiaries entry.
 import '../../styles/taxpay-payment-form.css';
-import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';

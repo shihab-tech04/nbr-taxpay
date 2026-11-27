@@ -2,7 +2,7 @@ import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-table'
 import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
 import {usePreviewCorrectionRegister,previewCorrectionStatus} from '../../services/previewCorrections';
-import {TaxPayCompactCellList,TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
+import {TaxPayCompactCellList,TaxPayDataGrid,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useState} from 'react';
 import '../../styles/taxpay-dashboard-bento.css';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';

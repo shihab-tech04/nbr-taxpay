@@ -153,7 +153,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       if (popup.matches(':popover-open')) popup.hidePopover();
     };
   }, [passportSuggestionsFor]);
-  const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
   const [methodGroup, setMethodGroup] = useState<PaymentMethodGroup | null>(null);

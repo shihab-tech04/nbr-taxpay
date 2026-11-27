@@ -337,7 +337,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (match && forSelf === false && !otherBatch) setOtherTaxpayerName(match.nameEn);
   };
   const [verifiedReference, setVerifiedReference] = useState<V11GuestNotice | null>(null);
-  const tinAttempts = useRef<number[]>([]);
   const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY' | null>(null);
   const [taxpayerEntityOverrides, setTaxpayerEntityOverrides] = useState<Record<string, IncomeTaxEntityType>>({});
   const [unifiedReturnSelectionNotice, setUnifiedReturnSelectionNotice] = useState('');

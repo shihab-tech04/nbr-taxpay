@@ -34,7 +34,6 @@ const localToday = () => {
   return `${part('year')}-${part('month')}-${part('day')}`;
 };
 const inputClass = 'gift-tax-field-control';
-const primaryClass = 'gift-tax-action gift-tax-action--primary';
 const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
 
 /**
