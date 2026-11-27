@@ -11,7 +11,6 @@ import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
 import { receiptReturnRoute } from './services/routeContract';
-import { IncidentReporting } from './components/screens/IncidentReporting';
 import { user1DemoRoutes } from './config/user1DemoRoutes';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/transactionId';
@@ -131,13 +130,12 @@ const MainRouter: React.FC = () => {
   const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
   // The public guide retains the same public navigation for guests and signed-in visitors.
-  const taxpayerSupportRoute = false; // Receipt status is now a public modal, not a taxpayer-page shell.
   const publicInformationRoute = receiptOverlayRoute || ['landing','home-2','home-3','incident'].includes(currentRoute) ||
-    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) ||
+    ['user_guide','guidance'].includes(currentRoute) ||
     loginOverlay || privateSampleGate;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
   // All account-only routes use the same approved taxpayer shell and sidebar.
-  const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
+  const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) ||
     currentRoute === 'secure_workspace');
   const showActivitySections = taxpayerSession && !privateSampleGate && activityRoutes.has(currentRoute);
 

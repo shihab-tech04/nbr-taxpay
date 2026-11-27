@@ -88,6 +88,11 @@ try{
   await expect(panel.getByRole('combobox',{name:'Transaction category'})).toBeVisible();
   const rows=panel.getByTestId('taxpayer-transaction-table').locator('tbody tr');
   if(latest){
+    const muiTable=panel.getByTestId('taxpayer-transaction-table');
+    await expect(muiTable).toHaveAttribute('data-mui-record-table','true');
+    await expect(muiTable).toHaveClass(/MuiTable-root/);
+    await expect(muiTable.locator('thead th').first()).toHaveClass(/MuiTableCell-root/);
+    await expect(muiTable.locator('tbody tr').first()).toHaveClass(/MuiTableRow-root/);
     await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th'))
       .toHaveText(['Payment','Paid by','Paid for','Reference','Payment type','Date','Amount','Status','Actions']);
     await expect(rows.first()).toBeVisible();
@@ -113,6 +118,7 @@ try{
     await page.setViewportSize({width:375,height:812});
     const cards=panel.getByTestId('taxpayer-transaction-mobile-cards');
     await expect(cards).toBeVisible();
+    await expect(muiTable).toBeHidden();
     await expect(cards.locator(':scope > li').first()).toContainText(firstRef);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     if(overflow>2)throw new Error('Published mobile page overflows by '+overflow+' pixels');
@@ -203,6 +209,8 @@ try{
   if(selected.count>0){
     const table=activity2.getByTestId('signed-in-payment-activity-table');
     await expect(table).toBeVisible();
+    await expect(table).toHaveClass(/MuiTable-root/);
+    await expect(table).toHaveAttribute('data-mui-record-table','true');
     for(const id of selected.ids)await expect(table.getByText(id,{exact:true})).toBeVisible();
   }else{
     await expect(activity2.getByText(/^(No transactions yet\.|এখনো কোনো লেনদেন নেই।|এখনও.*লেনদেন.*নেই[।.]?)$/)).toBeVisible();

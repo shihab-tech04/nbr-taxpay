@@ -1,4 +1,5 @@
-import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-table';
+import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -263,7 +264,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     </p>}
     <TaxPayTableViewport role="region" aria-label={t('Scrollable tax event ledger','স্ক্রলযোগ্য কর ঘটনার লেজার')} tabIndex={0}>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
-        {(events.length===0||visible.length>0)&&<TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
+        {(events.length===0||visible.length>0)&&<TaxPayDataGrid variant="ledger" desktopSlots={citizenMuiDesktopTableSlots} rows={visible} getRowKey={e=>e.id}
           testId="event-ledger-table" ariaLabel={t('Tax event ledger','কর ঘটনার লেজার')}
           columns={[
             {key:'date',header:t('Date / time','তারিখ / সময়'),cellClassName:'whitespace-nowrap',renderCell:e=>dateTime(e.occurredAt,language)},

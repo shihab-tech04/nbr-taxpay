@@ -9,7 +9,7 @@ import {
   Network,
   Share2
 } from 'lucide-react';
-import { TAX_ONTOLOGY_NODES, OntologyNode } from '../../data/taxOntologyData';
+import { TAX_ONTOLOGY_NODES } from '../../data/taxOntologyData';
 
 export const OntologyView: React.FC = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string>('TAXPAYER');

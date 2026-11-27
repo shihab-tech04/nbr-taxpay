@@ -1,8 +1,9 @@
+import {citizenMuiDesktopTableSlots} from '../../design-system/mui-record-table';
 import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-unified-table.css';
 // The shared taxpayer lookup result card must be styled on direct Beneficiaries entry.
 import '../../styles/taxpay-payment-form.css';
-import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
@@ -873,7 +874,7 @@ export function Beneficiaries(){
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
               <TaxPayTablePanel className="beneficiary-directory__table">
-              <TaxPayDataGrid variant="tabular" rows={filteredPeople} getRowKey={person=>person.id}
+              <TaxPayDataGrid variant="tabular" desktopSlots={citizenMuiDesktopTableSlots} rows={filteredPeople} getRowKey={person=>person.id}
                 testId="beneficiary-directory-desktop" mobileTestId="beneficiary-directory-mobile"
                 isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"beneficiary-directory__tabular-row"}
                 columns={[
